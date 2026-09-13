@@ -14,7 +14,7 @@ def login_with_mpin(req: LoginMPINRequest, db: Session = Depends(get_db)):
     if not admin_setting:
         # Initialize default admin settings if not seeded yet
         default_hash = hash_mpin(settings.ADMIN_MPIN)
-        admin_setting = AdminSettings(hashed_mpin=default_hash, app_title="Contractor Pro")
+        admin_setting = AdminSettings(hashed_mpin=default_hash, app_title="Attendly")
         db.add(admin_setting)
         db.commit()
         db.refresh(admin_setting)
@@ -29,7 +29,7 @@ def login_with_mpin(req: LoginMPINRequest, db: Session = Depends(get_db)):
     return TokenResponse(
         access_token=access_token,
         token_type="bearer",
-        app_title=admin_setting.app_title or "Contractor Pro"
+        app_title=admin_setting.app_title or "Attendly"
     )
 
 @router.get("/verify")

@@ -1,6 +1,6 @@
-# Contractor Pro — Production Deployment Guide
+# Attendly — Production Deployment Guide
 
-This guide walks you through deploying the **Contractor Pro** workforce attendance and payroll PWA to production using:
+This guide walks you through deploying the **Attendly** workforce attendance and payroll PWA to production using:
 - **Neon PostgreSQL** for serverless database hosting
 - **Render Web Service** for the FastAPI backend
 - **Render Static Site** for the React + Vite frontend
@@ -31,7 +31,7 @@ This guide walks you through deploying the **Contractor Pro** workforce attendan
 
 ## Step 1: Initialize Git and Push to GitHub
 
-From your project root (`Dad_app`):
+From your project root (`Attendly`):
 
 ```bash
 # Initialize git if not already initialized
@@ -182,12 +182,12 @@ git push -u origin main
    - **Android (Chrome)**:
      - Open `https://dad-attendance-frontend.onrender.com`.
      - A banner or menu option **"Install app"** / **"Add to Home screen"** will appear.
-     - Tap Install &rarr; Contractor Pro appears as a standalone app with the CP icon on the home screen.
+     - Tap Install &rarr; Attendly appears as a standalone app with the Attendly icon on the home screen.
    - **iOS (Safari)**:
      - Open `https://dad-attendance-frontend.onrender.com` in Safari.
      - Tap the **Share** button (box with arrow pointing up).
      - Tap **"Add to Home Screen"**.
-     - Contractor Pro launches full-screen in standalone mode without browser URL bars.
+     - Attendly launches full-screen in standalone mode without browser URL bars.
 
 ---
 

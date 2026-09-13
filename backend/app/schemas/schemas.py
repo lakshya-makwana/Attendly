@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Optional, List, Any
+from typing import Optional, List
 from pydantic import BaseModel, Field, field_validator
 
 # --- Auth Schemas ---
@@ -18,7 +18,7 @@ class LoginMPINRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    app_title: str = "Contractor Pro"
+    app_title: str = "Attendly"
 
 class ChangeMPINRequest(BaseModel):
     current_mpin: str

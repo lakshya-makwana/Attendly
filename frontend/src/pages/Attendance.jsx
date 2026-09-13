@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Button,
   IconButton,
   Select,
@@ -63,7 +62,7 @@ const Attendance = () => {
         };
       });
       setRecords(initialMap);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to load attendance records.', severity: 'error' });
     } finally {
       setLoading(false);
@@ -166,7 +165,7 @@ const Attendance = () => {
         severity: 'success'
       });
       fetchData(selectedDate);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Error saving attendance records.', severity: 'error' });
     } finally {
       setSaving(false);

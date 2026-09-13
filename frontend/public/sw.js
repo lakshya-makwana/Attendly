@@ -1,5 +1,5 @@
-// Contractor Pro - Service Worker for PWA
-const CACHE_NAME = 'contractor-pro-v1';
+// Attendly - Service Worker for PWA
+const CACHE_NAME = 'attendly-v1';
 
 const STATIC_ASSETS = [
   '/',

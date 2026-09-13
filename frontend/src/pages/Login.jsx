@@ -114,7 +114,7 @@ const Login = () => {
             <LockIcon sx={{ fontSize: 20 }} />
           </Box>
           <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
-            Contractor Pro
+            Attendly
           </Typography>
           <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8125rem' }}>
             Enter your MPIN to continue

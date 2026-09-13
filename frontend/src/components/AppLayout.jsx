@@ -21,8 +21,7 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Divider,
-  Avatar
+  Divider
 } from '@mui/material';
 import {
   DashboardOutlined as DashboardIcon,
@@ -120,7 +119,7 @@ const AppLayout = () => {
                     fontSize: '0.85rem',
                   }}
                 >
-                  CP
+                  A
                 </Box>
               </Box>
               <Box>
@@ -205,7 +204,7 @@ const AppLayout = () => {
               }}
               title="Admin Session / Lock"
             >
-              CP
+              A
             </Box>
           </Box>
         </Toolbar>
@@ -228,7 +227,7 @@ const AppLayout = () => {
         <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
           <Box>
             <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#ffffff' }}>
-              Contractor Pro
+              Attendly
             </Typography>
             <Typography variant="caption" sx={{ color: '#94a3b8' }}>
               Workforce & Payroll

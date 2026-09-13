@@ -1,7 +1,7 @@
 {
-  "name": "Contractor Pro - Attendance & Wages",
-  "short_name": "Contractor Pro",
-  "description": "Mobile-first workforce attendance, advances, and payroll management.",
+  "name": "Attendly",
+  "short_name": "Attendly",
+  "description": "Attendance management made simple.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

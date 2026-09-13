@@ -12,7 +12,7 @@ def fix_database_url(url: str) -> str:
     return url
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "Contractor Workforce Attendance"
+    PROJECT_NAME: str = "Attendly"
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://lakshya@localhost:5432/contractor_db")
     SECRET_KEY: str = os.getenv("JWT_SECRET") or os.getenv("SECRET_KEY", "super_secret_jwt_key_contractor_attendance_app_2026")
     ALGORITHM: str = "HS256"

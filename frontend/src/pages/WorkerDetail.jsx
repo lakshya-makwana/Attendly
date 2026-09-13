@@ -25,8 +25,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Divider
+  TableRow
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -58,7 +57,7 @@ const WorkerDetail = () => {
       setLoading(true);
       const res = await api.get(`/workers/${id}/detail`);
       setDetail(res.data);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to load worker details.', severity: 'error' });
     } finally {
       setLoading(false);
@@ -89,7 +88,7 @@ const WorkerDetail = () => {
       setAdvanceAmount('');
       setAdvanceNote('');
       fetchDetail();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to record advance.', severity: 'error' });
     } finally {
       setAdvanceSaving(false);
@@ -101,7 +100,7 @@ const WorkerDetail = () => {
       await api.delete(`/advances/${advanceId}`);
       setSnackbar({ open: true, message: 'Advance transaction deleted.', severity: 'info' });
       fetchDetail();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to delete advance.', severity: 'error' });
     }
   };

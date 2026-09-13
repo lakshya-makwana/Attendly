@@ -4,7 +4,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Button,
   IconButton,
   Select,
@@ -13,7 +12,6 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  Grid,
   Divider,
   Table,
   TableBody,
@@ -24,8 +22,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Paper
+  DialogActions
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -60,7 +57,7 @@ const Payroll = () => {
       setLoading(true);
       const res = await api.get(`/payroll/monthly?year=${year}&month=${month}`);
       setPayrollData(res.data);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to compute monthly payroll.', severity: 'error' });
     } finally {
       setLoading(false);

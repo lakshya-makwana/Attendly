@@ -18,8 +18,7 @@ import {
   InputAdornment,
   Switch,
   FormControlLabel,
-  Divider,
-  Grid
+  Divider
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -56,7 +55,7 @@ const Workers = () => {
       setLoading(true);
       const res = await api.get('/workers');
       setWorkers(res.data);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to fetch workers.', severity: 'error' });
     } finally {
       setLoading(false);
@@ -135,7 +134,7 @@ const Workers = () => {
       setSnackbar({ open: true, message: 'Worker deleted successfully.', severity: 'success' });
       setDeleteDialogOpen(false);
       fetchWorkers();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to delete worker.', severity: 'error' });
     }
   };

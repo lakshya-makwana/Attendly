@@ -25,7 +25,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
   Chip,
   Stack
 } from '@mui/material';
@@ -33,7 +32,6 @@ import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
   LocationCityOutlined as SitesIcon,
-  VisibilityOutlined as ViewIcon,
   PrintOutlined as PrintIcon
 } from '@mui/icons-material';
 import api from '../api/client';
@@ -63,7 +61,7 @@ const SiteAnalytics = () => {
       setLoading(true);
       const res = await api.get(`/sites/analytics?year=${year}&month=${month}`);
       setAnalyticsData(res.data);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to load site analytics.', severity: 'error' });
     } finally {
       setLoading(false);

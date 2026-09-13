@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Button,
-  IconButton,
   TextField,
   Dialog,
   DialogTitle,
@@ -26,12 +25,7 @@ import {
   Paper
 } from '@mui/material';
 import {
-  Add as AddIcon,
-  EditOutlined as EditIcon,
-  DeleteOutlined as DeleteIcon,
-  LocationCityOutlined as SitesIcon,
-  Block as BlockIcon,
-  CheckCircle as ActiveIcon
+  Add as AddIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 
@@ -58,7 +52,7 @@ const Sites = () => {
       setLoading(true);
       const res = await api.get('/sites');
       setSites(res.data);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to load sites.', severity: 'error' });
     } finally {
       setLoading(false);
@@ -125,7 +119,7 @@ const Sites = () => {
         severity: 'info'
       });
       fetchSites();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to change site status.', severity: 'error' });
     }
   };
@@ -153,7 +147,7 @@ const Sites = () => {
       setSnackbar({ open: true, message: `Site '${siteToDelete.name}' deactivated successfully.`, severity: 'info' });
       setDeleteDialogOpen(false);
       fetchSites();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to deactivate site.', severity: 'error' });
     }
   };

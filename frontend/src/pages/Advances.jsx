@@ -32,8 +32,7 @@ import {
 } from '@mui/material';
 import {
   Add as AddIcon,
-  DeleteOutlined as DeleteIcon,
-  FilterList as FilterIcon
+  DeleteOutlined as DeleteIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { formatDateIndian } from '../utils/dateUtils';
@@ -65,7 +64,7 @@ const Advances = () => {
       ]);
       setAdvances(advRes.data);
       setWorkers(workersRes.data);
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to load advances.', severity: 'error' });
     } finally {
       setLoading(false);
@@ -102,7 +101,7 @@ const Advances = () => {
       setSnackbar({ open: true, message: 'Advance payment recorded successfully.', severity: 'success' });
       setDialogOpen(false);
       fetchData();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to record advance.', severity: 'error' });
     } finally {
       setSaving(false);
@@ -114,7 +113,7 @@ const Advances = () => {
       await api.delete(`/advances/${advId}`);
       setSnackbar({ open: true, message: 'Advance entry deleted.', severity: 'info' });
       fetchData();
-    } catch (err) {
+    } catch {
       setSnackbar({ open: true, message: 'Failed to delete advance.', severity: 'error' });
     }
   };

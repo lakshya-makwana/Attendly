@@ -28,7 +28,7 @@ def seed():
             print(f"Initializing Admin MPIN to: {mpin_to_set} (hashed with bcrypt)")
             admin = AdminSettings(
                 hashed_mpin=hash_mpin(mpin_to_set),
-                app_title="Contractor Pro"
+                app_title="Attendly"
             )
             db.add(admin)
         else:

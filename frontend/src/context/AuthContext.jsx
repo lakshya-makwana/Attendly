@@ -7,7 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('contractor_token') || null);
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem('contractor_token'));
   const [loading, setLoading] = useState(true);
-  const [appTitle, setAppTitle] = useState('Contractor Pro');
+  const [appTitle, setAppTitle] = useState('Attendly');
 
   useEffect(() => {
     const checkAuth = async () => {

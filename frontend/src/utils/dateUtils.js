@@ -29,7 +29,7 @@ export const formatDateIndian = (dateInput) => {
       const year = d.getFullYear();
       return `${day}/${month}/${year}`;
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 

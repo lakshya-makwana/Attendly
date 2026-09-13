@@ -7,5 +7,5 @@ class AdminSettings(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     hashed_mpin = Column(String(255), nullable=False)
-    app_title = Column(String(100), default="Contractor Pro")
+    app_title = Column(String(100), default="Attendly")
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))

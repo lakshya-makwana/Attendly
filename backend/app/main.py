@@ -16,8 +16,8 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(
-    title="Contractor Workforce Attendance & Payroll API",
-    description="Dedicated single-admin API for contractor workforce management, attendance, advances, and payroll.",
+    title="Attendly API",
+    description="Dedicated single-admin API for Attendly workforce attendance, advances, and payroll management.",
     version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
@@ -62,7 +62,7 @@ app.include_router(analytics.router, prefix="/api")
 def root():
     return {
         "status": "online",
-        "service": "Contractor Workforce Attendance & Payroll API",
+        "service": "Attendly API",
         "version": "1.0.0",
         "docs": "/docs"
     }

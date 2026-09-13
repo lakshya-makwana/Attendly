@@ -10,8 +10,7 @@ import {
   Divider,
   MenuItem,
   Select,
-  FormControl,
-  IconButton
+  FormControl
 } from '@mui/material';
 import {
   BarChart as BarChartIcon,
@@ -51,7 +50,7 @@ const Dashboard = () => {
       ]);
       setMetrics(dashRes.data);
       setSiteAnalytics(analyticsRes.data);
-    } catch (err) {
+    } catch {
       setError('Failed to load operations dashboard.');
     } finally {
       setLoading(false);
