@@ -10,7 +10,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
   CircularProgress,
   Alert,
   Snackbar,
@@ -21,11 +20,16 @@ import {
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
-  Paper
+  TableRow
 } from '@mui/material';
 import {
-  Add as AddIcon
+  Add as AddIcon,
+  LocationCity as SitesIcon,
+  LocationOn as LocationIcon,
+  EditOutlined as EditIcon,
+  DeleteOutlined as DeleteIcon,
+  ToggleOn as ToggleOnIcon,
+  ToggleOff as ToggleOffIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 
@@ -88,7 +92,6 @@ const Sites = () => {
     setSaving(true);
     try {
       if (editingSite) {
-        // In-place update preserving site_id and all historical attendance/analytics
         await api.put(`/sites/${editingSite.id}`, {
           name: name.trim(),
           address: address.trim() || null
@@ -153,21 +156,34 @@ const Sites = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
       {/* Page Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography variant="h5">Work Sites</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
-            Manage active and archived job locations
+          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Work Sites
+          </Typography>
+          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+            Manage active and archived construction locations
           </Typography>
         </Box>
 
         <Button
           variant="contained"
-          color="primary"
-          startIcon={<AddIcon fontSize="small" />}
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleOpenAdd}
+          sx={{
+            bgcolor: '#000000',
+            color: '#ffffff',
+            fontSize: '0.8125rem',
+            fontWeight: 700,
+            px: 2,
+            py: 0.85,
+            borderRadius: 2.5,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            '&:hover': { bgcolor: '#1f2937' },
+            '&:active': { transform: 'scale(0.97)' }
+          }}
         >
           Add Site
         </Button>
@@ -176,179 +192,151 @@ const Sites = () => {
       {/* Sites Content */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress size={28} />
+          <CircularProgress size={30} sx={{ color: '#000000' }} />
         </Box>
       ) : sites.length === 0 ? (
-        <Alert severity="info" sx={{ border: '1px solid #e2e8f0' }}>
+        <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
           No work sites configured. Click "Add Site" to create your first site.
         </Alert>
       ) : (
-        <>
-          {/* Desktop Table View */}
-          <Paper
-            variant="outlined"
-            sx={{
-              display: { xs: 'none', md: 'block' },
-              overflow: 'hidden',
-              borderColor: '#e2e8f0',
-            }}
-          >
-            <TableContainer>
-              <Table size="small">
-                <TableHead sx={{ bgcolor: '#f8fafc' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.25 }}>Site Name</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.25 }}>Location / Landmark</TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.25 }}>Status</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#475569', py: 1.25 }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sites.map((site) => (
-                    <TableRow
-                      key={site.id}
-                      hover
-                      sx={{
-                        opacity: site.is_active ? 1 : 0.65,
-                        '&:last-child td': { borderBottom: 0 }
-                      }}
-                    >
-                      <TableCell sx={{ fontWeight: 600, color: 'text.primary' }}>
-                        {site.name}
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary' }}>
-                        {site.address || '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={site.is_active ? 'Active' : 'Inactive'}
-                          size="small"
-                          sx={{
-                            height: 22,
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            bgcolor: site.is_active ? '#ecfdf5' : '#f1f5f9',
-                            color: site.is_active ? '#065f46' : '#64748b',
-                            border: `1px solid ${site.is_active ? '#a7f3d0' : '#e2e8f0'}`
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack direction="row" spacing={0.5} justifyContent="flex-end">
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => handleOpenEdit(site)}
-                            sx={{ color: 'text.secondary', minWidth: 'auto', px: 1, fontSize: '0.8rem' }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => handleToggleStatus(site)}
-                            sx={{
-                              color: site.is_active ? '#b45309' : '#059669',
-                              minWidth: 'auto',
-                              px: 1,
-                              fontSize: '0.8rem'
-                            }}
-                          >
-                            {site.is_active ? 'Deactivate' : 'Activate'}
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="text"
-                            color="error"
-                            onClick={() => handleOpenDelete(site)}
-                            sx={{ minWidth: 'auto', px: 1, fontSize: '0.8rem' }}
-                          >
-                            Delete
-                          </Button>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-
-          {/* Mobile Card / List View */}
-          <Stack spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' } }}>
-            {sites.map((site) => (
-              <Card
-                key={site.id}
-                variant="outlined"
-                sx={{
-                  borderColor: '#e2e8f0',
-                  opacity: site.is_active ? 1 : 0.65,
-                }}
-              >
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-                        {site.name}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
-                        {site.address || 'No location specified'}
-                      </Typography>
-                    </Box>
-                    <Chip
-                      label={site.is_active ? 'Active' : 'Inactive'}
-                      size="small"
-                      sx={{
-                        height: 22,
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        bgcolor: site.is_active ? '#ecfdf5' : '#f1f5f9',
-                        color: site.is_active ? '#065f46' : '#64748b',
-                        border: `1px solid ${site.is_active ? '#a7f3d0' : '#e2e8f0'}`
-                      }}
-                    />
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+          {sites.map((site) => (
+            <Card
+              key={site.id}
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                border: '1px solid #e2e8f8',
+                bgcolor: '#ffffff',
+                p: 2,
+                opacity: site.is_active ? 1 : 0.65,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.25 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '12px',
+                      bgcolor: '#f0f3ff',
+                      color: '#151c27',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <SitesIcon sx={{ fontSize: 22 }} />
                   </Box>
 
-                  <Divider sx={{ my: 1.25, borderColor: '#f1f5f9' }} />
-
-                  <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleOpenEdit(site)}
-                      sx={{ fontSize: '0.75rem', px: 1.5 }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color={site.is_active ? 'inherit' : 'success'}
-                      onClick={() => handleToggleStatus(site)}
-                      sx={{ fontSize: '0.75rem', px: 1.5 }}
-                    >
-                      {site.is_active ? 'Deactivate' : 'Activate'}
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="error"
-                      onClick={() => handleOpenDelete(site)}
-                      sx={{ fontSize: '0.75rem', px: 1.5 }}
-                    >
-                      Delete
-                    </Button>
+                  <Box>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2 }}>
+                      {site.name}
+                    </Typography>
+                    <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', mt: 0.25, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <LocationIcon sx={{ fontSize: 13 }} />
+                      {site.address || 'No location specified'}
+                    </Typography>
                   </Box>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        </>
+                </Box>
+
+                <Box
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    px: 1.5,
+                    py: 0.4,
+                    borderRadius: 1.5,
+                    bgcolor: site.is_active ? '#f0f3ff' : '#e2e8f8',
+                    color: site.is_active ? '#151c27' : '#555f6f'
+                  }}
+                >
+                  {site.is_active ? 'Active' : 'Inactive'}
+                </Box>
+              </Box>
+
+              <Divider sx={{ my: 1.25, borderColor: '#f0f3ff' }} />
+
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleOpenEdit(site)}
+                  startIcon={<EditIcon sx={{ fontSize: 15 }} />}
+                  sx={{
+                    fontSize: '0.75rem',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 2,
+                    borderColor: '#dce2f3',
+                    color: '#151c27',
+                    fontWeight: 600,
+                    '&:hover': { bgcolor: '#f0f3ff' }
+                  }}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleToggleStatus(site)}
+                  startIcon={site.is_active ? <ToggleOffIcon sx={{ fontSize: 16 }} /> : <ToggleOnIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    fontSize: '0.75rem',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 2,
+                    borderColor: '#dce2f3',
+                    color: '#555f6f',
+                    fontWeight: 600,
+                    '&:hover': { bgcolor: '#f0f3ff', color: '#151c27' }
+                  }}
+                >
+                  {site.is_active ? 'Deactivate' : 'Activate'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => handleOpenDelete(site)}
+                  startIcon={<DeleteIcon sx={{ fontSize: 15 }} />}
+                  sx={{
+                    fontSize: '0.75rem',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 2,
+                    borderColor: '#ffdad6',
+                    color: '#ba1a1a',
+                    fontWeight: 600,
+                    '&:hover': { bgcolor: '#ffdad6' }
+                  }}
+                >
+                  Delete
+                </Button>
+              </Box>
+            </Card>
+          ))}
+        </Box>
       )}
 
       {/* Add / Edit Site Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
           {editingSite ? `Edit ${editingSite.name}` : 'Add Work Site'}
         </DialogTitle>
         <DialogContent>
@@ -363,6 +351,7 @@ const Sites = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               helperText="Renaming preserves past attendance records."
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
@@ -373,17 +362,25 @@ const Sites = () => {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               helperText="Optional location reference"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setDialogOpen(false)} sx={{ color: 'text.secondary' }}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+          >
             Cancel
           </Button>
           <Button
             variant="contained"
+            size="small"
             onClick={handleSave}
             disabled={saving || !name.trim()}
+            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
           >
             {saving ? 'Saving...' : editingSite ? 'Update Site' : 'Add Site'}
           </Button>
@@ -391,32 +388,59 @@ const Sites = () => {
       </Dialog>
 
       {/* Delete / Deactivate Confirmation Dialog */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
           {deleteError ? 'Cannot Delete Site' : 'Delete Work Site'}
         </DialogTitle>
         <DialogContent>
           {deleteError ? (
-            <Alert severity="warning" sx={{ mb: 2 }}>
+            <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
               {deleteError}
             </Alert>
           ) : (
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+            <Typography variant="body2" sx={{ color: '#555f6f' }}>
               Are you sure you want to delete <strong>{siteToDelete?.name}</strong>?
               If attendance was ever recorded at this site, deletion will be blocked to maintain historical records.
             </Typography>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} sx={{ color: 'text.secondary' }}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+          >
             Cancel
           </Button>
           {deleteError ? (
-            <Button variant="contained" color="warning" onClick={handleDeactivateInstead}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleDeactivateInstead}
+              sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+            >
               Deactivate Site Instead
             </Button>
           ) : (
-            <Button variant="contained" color="error" onClick={handleDelete}>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={handleDelete}
+              sx={{ borderRadius: 2, bgcolor: '#ba1a1a', color: '#ffffff', fontWeight: 700, '&:hover': { bgcolor: '#93000a' } }}
+            >
               Delete Site
             </Button>
           )}
@@ -430,7 +454,7 @@ const Sites = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', fontWeight: 600 }}>
+        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

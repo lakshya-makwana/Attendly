@@ -15,15 +15,18 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Stack
+  DialogActions
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
-  Save as SaveIcon,
+  CheckCircle as CheckCircleIcon,
   Check as CheckIcon,
-  LocationOn as LocationIcon
+  LocationOn as LocationIcon,
+  DoneAll as DoneAllIcon,
+  CalendarToday as CalendarIcon,
+  Person as PersonIcon,
+  Schedule as ScheduleIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { formatDateIndian, getTodayInputDate } from '../utils/dateUtils';
@@ -41,6 +44,7 @@ const Attendance = () => {
 
   const [bulkSiteDialogOpen, setBulkSiteDialogOpen] = useState(false);
   const [bulkSiteId, setBulkSiteId] = useState('');
+  const [selectedSiteFilter, setSelectedSiteFilter] = useState('all');
 
   const fetchData = async (dateStr) => {
     try {
@@ -175,41 +179,313 @@ const Attendance = () => {
   const markedRecords = Object.values(records).filter((r) => r.work_units !== null && r.work_units !== undefined);
   const totalWorkUnits = markedRecords.reduce((sum, r) => sum + parseFloat(r.work_units || 0), 0);
 
+  const fullDayCount = markedRecords.filter((r) => parseFloat(r.work_units) >= 1).length;
+  const halfDayCount = markedRecords.filter((r) => parseFloat(r.work_units) > 0 && parseFloat(r.work_units) < 1).length;
+  const absentCount = markedRecords.filter((r) => parseFloat(r.work_units) === 0).length;
+  const percentDone = workers.length > 0 ? Math.round((markedRecords.length / workers.length) * 100) : 0;
+
+  // Filter workers by selected site chip
+  const filteredWorkers = workers.filter((w) => {
+    if (selectedSiteFilter === 'all') return true;
+    const rec = records[w.worker_id];
+    return rec?.site_id === selectedSiteFilter;
+  });
+
+  const isToday = selectedDate === getTodayInputDate();
+
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 640, mx: 'auto', pb: 12 }}>
-      {/* 1. Refined Attendance Header: Date Navigation & Bulk Actions */}
-      <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff', p: 1.5 }}>
-        {/* Date Row with Left/Right Arrows */}
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 2, mb: 1.5 }}>
-          <IconButton onClick={handlePrevDay} size="small" sx={{ color: '#475569' }}>
-            <PrevIcon fontSize="small" />
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 600, mx: 'auto', pb: 16 }}>
+      {/* 1. Top Operational Bar: Date Capsule & Live Sync State */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.5 }}>
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.75,
+            bgcolor: '#f0f3ff',
+            px: 1.5,
+            py: 0.75,
+            borderRadius: 9999,
+            border: '1px solid #e2e8f8'
+          }}
+        >
+          <IconButton
+            onClick={handlePrevDay}
+            size="small"
+            sx={{
+              width: 28,
+              height: 28,
+              p: 0,
+              color: '#555f6f',
+              '&:hover': { color: '#151c27', bgcolor: '#e7eefe' },
+              '&:active': { transform: 'scale(0.95)' }
+            }}
+          >
+            <PrevIcon sx={{ fontSize: 18 }} />
           </IconButton>
 
-          <Typography variant="h6" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace', letterSpacing: 0.5 }}>
-            {formatDateIndian(selectedDate)}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 0.5 }}>
+            <CalendarIcon sx={{ fontSize: 16, color: '#000000' }} />
+            <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27' }}>
+              {formatDateIndian(selectedDate)}
+            </Typography>
+            {isToday && (
+              <Box
+                component="span"
+                sx={{
+                  bgcolor: '#d6e0f3',
+                  color: '#596373',
+                  px: 1.25,
+                  py: 0.25,
+                  borderRadius: 9999,
+                  fontSize: '0.6875rem',
+                  fontWeight: 700
+                }}
+              >
+                Today
+              </Box>
+            )}
+          </Box>
 
-          <IconButton onClick={handleNextDay} size="small" sx={{ color: '#475569' }}>
-            <NextIcon fontSize="small" />
+          <IconButton
+            onClick={handleNextDay}
+            size="small"
+            sx={{
+              width: 28,
+              height: 28,
+              p: 0,
+              color: '#555f6f',
+              '&:hover': { color: '#151c27', bgcolor: '#e7eefe' },
+              '&:active': { transform: 'scale(0.95)' }
+            }}
+          >
+            <NextIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
 
-        {/* Action Buttons Row: All 1.0 & Set Site for All */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.25 }}>
+        {/* Live Sync Status */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box
+            sx={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              bgcolor: '#000000',
+              boxShadow: '0 0 0 3px rgba(0,0,0,0.1)'
+            }}
+          />
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#555f6f' }}>
+            Live Sync
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* 2. Site Filter Chips (Horizontal Scroll) */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          overflowX: 'auto',
+          py: 0.5,
+          '::-webkit-scrollbar': { display: 'none' },
+          msOverflowStyle: 'none',
+          scrollbarWidth: 'none'
+        }}
+      >
+        <Box
+          onClick={() => setSelectedSiteFilter('all')}
+          sx={{
+            flexShrink: 0,
+            cursor: 'pointer',
+            bgcolor: selectedSiteFilter === 'all' ? '#000000' : '#f0f3ff',
+            color: selectedSiteFilter === 'all' ? '#ffffff' : '#151c27',
+            px: 2,
+            py: 0.85,
+            borderRadius: 9999,
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            transition: 'all 0.15s ease',
+            border: '1px solid',
+            borderColor: selectedSiteFilter === 'all' ? '#000000' : '#e2e8f8',
+            '&:active': { transform: 'scale(0.96)' }
+          }}
+        >
+          All Sites
+        </Box>
+
+        {sites.map((site) => {
+          const isSelected = selectedSiteFilter === site.id;
+          const siteWorkerCount = workers.filter((w) => records[w.worker_id]?.site_id === site.id).length;
+
+          return (
+            <Box
+              key={site.id}
+              onClick={() => setSelectedSiteFilter(site.id)}
+              sx={{
+                flexShrink: 0,
+                cursor: 'pointer',
+                bgcolor: isSelected ? '#000000' : '#f0f3ff',
+                color: isSelected ? '#ffffff' : '#151c27',
+                px: 2,
+                py: 0.85,
+                borderRadius: 9999,
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                transition: 'all 0.15s ease',
+                border: '1px solid',
+                borderColor: isSelected ? '#000000' : '#e2e8f8',
+                '&:hover': { bgcolor: isSelected ? '#1f2937' : '#e7eefe' },
+                '&:active': { transform: 'scale(0.96)' }
+              }}
+            >
+              {site.name}
+              <Box
+                component="span"
+                sx={{
+                  ml: 0.75,
+                  fontSize: '0.6875rem',
+                  fontWeight: 600,
+                  color: isSelected ? '#dce2f3' : '#555f6f'
+                }}
+              >
+                {siteWorkerCount}
+              </Box>
+            </Box>
+          );
+        })}
+      </Box>
+
+      {/* 3. Roster Overview Metrics Card */}
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: 3,
+          border: '1px solid #e2e8f8',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+          bgcolor: '#ffffff',
+          p: 2.25
+        }}
+      >
+        {/* Top Metric Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', lineHeight: 1 }}>
+              {markedRecords.length}
+            </Typography>
+            <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#555f6f' }}>
+              / {workers.length} Marked
+            </Typography>
+          </Box>
+
+          <Box
+            sx={{
+              bgcolor: '#f0f3ff',
+              color: '#151c27',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 2,
+              fontSize: '0.75rem',
+              fontWeight: 700
+            }}
+          >
+            {percentDone}% Done
+          </Box>
+        </Box>
+
+        {/* Segmented Micro Progress Bar */}
+        <Box
+          sx={{
+            width: '100%',
+            height: 6,
+            bgcolor: '#e2e8f8',
+            borderRadius: 9999,
+            overflow: 'hidden',
+            display: 'flex',
+            my: 1.5
+          }}
+        >
+          <Box
+            sx={{
+              height: '100%',
+              bgcolor: '#000000',
+              width: workers.length > 0 ? `${(fullDayCount / workers.length) * 100}%` : '0%',
+              transition: 'width 0.4s ease'
+            }}
+          />
+          <Box
+            sx={{
+              height: '100%',
+              bgcolor: '#555f6f',
+              width: workers.length > 0 ? `${(halfDayCount / workers.length) * 100}%` : '0%',
+              transition: 'width 0.4s ease'
+            }}
+          />
+          <Box
+            sx={{
+              height: '100%',
+              bgcolor: '#dce2f3',
+              width: workers.length > 0 ? `${(absentCount / workers.length) * 100}%` : '0%',
+              transition: 'width 0.4s ease'
+            }}
+          />
+        </Box>
+
+        {/* 3 Quick Breakdown Metrics Cards */}
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.25, pt: 0.5 }}>
+          <Box sx={{ bgcolor: '#f0f3ff', p: 1.25, borderRadius: 2 }}>
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#555f6f' }}>
+              Full Day (1.0)
+            </Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#151c27', mt: 0.25 }}>
+              {fullDayCount}
+            </Typography>
+          </Box>
+
+          <Box sx={{ bgcolor: '#f0f3ff', p: 1.25, borderRadius: 2 }}>
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#555f6f' }}>
+              Half Day (0.5)
+            </Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#151c27', mt: 0.25 }}>
+              {halfDayCount}
+            </Typography>
+          </Box>
+
+          <Box sx={{ bgcolor: '#f0f3ff', p: 1.25, borderRadius: 2 }}>
+            <Typography sx={{ fontSize: '0.6875rem', fontWeight: 600, color: '#555f6f' }}>
+              Absent (0)
+            </Typography>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.15rem', color: '#151c27', mt: 0.25 }}>
+              {absentCount}
+            </Typography>
+          </Box>
+        </Box>
+      </Card>
+
+      {/* 4. Section Label & Fast Action */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 0.5, pt: 0.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f' }}>
+            Roster Units
+          </Typography>
+          <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: '#bdc7d9' }} />
+          <Typography sx={{ fontSize: '0.75rem', color: '#555f6f', fontWeight: 500 }}>
+            {filteredWorkers.length} visible
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Button
             size="small"
-            variant="outlined"
             onClick={handleMarkAllFullDay}
-            startIcon={<CheckIcon fontSize="small" />}
+            startIcon={<DoneAllIcon sx={{ fontSize: 16 }} />}
             sx={{
-              height: 36,
-              borderRadius: 1.5,
-              borderColor: '#cbd5e1',
-              color: '#0f172a',
+              color: '#000000',
               fontWeight: 700,
-              fontSize: '0.8125rem',
-              bgcolor: '#ffffff',
-              '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' }
+              fontSize: '0.75rem',
+              p: 0,
+              minWidth: 0,
+              '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
             }}
           >
             All 1.0
@@ -217,211 +493,302 @@ const Attendance = () => {
 
           <Button
             size="small"
-            variant="outlined"
             onClick={() => setBulkSiteDialogOpen(true)}
-            startIcon={<LocationIcon fontSize="small" />}
+            startIcon={<LocationIcon sx={{ fontSize: 15 }} />}
             sx={{
-              height: 36,
-              borderRadius: 1.5,
-              borderColor: '#cbd5e1',
-              color: '#0f172a',
-              fontWeight: 700,
-              fontSize: '0.8125rem',
-              bgcolor: '#ffffff',
-              '&:hover': { bgcolor: '#f8fafc', borderColor: '#94a3b8' }
+              color: '#555f6f',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              p: 0,
+              minWidth: 0,
+              '&:hover': { color: '#000000', bgcolor: 'transparent' }
             }}
           >
-            Set Site for All
+            Bulk Site
           </Button>
-        </Box>
-      </Card>
-
-      {/* 2. Subheader: Daily Attendance Roster Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', px: 0.5 }}>
-        <Typography variant="caption" sx={{ fontWeight: 800, color: '#475569', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-          Daily Attendance Roster ({workers.length} Workers)
-        </Typography>
-
-        <Box sx={{ textAlign: 'right' }}>
-          <Typography variant="caption" sx={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>
-            Total logged
-          </Typography>
-          <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace', lineHeight: 1.1 }}>
-            {totalWorkUnits.toFixed(1)} units
-          </Typography>
         </Box>
       </Box>
 
-      {/* 3. Worker Attendance Cards List */}
+      {/* 5. Worker Attendance Cards Stream */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress size={28} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <CircularProgress size={30} sx={{ color: '#000000' }} />
         </Box>
-      ) : workers.length === 0 ? (
-        <Alert severity="info" sx={{ border: '1px solid #e2e8f0' }}>No active workers found in roster.</Alert>
+      ) : filteredWorkers.length === 0 ? (
+        <Alert severity="info" sx={{ borderRadius: 2, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
+          No workers found for the selected filter.
+        </Alert>
       ) : (
-        <Stack spacing={1.5}>
-          {workers.map((worker) => {
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>
+          {filteredWorkers.map((worker) => {
             const currentRecord = records[worker.worker_id] || {};
             const currentUnits = currentRecord.work_units;
             const wage = parseFloat(worker.daily_wage || 0);
             const earned = currentUnits !== null ? parseFloat(currentUnits) * wage : wage;
+            const currentSite = sites.find((s) => s.id === currentRecord.site_id);
+            const isUnmarked = currentUnits === null || currentUnits === undefined;
 
             return (
               <Card
                 key={worker.worker_id}
-                variant="outlined"
+                elevation={0}
                 sx={{
-                  borderRadius: 2,
-                  borderColor: '#e2e8f0',
-                  bgcolor: '#ffffff',
-                  p: 2
+                  borderRadius: 3,
+                  border: '1px solid #e2e8f8',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
+                  bgcolor: isUnmarked ? '#f0f3ff' : '#ffffff',
+                  p: 2.25,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.75,
+                  transition: 'all 0.15s ease'
                 }}
               >
-                {/* Worker Name & Daily Rate / Today's Earnings */}
-                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-                  {worker.worker_name}
-                </Typography>
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 0.25, display: 'block' }}>
-                  ₹{wage.toFixed(0)}/day &nbsp;·&nbsp; <span style={{ color: '#16a34a', fontWeight: 700 }}>₹{earned.toFixed(0)}</span>
-                </Typography>
+                {/* Worker Top Info */}
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    {/* Worker Avatar */}
+                    <Box
+                      sx={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: '12px',
+                        bgcolor: isUnmarked ? '#e2e8f8' : '#f0f3ff',
+                        color: '#151c27',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        fontSize: '0.95rem',
+                        flexShrink: 0
+                      }}
+                    >
+                      {worker.worker_name ? worker.worker_name.charAt(0).toUpperCase() : <PersonIcon />}
+                    </Box>
 
-                {/* Label: Work Units */}
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 1.5, mb: 0.5, display: 'block' }}>
-                  Work Units
-                </Typography>
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2 }}>
+                        {worker.worker_name}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.75rem', color: '#555f6f', mt: 0.25 }}>
+                        {worker.role || 'Worker'} {currentSite ? `• ${currentSite.name}` : ''}
+                      </Typography>
+                    </Box>
+                  </Box>
 
-                {/* Segmented Control Work Unit Buttons (0, 0.5, 1, 1.5, 2) in single horizontal line */}
+                  {/* Status Badge */}
+                  <Box
+                    sx={{
+                      fontSize: '0.6875rem',
+                      fontWeight: 700,
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      bgcolor:
+                        isUnmarked
+                          ? '#e2e8f8'
+                          : parseFloat(currentUnits) >= 1
+                          ? '#000000'
+                          : parseFloat(currentUnits) > 0
+                          ? '#d6e0f3'
+                          : '#ffdad6',
+                      color:
+                        isUnmarked
+                          ? '#555f6f'
+                          : parseFloat(currentUnits) >= 1
+                          ? '#ffffff'
+                          : parseFloat(currentUnits) > 0
+                          ? '#596373'
+                          : '#ba1a1a'
+                    }}
+                  >
+                    {isUnmarked ? 'Pending' : `${currentUnits} Unit`}
+                  </Box>
+                </Box>
+
+                {/* Tri-state / Multi-state Segmented Unit Toggle */}
                 <Box
                   sx={{
-                    display: 'flex',
-                    border: '1px solid #cbd5e1',
-                    borderRadius: 1.5,
-                    overflow: 'hidden',
-                    bgcolor: '#ffffff',
-                    width: '100%'
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${WORK_UNIT_VALUES.length}, 1fr)`,
+                    gap: 0.5,
+                    bgcolor: isUnmarked ? '#ffffff' : '#f0f3ff',
+                    p: 0.75,
+                    borderRadius: 2.5,
+                    border: '1px solid #e2e8f8'
                   }}
                 >
-                  {WORK_UNIT_VALUES.map((val, idx) => {
+                  {WORK_UNIT_VALUES.map((val) => {
                     const isSelected = String(currentUnits) === val;
                     return (
                       <Box
                         key={val}
                         onClick={() => updateWorkerRecord(worker.worker_id, 'work_units', val)}
                         sx={{
-                          flex: 1,
                           py: 1,
+                          borderRadius: 2,
                           textAlign: 'center',
                           cursor: 'pointer',
                           userSelect: 'none',
-                          fontSize: '0.875rem',
-                          fontWeight: isSelected ? 800 : 600,
-                          bgcolor: isSelected ? '#1e293b' : '#ffffff',
-                          color: isSelected ? '#ffffff' : '#1e293b',
-                          borderRight: idx < WORK_UNIT_VALUES.length - 1 ? '1px solid #cbd5e1' : 'none',
-                          transition: 'background-color 0.15s ease, color 0.15s ease',
+                          fontSize: '0.8125rem',
+                          fontWeight: isSelected ? 700 : 500,
+                          bgcolor: isSelected ? '#000000' : 'transparent',
+                          color: isSelected ? '#ffffff' : '#555f6f',
+                          boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 0.5,
+                          transition: 'all 0.12s ease',
                           '&:hover': {
-                            bgcolor: isSelected ? '#0f172a' : '#f8fafc'
-                          }
+                            bgcolor: isSelected ? '#000000' : '#e7eefe',
+                            color: isSelected ? '#ffffff' : '#151c27'
+                          },
+                          '&:active': { transform: 'scale(0.95)' }
                         }}
                       >
+                        {isSelected && <CheckIcon sx={{ fontSize: 14 }} />}
                         {val}
                       </Box>
                     );
                   })}
                 </Box>
 
-                {/* Label: Work Site */}
-                <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 1.5, mb: 0.5, display: 'block' }}>
-                  Work Site
-                </Typography>
+                {/* Worker Site & Rate Row */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.25 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 160 }}>
+                    <FormControl size="small" fullWidth disabled={currentUnits === '0'}>
+                      <Select
+                        value={currentRecord.site_id || ''}
+                        onChange={(e) => updateWorkerRecord(worker.worker_id, 'site_id', e.target.value)}
+                        sx={{
+                          borderRadius: 2,
+                          fontSize: '0.75rem',
+                          fontWeight: 600,
+                          bgcolor: '#ffffff',
+                          '& .MuiSelect-select': { py: 0.75, px: 1.25 }
+                        }}
+                      >
+                        {sites.map((s) => (
+                          <MenuItem key={s.id} value={s.id} sx={{ fontSize: '0.8125rem' }}>
+                            {s.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
 
-                {/* Work Site Selector directly below buttons */}
-                <FormControl fullWidth size="small" disabled={currentUnits === '0'}>
-                  <Select
-                    value={currentRecord.site_id || ''}
-                    onChange={(e) => updateWorkerRecord(worker.worker_id, 'site_id', e.target.value)}
-                    sx={{
-                      borderRadius: 1.5,
-                      bgcolor: '#ffffff',
-                      fontSize: '0.875rem',
-                      fontWeight: 600,
-                      color: '#0f172a'
-                    }}
-                  >
-                    {sites.map((s) => (
-                      <MenuItem key={s.id} value={s.id} sx={{ fontSize: '0.875rem' }}>
-                        {s.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                  <Box sx={{ textAlign: 'right' }}>
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#151c27' }}>
+                      ₹{wage.toFixed(0)}/day
+                    </Typography>
+                    <Typography sx={{ fontSize: '0.6875rem', color: '#555f6f' }}>
+                      Earned: <span style={{ fontWeight: 700, color: '#151c27' }}>₹{earned.toFixed(0)}</span>
+                    </Typography>
+                  </Box>
+                </Box>
               </Card>
             );
           })}
-        </Stack>
+        </Box>
       )}
 
-      {/* 4. Sticky Bottom Save Attendance Bar */}
-      <Paper
-        elevation={0}
+      {/* 6. Floating Sticky Action Button (Stitch Positioned above bottom nav) */}
+      <Box
         sx={{
           position: 'fixed',
-          bottom: { xs: 56, md: 0 }, // Sits cleanly above 56px bottom nav on mobile
+          bottom: { xs: 72, md: 24 },
           left: 0,
           right: 0,
-          p: 1.5,
-          bgcolor: '#ffffff',
-          borderTop: '1px solid #e2e8f0',
-          boxShadow: '0 -2px 10px rgba(0,0,0,0.04)',
-          zIndex: 1050,
+          px: 2.5,
+          zIndex: 900,
+          maxWidth: 500,
+          mx: 'auto',
+          pointerEvents: 'none'
         }}
       >
         <Box
           sx={{
-            maxWidth: 640,
-            mx: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            px: 1
+            pointerEvents: 'auto',
+            bgcolor: 'rgba(255, 255, 255, 0.92)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            p: 1,
+            borderRadius: 3,
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            border: '1px solid #e2e8f8'
           }}
         >
-          <Box>
-            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
-              {markedRecords.length} of {workers.length} Marked
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
-              {totalWorkUnits.toFixed(1)} total units · {formatDateIndian(selectedDate)}
-            </Typography>
-          </Box>
-
           <Button
-            variant="contained"
-            color="primary"
+            fullWidth
             onClick={handleSave}
             disabled={saving || loading}
-            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon fontSize="small" />}
             sx={{
+              bgcolor: '#000000',
+              color: '#ffffff',
+              py: 1.5,
               px: 2.5,
-              py: 1,
-              bgcolor: '#0f172a',
-              borderRadius: 2,
+              borderRadius: 2.5,
               fontWeight: 700,
               fontSize: '0.875rem',
-              '&:hover': { bgcolor: '#1e293b' }
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              transition: 'all 0.15s ease',
+              '&:hover': { bgcolor: '#1f2937' },
+              '&:active': { transform: 'scale(0.98)' },
+              '&.Mui-disabled': { bgcolor: '#e2e8f8', color: '#76777c' }
             }}
           >
-            {saving ? 'Saving...' : 'Save Attendance'}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+              {saving ? (
+                <CircularProgress size={18} sx={{ color: '#ffffff' }} />
+              ) : (
+                <CheckCircleIcon sx={{ fontSize: 20, color: '#ffffff' }} />
+              )}
+              <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#ffffff' }}>
+                {saving ? 'Saving...' : 'Save Attendance'}
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                color: '#ffffff',
+                px: 1.5,
+                py: 0.35,
+                borderRadius: 9999,
+                fontSize: '0.75rem',
+                fontWeight: 700
+              }}
+            >
+              {markedRecords.length} Marked
+            </Box>
           </Button>
         </Box>
-      </Paper>
+      </Box>
 
       {/* Set Site Modal */}
-      <Dialog open={bulkSiteDialogOpen} onClose={() => setBulkSiteDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 1 }}>Set Site for All Workers</DialogTitle>
+      <Dialog
+        open={bulkSiteDialogOpen}
+        onClose={() => setBulkSiteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#151c27' }}>
+          Set Site for All Workers
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mb: 2 }}>
+          <Typography variant="body2" sx={{ color: '#555f6f', mb: 2 }}>
             Assign all workers to this site for {formatDateIndian(selectedDate)}.
           </Typography>
 
@@ -430,6 +797,7 @@ const Attendance = () => {
               value={bulkSiteId}
               onChange={(e) => setBulkSiteId(e.target.value)}
               displayEmpty
+              sx={{ borderRadius: 2 }}
             >
               <MenuItem value="" disabled>Select work site</MenuItem>
               {sites.map((s) => (
@@ -438,9 +806,22 @@ const Attendance = () => {
             </Select>
           </FormControl>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setBulkSiteDialogOpen(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
-          <Button variant="contained" onClick={applyBulkSite} disabled={!bulkSiteId}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setBulkSiteDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={applyBulkSite}
+            disabled={!bulkSiteId}
+            size="small"
+            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 600 }}
+          >
             Apply to All
           </Button>
         </DialogActions>
@@ -453,7 +834,15 @@ const Attendance = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', fontWeight: 600 }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            fontWeight: 600,
+            borderRadius: 2,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

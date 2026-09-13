@@ -1,3 +1,68 @@
+@import "tailwindcss";
+
+@theme {
+  --color-secondary: #555f6f;
+  --color-outline-variant: #c6c6cb;
+  --color-background: #f9f9ff;
+  --color-primary: #000000;
+  --color-surface-container-highest: #dce2f3;
+  --color-surface-dim: #d3daea;
+  --color-on-tertiary: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-surface: #151c27;
+  --color-on-tertiary-fixed: #121c2a;
+  --color-error: #ba1a1a;
+  --color-surface-bright: #f9f9ff;
+  --color-primary-fixed-dim: #c3c6d2;
+  --color-secondary-fixed-dim: #bdc7d9;
+  --color-on-secondary-container: #596373;
+  --color-on-error: #ffffff;
+  --color-surface-container-high: #e2e8f8;
+  --color-secondary-container: #d6e0f3;
+  --color-surface-tint: #5b5e68;
+  --color-surface-container-lowest: #ffffff;
+  --color-tertiary-fixed-dim: #bdc7db;
+  --color-on-background: #151c27;
+  --color-tertiary: #000000;
+  --color-surface-container-low: #f0f3ff;
+  --color-surface: #f9f9ff;
+  --color-on-secondary-fixed-variant: #3d4756;
+  --color-primary-container: #181c24;
+  --color-tertiary-container: #121c2a;
+  --color-inverse-surface: #2a313d;
+  --color-on-error-container: #93000a;
+  --color-inverse-primary: #c3c6d2;
+  --color-surface-variant: #dce2f3;
+  --color-on-primary-fixed-variant: #434750;
+  --color-on-primary-container: #80848e;
+  --color-on-primary-fixed: #181c24;
+  --color-on-tertiary-container: #7a8496;
+  --color-surface-container: #e7eefe;
+  --color-on-tertiary-fixed-variant: #3d4757;
+  --color-on-secondary: #ffffff;
+  --color-tertiary-fixed: #d9e3f7;
+  --color-outline: #76777c;
+  --color-secondary-fixed: #d9e3f6;
+  --color-on-primary: #ffffff;
+  --color-primary-fixed: #dfe2ee;
+  --color-on-surface-variant: #45474b;
+  --color-inverse-on-surface: #ebf1ff;
+  --color-on-secondary-fixed: #121c2a;
+
+  --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  --app-surface: #f9f9ff;
+  --app-surface-container: #e7eefe;
+  --app-surface-container-low: #f0f3ff;
+  --app-surface-container-high: #e2e8f8;
+  --app-surface-container-lowest: #ffffff;
+  --app-on-surface: #151c27;
+  --app-primary: #000000;
+  --app-secondary: #555f6f;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -7,11 +72,43 @@ html, body {
   padding: 0;
   width: 100%;
   min-height: 100%;
-  background-color: #f8fafc;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: #f9f9ff;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #0f172a;
+  color: #151c27;
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Material Symbols font utility */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Tabular figures for financial and numerical tables */
@@ -26,18 +123,18 @@ button, input, select {
 
 /* Clean scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
+  background: #dce2f3;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #bdc7d9;
 }
 
 @media print {

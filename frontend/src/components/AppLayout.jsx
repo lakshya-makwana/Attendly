@@ -6,9 +6,6 @@ import {
   Typography,
   IconButton,
   Box,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper,
   Container,
   Drawer,
   List,
@@ -33,7 +30,8 @@ import {
   QueryStatsOutlined as AnalyticsIcon,
   Menu as MenuIcon,
   LockOutlined as LockIcon,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
@@ -47,6 +45,14 @@ const NAV_LINKS = [
   { label: 'Analytics', path: '/analytics', icon: <AnalyticsIcon sx={{ fontSize: 20 }} /> },
 ];
 
+const BOTTOM_NAV_ITEMS = [
+  { label: 'Overview', path: '/', icon: <DashboardIcon sx={{ fontSize: 22 }} /> },
+  { label: 'Attendance', path: '/attendance', icon: <AttendanceIcon sx={{ fontSize: 22 }} /> },
+  { label: 'Workers', path: '/workers', icon: <WorkersIcon sx={{ fontSize: 22 }} /> },
+  { label: 'Sites', path: '/sites', icon: <SitesIcon sx={{ fontSize: 22 }} /> },
+  { label: 'Payroll', path: '/payroll', icon: <PayrollIcon sx={{ fontSize: 22 }} /> },
+];
+
 const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -54,14 +60,16 @@ const AppLayout = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  const getNavValue = () => {
+  const getSubHeaderTitle = () => {
     const path = location.pathname;
-    if (path === '/') return 0;
-    if (path.startsWith('/attendance')) return 1;
-    if (path.startsWith('/workers')) return 2;
-    if (path.startsWith('/advances')) return 3;
-    if (path.startsWith('/payroll')) return 4;
-    return -1;
+    if (path === '/') return 'Overview';
+    if (path.startsWith('/attendance')) return 'Attendance';
+    if (path.startsWith('/workers')) return 'Workers';
+    if (path.startsWith('/sites')) return 'Sites';
+    if (path.startsWith('/advances')) return 'Advances';
+    if (path.startsWith('/payroll')) return 'Payroll';
+    if (path.startsWith('/analytics')) return 'Analytics';
+    return 'Workforce & Payroll';
   };
 
   const confirmLogout = () => {
@@ -71,30 +79,34 @@ const AppLayout = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Top Application Bar */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f9f9ff' }}>
+      {/* Top Application Bar - Stitch Glassmorphism Header */}
       <AppBar
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: '#0f172a',
-          borderBottom: '1px solid #1e293b',
-          zIndex: 1200,
+          bgcolor: 'rgba(249, 249, 255, 0.85)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: '1px solid #e2e8f8',
+          zIndex: 1100,
+          color: '#151c27',
+          top: 0
         }}
       >
         <Toolbar
           sx={{
             justifyContent: 'space-between',
-            minHeight: { xs: 52, sm: 56 },
-            px: { xs: 1.5, sm: 3 }
+            minHeight: { xs: 58, sm: 64 },
+            px: { xs: 2, sm: 3 }
           }}
         >
-          {/* Brand Identity with Menu toggle on mobile */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {/* Brand Identity with Mobile Drawer Toggle */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <IconButton
               size="small"
               onClick={() => setDrawerOpen(true)}
-              sx={{ color: '#cbd5e1', display: { xs: 'inline-flex', md: 'none' }, p: 0.5 }}
+              sx={{ color: '#555f6f', display: { xs: 'inline-flex', md: 'none' }, p: 0.75, borderRadius: 1.5, '&:hover': { bgcolor: '#f0f3ff' } }}
               aria-label="open navigation drawer"
             >
               <MenuIcon fontSize="small" />
@@ -104,37 +116,37 @@ const AppLayout = () => {
               sx={{ display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer' }}
               onClick={() => navigate('/')}
             >
-              <Box sx={{ display: { xs: 'none', sm: 'flex' } }}>
-                <Box
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: 1,
-                    bgcolor: '#334155',
-                    color: '#f8fafc',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  A
-                </Box>
+              {/* Dark Squircle Logo Mark */}
+              <Box
+                sx={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: '10px',
+                  bgcolor: '#000000',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '0.95rem',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.12)'
+                }}
+              >
+                A
               </Box>
-              <Box>
-                <Typography variant="subtitle1" sx={{ color: '#ffffff', fontWeight: 700, lineHeight: 1.15, fontSize: '0.925rem' }}>
-                  {appTitle}
+              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                <Typography sx={{ color: '#151c27', fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+                  {appTitle || 'Attendly'}
                 </Typography>
-                <Typography variant="caption" sx={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem', lineHeight: 1 }}>
-                  Workforce & Payroll
+                <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 500, lineHeight: 1, mt: 0.5 }}>
+                  {getSubHeaderTitle()}
                 </Typography>
               </Box>
             </Box>
           </Box>
 
           {/* Desktop Navigation Links */}
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5 }}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.75 }}>
             {NAV_LINKS.map((item) => {
               const isActive = item.path === '/'
                 ? location.pathname === '/'
@@ -145,16 +157,18 @@ const AppLayout = () => {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   sx={{
-                    color: isActive ? '#ffffff' : '#94a3b8',
-                    bgcolor: isActive ? '#1e293b' : 'transparent',
+                    color: isActive ? '#ffffff' : '#555f6f',
+                    bgcolor: isActive ? '#000000' : 'transparent',
                     fontSize: '0.8125rem',
-                    fontWeight: isActive ? 600 : 500,
-                    px: 1.5,
+                    fontWeight: isActive ? 700 : 500,
+                    px: 1.75,
                     py: 0.75,
-                    borderRadius: 1.5,
+                    borderRadius: 9999,
+                    textTransform: 'none',
+                    transition: 'all 0.15s ease',
                     '&:hover': {
-                      color: '#ffffff',
-                      bgcolor: '#1e293b',
+                      color: isActive ? '#ffffff' : '#151c27',
+                      bgcolor: isActive ? '#1f2937' : '#f0f3ff',
                     },
                   }}
                 >
@@ -164,47 +178,45 @@ const AppLayout = () => {
             })}
           </Box>
 
-          {/* User Controls & Circular Badge on Right */}
+          {/* Right Controls: Lock & Profile */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Button
-              size="small"
+            <IconButton
               onClick={() => setLogoutDialogOpen(true)}
-              startIcon={<LockIcon sx={{ fontSize: '0.85rem !important' }} />}
+              aria-label="Lock application"
               sx={{
-                color: '#cbd5e1',
-                borderColor: '#334155',
-                border: '1px solid #334155',
-                fontSize: '0.75rem',
-                py: 0.5,
-                px: 1.25,
-                display: { xs: 'none', sm: 'inline-flex' },
-                '&:hover': { bgcolor: '#1e293b', borderColor: '#475569' }
+                width: 36,
+                height: 36,
+                borderRadius: '10px',
+                color: '#151c27',
+                border: '1px solid #e2e8f8',
+                bgcolor: '#ffffff',
+                transition: 'all 0.15s ease',
+                '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+                '&:active': { transform: 'scale(0.95)' }
               }}
             >
-              Lock
-            </Button>
+              <LockIcon sx={{ fontSize: 18 }} />
+            </IconButton>
 
-            {/* Circular Avatar "CP" */}
             <Box
               onClick={() => setLogoutDialogOpen(true)}
               sx={{
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 borderRadius: '50%',
-                bgcolor: '#334155',
-                color: '#f8fafc',
+                bgcolor: '#000000',
+                color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontWeight: 700,
-                fontSize: '0.75rem',
                 cursor: 'pointer',
-                border: '1px solid #475569',
-                '&:hover': { bgcolor: '#475569' }
+                transition: 'all 0.15s ease',
+                '&:hover': { opacity: 0.85 },
+                '&:active': { transform: 'scale(0.95)' }
               }}
               title="Admin Session / Lock"
             >
-              A
+              <PersonIcon sx={{ fontSize: 18, color: '#ffffff' }} />
             </Box>
           </Box>
         </Toolbar>
@@ -217,59 +229,84 @@ const AppLayout = () => {
         onClose={() => setDrawerOpen(false)}
         PaperProps={{
           sx: {
-            width: 260,
-            bgcolor: '#0f172a',
-            color: '#f8fafc',
-            borderRight: '1px solid #1e293b'
+            width: 280,
+            bgcolor: '#ffffff',
+            color: '#151c27',
+            borderRight: '1px solid #e2e8f8',
+            p: 1.5
           }
         }}
       >
-        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b' }}>
-          <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#ffffff' }}>
-              Attendly
-            </Typography>
-            <Typography variant="caption" sx={{ color: '#94a3b8' }}>
-              Workforce & Payroll
-            </Typography>
+        <Box sx={{ p: 1.5, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f8' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '10px',
+                bgcolor: '#000000',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '0.9rem'
+              }}
+            >
+              A
+            </Box>
+            <Box>
+              <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.9375rem', lineHeight: 1.2 }}>
+                {appTitle || 'Attendly'}
+              </Typography>
+              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>
+                Workforce Management
+              </Typography>
+            </Box>
           </Box>
-          <IconButton size="small" onClick={() => setDrawerOpen(false)} sx={{ color: '#94a3b8' }}>
+          <IconButton size="small" onClick={() => setDrawerOpen(false)} sx={{ color: '#555f6f' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
 
-        <List sx={{ px: 1, py: 1.5 }}>
+        <List sx={{ px: 0.5, py: 1.5 }}>
           {NAV_LINKS.map((item) => {
             const isActive = item.path === '/'
               ? location.pathname === '/'
               : location.pathname.startsWith(item.path);
             return (
-              <ListItem key={item.path} disablePadding sx={{ mb: 0.5 }}>
+              <ListItem key={item.path} disablePadding sx={{ mb: 0.75 }}>
                 <ListItemButton
                   onClick={() => {
                     setDrawerOpen(false);
                     navigate(item.path);
                   }}
                   sx={{
-                    borderRadius: 1.5,
-                    bgcolor: isActive ? '#1e293b' : 'transparent',
-                    color: isActive ? '#ffffff' : '#94a3b8',
-                    '&:hover': { bgcolor: '#1e293b', color: '#ffffff' }
+                    borderRadius: 2,
+                    bgcolor: isActive ? '#000000' : 'transparent',
+                    color: isActive ? '#ffffff' : '#555f6f',
+                    py: 1,
+                    px: 1.5,
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      bgcolor: isActive ? '#000000' : '#f0f3ff',
+                      color: isActive ? '#ffffff' : '#151c27'
+                    }
                   }}
                 >
-                  <ListItemIcon sx={{ color: isActive ? '#ffffff' : '#94a3b8', minWidth: 36 }}>
+                  <ListItemIcon sx={{ color: isActive ? '#ffffff' : '#555f6f', minWidth: 36 }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText
                     primary={item.label}
-                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 600 : 500 }}
+                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 700 : 500 }}
                   />
                 </ListItemButton>
               </ListItem>
             );
           })}
 
-          <Divider sx={{ my: 1.5, borderColor: '#1e293b' }} />
+          <Divider sx={{ my: 1.5, borderColor: '#e2e8f8' }} />
 
           <ListItem disablePadding>
             <ListItemButton
@@ -278,12 +315,14 @@ const AppLayout = () => {
                 setLogoutDialogOpen(true);
               }}
               sx={{
-                borderRadius: 1.5,
-                color: '#f87171',
-                '&:hover': { bgcolor: 'rgba(239, 68, 68, 0.1)' }
+                borderRadius: 2,
+                color: '#ba1a1a',
+                py: 1,
+                px: 1.5,
+                '&:hover': { bgcolor: '#ffdad6' }
               }}
             >
-              <ListItemIcon sx={{ color: '#f87171', minWidth: 36 }}>
+              <ListItemIcon sx={{ color: '#ba1a1a', minWidth: 36 }}>
                 <LockIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText
@@ -301,79 +340,140 @@ const AppLayout = () => {
         sx={{
           flex: 1,
           py: { xs: 2, sm: 2.5 },
-          pb: { xs: 11, sm: 4 }, // Generous padding so sticky/bottom elements never overlap content
-          px: { xs: 1.5, sm: 3 }
+          pb: { xs: 12, sm: 4 },
+          px: { xs: 2, sm: 3 }
         }}
       >
         <Outlet />
       </Container>
 
-      {/* Mobile Bottom Navigation (Strictly 5 Primary Items matching prompt) */}
-      <Paper
+      {/* Mobile Bottom Navigation Bar - Exact Stitch Alignment */}
+      <Box
+        component="nav"
         sx={{
-          display: { xs: 'block', md: 'none' },
+          display: { xs: 'flex', md: 'none' },
           position: 'fixed',
           bottom: 0,
           left: 0,
           right: 0,
-          zIndex: 1100,
-          borderTop: '1px solid #e2e8f0',
-          boxShadow: '0 -1px 4px rgba(0,0,0,0.04)',
-          bgcolor: '#ffffff'
+          zIndex: 1000,
+          height: 64,
+          bgcolor: 'rgba(255, 255, 255, 0.92)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderTop: '1px solid #e2e8f8',
+          boxShadow: '0 -2px 12px rgba(0,0,0,0.03)',
+          px: 1,
+          pb: 'env(safe-area-inset-bottom, 0px)',
+          alignItems: 'center',
+          justifyContent: 'space-around'
         }}
-        elevation={0}
       >
-        <BottomNavigation
-          showLabels
-          value={getNavValue()}
-          onChange={(event, newValue) => {
-            if (newValue === 0) navigate('/');
-            else if (newValue === 1) navigate('/attendance');
-            else if (newValue === 2) navigate('/workers');
-            else if (newValue === 3) navigate('/advances');
-            else if (newValue === 4) navigate('/payroll');
-          }}
-          sx={{
-            height: 56,
-            '& .MuiBottomNavigationAction-root': {
-              minWidth: 0,
-              padding: '6px 0',
-              color: '#64748b',
-              '&.Mui-selected': {
-                color: '#0f172a',
-                fontWeight: 600,
-              },
-            },
-            '& .MuiBottomNavigationAction-label': {
-              fontSize: '0.6875rem',
-              '&.Mui-selected': {
-                fontSize: '0.6875rem',
-                fontWeight: 600,
-              },
-            },
-          }}
-        >
-          <BottomNavigationAction label="Overview" icon={<DashboardIcon sx={{ fontSize: 20 }} />} />
-          <BottomNavigationAction label="Attendance" icon={<AttendanceIcon sx={{ fontSize: 20 }} />} />
-          <BottomNavigationAction label="Workers" icon={<WorkersIcon sx={{ fontSize: 20 }} />} />
-          <BottomNavigationAction label="Advances" icon={<AdvancesIcon sx={{ fontSize: 20 }} />} />
-          <BottomNavigationAction label="Payroll" icon={<PayrollIcon sx={{ fontSize: 20 }} />} />
-        </BottomNavigation>
-      </Paper>
+        {BOTTOM_NAV_ITEMS.map((tab) => {
+          const isActive = tab.path === '/'
+            ? location.pathname === '/'
+            : location.pathname.startsWith(tab.path);
+
+          return (
+            <Box
+              key={tab.path}
+              onClick={() => navigate(tab.path)}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 0.75,
+                px: 1.25,
+                cursor: 'pointer',
+                color: isActive ? '#000000' : '#555f6f',
+                transition: 'all 0.15s ease',
+                userSelect: 'none',
+                '&:active': { transform: 'scale(0.93)' }
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: isActive ? '#000000' : '#555f6f',
+                  transition: 'color 0.15s ease',
+                  '& .MuiSvgIcon-root': {
+                    fontSize: 22,
+                    strokeWidth: isActive ? 0.5 : 0
+                  }
+                }}
+              >
+                {tab.icon}
+              </Box>
+              <Typography
+                sx={{
+                  fontSize: '0.6875rem',
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? '#000000' : '#555f6f',
+                  mt: 0.25,
+                  letterSpacing: '0.01em',
+                  lineHeight: 1
+                }}
+              >
+                {tab.label}
+              </Typography>
+            </Box>
+          );
+        })}
+      </Box>
 
       {/* Lock / Logout Confirmation Modal */}
-      <Dialog open={logoutDialogOpen} onClose={() => setLogoutDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem', pb: 1 }}>Lock Application?</DialogTitle>
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#151c27' }}>
+          Lock Application?
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary">
-            Your session will be closed. You will need to enter your MPIN to open the app again.
+          <Typography variant="body2" sx={{ color: '#555f6f' }}>
+            Your session will be closed. You will need to enter your MPIN to access Attendly again.
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setLogoutDialogOpen(false)} size="small" variant="outlined">
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setLogoutDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{
+              borderRadius: 2,
+              borderColor: '#dce2f3',
+              color: '#151c27',
+              fontWeight: 600,
+              '&:hover': { borderColor: '#bdc7d9', bgcolor: '#f0f3ff' }
+            }}
+          >
             Cancel
           </Button>
-          <Button onClick={confirmLogout} size="small" variant="contained" color="primary">
+          <Button
+            onClick={confirmLogout}
+            variant="contained"
+            size="small"
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#000000',
+              color: '#ffffff',
+              fontWeight: 600,
+              '&:hover': { bgcolor: '#1f2937' }
+            }}
+          >
             Lock Now
           </Button>
         </DialogActions>

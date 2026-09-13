@@ -85,92 +85,141 @@ const Login = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        bgcolor: '#f8fafc',
+        minHeight: '100dvh',
+        bgcolor: '#f9f9ff',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        px: 2,
+        px: { xs: 2.5, sm: 3 },
         py: 4,
       }}
     >
-      <Box sx={{ width: '100%', maxWidth: 360 }}>
-        {/* App Title / Header */}
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
+      <Box sx={{ width: '100%', maxWidth: 380 }}>
+        {/* App Title / Header Badge */}
+        <Box sx={{ textAlign: 'center', mb: 3.5 }}>
           <Box
             sx={{
-              width: 36,
-              height: 36,
-              borderRadius: 1.5,
-              bgcolor: '#0f172a',
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              bgcolor: '#000000',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               mx: 'auto',
-              mb: 1.25,
+              mb: 1.5,
+              boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)'
             }}
           >
-            <LockIcon sx={{ fontSize: 20 }} />
+            <LockIcon sx={{ fontSize: 24 }} />
           </Box>
-          <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a', letterSpacing: '-0.01em' }}>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: '1.5rem',
+              color: '#151c27',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.2
+            }}
+          >
             Attendly
           </Typography>
-          <Typography variant="body2" sx={{ color: '#64748b', fontSize: '0.8125rem' }}>
+          <Typography
+            sx={{
+              color: '#555f6f',
+              fontSize: '0.875rem',
+              mt: 0.5,
+              fontWeight: 400
+            }}
+          >
             Enter your MPIN to continue
           </Typography>
         </Box>
 
-        <Card sx={{ borderRadius: 2, border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-          <CardContent sx={{ p: { xs: 2.5, sm: 3 }, textAlign: 'center' }}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 8px 24px rgba(21, 28, 39, 0.04)',
+            bgcolor: '#ffffff'
+          }}
+        >
+          <CardContent sx={{ p: { xs: 3, sm: 3.5 }, textAlign: 'center' }}>
             {/* PIN Dots Display */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1.5, mb: 2, py: 1 }}>
-              {[0, 1, 2, 3].map((index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    width: 14,
-                    height: 14,
-                    borderRadius: '50%',
-                    border: '1.5px solid',
-                    borderColor: index < mpin.length ? '#0f172a' : '#cbd5e1',
-                    bgcolor: index < mpin.length ? '#0f172a' : 'transparent',
-                    transition: 'all 0.1s ease',
-                  }}
-                />
-              ))}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: 2,
+                mb: 3,
+                py: 1
+              }}
+            >
+              {[0, 1, 2, 3].map((index) => {
+                const isFilled = index < mpin.length;
+                return (
+                  <Box
+                    key={index}
+                    sx={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: '50%',
+                      border: isFilled ? 'none' : '1.5px solid #bdc7d9',
+                      bgcolor: isFilled ? '#000000' : 'transparent',
+                      transform: isFilled ? 'scale(1.08)' : 'scale(1)',
+                      transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)',
+                    }}
+                  />
+                );
+              })}
             </Box>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2, py: 0.5, fontSize: '0.8125rem', borderRadius: 1 }}>
+              <Alert
+                severity="error"
+                sx={{
+                  mb: 2.5,
+                  py: 0.5,
+                  fontSize: '0.8125rem',
+                  borderRadius: 2,
+                  bgcolor: '#ffdad6',
+                  color: '#93000a',
+                  border: '1px solid #ffdad6',
+                  '& .MuiAlert-icon': { color: '#ba1a1a' }
+                }}
+              >
                 {error}
               </Alert>
             )}
 
-            {/* Numeric Keypad */}
-            <Box sx={{ maxWidth: 280, mx: 'auto', mb: 2 }}>
-              <Grid container spacing={1}>
+            {/* Tactile Numeric Keypad (3x4 Grid) */}
+            <Box sx={{ maxWidth: 300, mx: 'auto', mb: 2.5 }}>
+              <Grid container spacing={1.25}>
                 {numpadDigits.map((digit) => (
                   <Grid item xs={4} key={digit}>
                     <Button
                       fullWidth
-                      variant="outlined"
                       onClick={() => handleDigitPress(digit)}
                       disabled={submitting}
                       sx={{
-                        height: 50,
-                        fontSize: '1.25rem',
+                        height: 58,
+                        fontSize: '1.4rem',
                         fontWeight: 600,
-                        color: '#0f172a',
-                        borderColor: '#e2e8f0',
+                        color: '#151c27',
+                        border: '1px solid #e2e8f8',
                         bgcolor: '#ffffff',
-                        borderRadius: 1.5,
+                        borderRadius: 2,
+                        transition: 'all 0.12s ease',
                         '&:hover': {
-                          bgcolor: '#f1f5f9',
-                          borderColor: '#cbd5e1',
+                          bgcolor: '#f0f3ff',
+                          borderColor: '#dce2f3',
                         },
                         '&:active': {
-                          bgcolor: '#e2e8f0',
+                          transform: 'scale(0.96)',
+                          bgcolor: '#e2e8f8',
                         },
                       }}
                     >
@@ -183,14 +232,22 @@ const Login = () => {
                 <Grid item xs={4}>
                   <Button
                     fullWidth
-                    variant="text"
                     onClick={handleClear}
                     disabled={submitting || mpin.length === 0}
                     sx={{
-                      height: 50,
-                      fontSize: '0.75rem',
+                      height: 58,
+                      fontSize: '0.8125rem',
                       fontWeight: 600,
-                      color: '#64748b',
+                      color: '#555f6f',
+                      borderRadius: 2,
+                      textTransform: 'none',
+                      '&:hover': {
+                        color: '#151c27',
+                        bgcolor: '#f0f3ff'
+                      },
+                      '&:active': {
+                        transform: 'scale(0.96)',
+                      },
                     }}
                   >
                     Clear
@@ -200,20 +257,24 @@ const Login = () => {
                 <Grid item xs={4}>
                   <Button
                     fullWidth
-                    variant="outlined"
                     onClick={() => handleDigitPress('0')}
                     disabled={submitting}
                     sx={{
-                      height: 50,
-                      fontSize: '1.25rem',
+                      height: 58,
+                      fontSize: '1.4rem',
                       fontWeight: 600,
-                      color: '#0f172a',
-                      borderColor: '#e2e8f0',
+                      color: '#151c27',
+                      border: '1px solid #e2e8f8',
                       bgcolor: '#ffffff',
-                      borderRadius: 1.5,
+                      borderRadius: 2,
+                      transition: 'all 0.12s ease',
                       '&:hover': {
-                        bgcolor: '#f1f5f9',
-                        borderColor: '#cbd5e1',
+                        bgcolor: '#f0f3ff',
+                        borderColor: '#dce2f3',
+                      },
+                      '&:active': {
+                        transform: 'scale(0.96)',
+                        bgcolor: '#e2e8f8',
                       },
                     }}
                   >
@@ -224,22 +285,27 @@ const Login = () => {
                 <Grid item xs={4}>
                   <Button
                     fullWidth
-                    variant="outlined"
                     onClick={handleBackspace}
                     disabled={submitting || mpin.length === 0}
                     sx={{
-                      height: 50,
-                      color: '#64748b',
-                      borderColor: '#e2e8f0',
+                      height: 58,
+                      color: '#555f6f',
+                      border: '1px solid #e2e8f8',
                       bgcolor: '#ffffff',
-                      borderRadius: 1.5,
+                      borderRadius: 2,
+                      transition: 'all 0.12s ease',
                       '&:hover': {
-                        bgcolor: '#f1f5f9',
-                        borderColor: '#cbd5e1',
+                        bgcolor: '#f0f3ff',
+                        borderColor: '#dce2f3',
+                        color: '#151c27'
+                      },
+                      '&:active': {
+                        transform: 'scale(0.96)',
+                        bgcolor: '#e2e8f8',
                       },
                     }}
                   >
-                    <BackspaceIcon fontSize="small" />
+                    <BackspaceIcon sx={{ fontSize: 20 }} />
                   </Button>
                 </Grid>
               </Grid>
@@ -248,24 +314,37 @@ const Login = () => {
             {/* Unlock Action Button */}
             <Button
               fullWidth
-              size="medium"
+              size="large"
               variant="contained"
-              color="primary"
               onClick={() => handleSubmit()}
               disabled={submitting || mpin.length < 4}
-              startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : null}
+              startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
               sx={{
-                py: 1.25,
-                fontWeight: 600,
-                borderRadius: 1.5,
-                fontSize: '0.875rem'
+                py: 1.5,
+                fontWeight: 700,
+                borderRadius: 2.5,
+                fontSize: '0.9375rem',
+                bgcolor: '#000000',
+                color: '#ffffff',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: '#1f2937'
+                },
+                '&:active': {
+                  transform: 'scale(0.98)'
+                },
+                '&.Mui-disabled': {
+                  bgcolor: '#f0f3ff',
+                  color: '#bdc7d9'
+                }
               }}
             >
               {submitting ? 'Verifying...' : 'Unlock'}
             </Button>
 
             {/* Dev Helper */}
-            <Box sx={{ mt: 2.5, pt: 1.5, borderTop: '1px solid #f1f5f9' }}>
+            <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid #f0f3ff' }}>
               <Typography
                 variant="caption"
                 onClick={() => {
@@ -273,10 +352,11 @@ const Login = () => {
                   handleSubmit('1234');
                 }}
                 sx={{
-                  color: '#64748b',
+                  color: '#76777c',
                   fontSize: '0.75rem',
                   cursor: 'pointer',
-                  '&:hover': { color: '#0f172a', textDecoration: 'underline' }
+                  transition: 'color 0.15s ease',
+                  '&:hover': { color: '#000000', textDecoration: 'underline' }
                 }}
               >
                 Development PIN: 1234 (Click to fill)

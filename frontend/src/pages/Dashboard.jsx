@@ -74,7 +74,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress size={30} />
+        <CircularProgress size={32} sx={{ color: '#000000' }} />
       </Box>
     );
   }
@@ -93,15 +93,30 @@ const Dashboard = () => {
   const activeSitesList = siteAnalytics?.sites?.filter(s => s.is_active || s.total_work_units > 0) || [];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
       {/* 1. Header & Context Month Selector */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-        <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
-          Overview
-        </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.5 }}>
+        <Box>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Overview
+          </Typography>
+          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+            Operations & Financial Snapshot
+          </Typography>
+        </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <FormControl variant="standard" sx={{ minWidth: 140 }}>
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            bgcolor: '#f0f3ff',
+            px: 1.5,
+            py: 0.5,
+            borderRadius: 9999,
+            border: '1px solid #e2e8f8'
+          }}
+        >
+          <FormControl variant="standard">
             <Select
               disableUnderline
               value={`${selectedYear}-${selectedMonth}`}
@@ -112,10 +127,10 @@ const Dashboard = () => {
               }}
               IconComponent={ArrowDownIcon}
               sx={{
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                color: '#475569',
-                '& .MuiSelect-select': { py: 0, pr: '20px !important' }
+                fontSize: '0.8125rem',
+                fontWeight: 700,
+                color: '#151c27',
+                '& .MuiSelect-select': { py: 0.25, pr: '20px !important' }
               }}
             >
               {[
@@ -129,7 +144,7 @@ const Dashboard = () => {
                 { y: 2026, m: 2 },
                 { y: 2026, m: 1 }
               ].map(({ y, m }) => (
-                <MenuItem key={`${y}-${m}`} value={`${y}-${m}`} sx={{ fontSize: '0.875rem' }}>
+                <MenuItem key={`${y}-${m}`} value={`${y}-${m}`} sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>
                   {monthNames[m - 1]} {y}
                 </MenuItem>
               ))}
@@ -138,249 +153,307 @@ const Dashboard = () => {
         </Box>
       </Box>
 
-      {error && <Alert severity="error">{error}</Alert>}
+      {error && (
+        <Alert severity="error" sx={{ borderRadius: 2, bgcolor: '#ffdad6', color: '#93000a', border: '1px solid #ffdad6' }}>
+          {error}
+        </Alert>
+      )}
 
       {/* 2. Financial Summary 2x2 Grid */}
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
         {/* Tile 1: Total Work Units */}
-        <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-          <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
-            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', fontSize: '0.75rem' }}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            bgcolor: '#ffffff',
+            p: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
               Total Work Units
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.75 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
-                {monthWorkUnits}
-              </Typography>
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 1.5,
-                  bgcolor: '#ecfdf5',
-                  color: '#10b981',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <BarChartIcon sx={{ fontSize: 20 }} />
-              </Box>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '10px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <BarChartIcon sx={{ fontSize: 18 }} />
             </Box>
-          </CardContent>
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+            {monthWorkUnits}
+          </Typography>
         </Card>
 
         {/* Tile 2: Gross Labour */}
-        <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-          <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
-            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', fontSize: '0.75rem' }}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            bgcolor: '#ffffff',
+            p: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
               Gross Labour
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.75 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
-                {formatCurrency(grossLabour)}
-              </Typography>
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 1.5,
-                  bgcolor: '#f0f9ff',
-                  color: '#0284c7',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <CurrencyRupeeIcon sx={{ fontSize: 20 }} />
-              </Box>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '10px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <CurrencyRupeeIcon sx={{ fontSize: 18 }} />
             </Box>
-          </CardContent>
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+            {formatCurrency(grossLabour)}
+          </Typography>
         </Card>
 
         {/* Tile 3: Advances */}
-        <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-          <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
-            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', fontSize: '0.75rem' }}>
-              Advances
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            bgcolor: '#ffffff',
+            p: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
+              Advances Deducted
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.75 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#d97706', fontFamily: 'monospace' }}>
-                {formatCurrency(advances)}
-              </Typography>
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 1.5,
-                  bgcolor: '#fffbeb',
-                  color: '#f59e0b',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <PaidIcon sx={{ fontSize: 20 }} />
-              </Box>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '10px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <PaidIcon sx={{ fontSize: 18 }} />
             </Box>
-          </CardContent>
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+            {formatCurrency(advances)}
+          </Typography>
         </Card>
 
         {/* Tile 4: Net Payable */}
-        <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-          <CardContent sx={{ p: 1.75, '&:last-child': { pb: 1.75 } }}>
-            <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, display: 'block', fontSize: '0.75rem' }}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            bgcolor: '#ffffff',
+            p: 2
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
               Net Payable
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.75 }}>
-              <Typography variant="h5" sx={{ fontWeight: 800, color: '#16a34a', fontFamily: 'monospace' }}>
-                {formatCurrency(netPayable)}
-              </Typography>
-              <Box
-                sx={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: 1.5,
-                  bgcolor: '#ecfdf5',
-                  color: '#16a34a',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <WalletIcon sx={{ fontSize: 20 }} />
-              </Box>
+            <Box
+              sx={{
+                width: 32,
+                height: 32,
+                borderRadius: '10px',
+                bgcolor: '#000000',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <WalletIcon sx={{ fontSize: 18 }} />
             </Box>
-          </CardContent>
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+            {formatCurrency(netPayable)}
+          </Typography>
         </Card>
       </Box>
 
       {/* 3. Today's Activity Section */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 0.5 }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f' }}>
             Today's Activity
           </Typography>
-          <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, fontFamily: 'monospace' }}>
+          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 600 }}>
             {todayIndianDate}
           </Typography>
         </Box>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.25 }}>
           {/* Box 1: Workers */}
-          <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
-                  {metrics?.today_marked_workers ?? 0}
-                </Typography>
-                <PeopleIcon sx={{ color: '#0284c7', fontSize: 18 }} />
-              </Box>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 0.5, display: 'block' }}>
-                Workers
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
+              bgcolor: '#ffffff',
+              p: 1.75
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+                {metrics?.today_marked_workers ?? 0}
               </Typography>
-            </CardContent>
+              <PeopleIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+            </Box>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
+              Marked Workers
+            </Typography>
           </Card>
 
           {/* Box 2: Units */}
-          <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
-                  {parseFloat(metrics?.today_total_work_units || 0).toFixed(1)}
-                </Typography>
-                <FactCheckIcon sx={{ color: '#0f172a', fontSize: 18 }} />
-              </Box>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 0.5, display: 'block' }}>
-                Units
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
+              bgcolor: '#ffffff',
+              p: 1.75
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+                {parseFloat(metrics?.today_total_work_units || 0).toFixed(1)}
               </Typography>
-            </CardContent>
+              <FactCheckIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+            </Box>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
+              Today Units
+            </Typography>
           </Card>
 
           {/* Box 3: Active Site */}
-          <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff' }}>
-            <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Typography variant="h5" sx={{ fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>
-                  {metrics?.active_sites ?? 0}
-                </Typography>
-                <LocationOnIcon sx={{ color: '#0284c7', fontSize: 18 }} />
-              </Box>
-              <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 600, mt: 0.5, display: 'block' }}>
-                Active Site
+          <Card
+            elevation={0}
+            sx={{
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
+              bgcolor: '#ffffff',
+              p: 1.75
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+                {metrics?.active_sites ?? 0}
               </Typography>
-            </CardContent>
+              <LocationOnIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+            </Box>
+            <Typography sx={{ color: '#555f6f', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
+              Active Sites
+            </Typography>
           </Card>
         </Box>
       </Box>
 
       {/* 4. Site Overview Section */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 0.5 }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f' }}>
             Site Overview
           </Typography>
           <Typography
-            variant="caption"
             onClick={() => navigate('/analytics')}
-            sx={{ color: '#0284c7', fontWeight: 700, cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+            sx={{ color: '#000000', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
           >
             View All
           </Typography>
         </Box>
 
-        <Card variant="outlined" sx={{ borderRadius: 2, borderColor: '#e2e8f0', bgcolor: '#ffffff', overflow: 'hidden' }}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            bgcolor: '#ffffff',
+            overflow: 'hidden'
+          }}
+        >
           {activeSitesList.length === 0 ? (
-            <Box sx={{ p: 2.5, textAlign: 'center' }}>
-              <Typography variant="body2" sx={{ color: '#64748b' }}>
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>
                 No active work sites configured.
               </Typography>
             </Box>
           ) : (
             activeSitesList.slice(0, 4).map((site, index) => (
               <Box key={site.site_id}>
-                {index > 0 && <Divider sx={{ borderColor: '#f1f5f9' }} />}
+                {index > 0 && <Divider sx={{ borderColor: '#f0f3ff' }} />}
                 <Box
                   onClick={() => navigate(`/analytics?year=${selectedYear}&month=${selectedMonth}`)}
                   sx={{
-                    p: 1.75,
+                    p: 2,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    '&:hover': { bgcolor: '#f8fafc' }
+                    transition: 'background-color 0.15s ease',
+                    '&:hover': { bgcolor: '#f0f3ff' }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Box
                       sx={{
-                        width: 36,
-                        height: 36,
-                        borderRadius: 1.5,
-                        bgcolor: '#f1f5f9',
-                        color: '#475569',
+                        width: 38,
+                        height: 38,
+                        borderRadius: '10px',
+                        bgcolor: '#f0f3ff',
+                        color: '#151c27',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}
                     >
-                      <SitesIcon sx={{ fontSize: 18 }} />
+                      <SitesIcon sx={{ fontSize: 20 }} />
                     </Box>
                     <Box>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#0f172a', lineHeight: 1.2 }}>
+                      <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.9rem', lineHeight: 1.2 }}>
                         {site.site_name}
                       </Typography>
-                      <Typography variant="caption" sx={{ color: '#64748b', display: 'block', mt: 0.25 }}>
+                      <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', mt: 0.25 }}>
                         {site.unique_worker_count} workers · {parseFloat(site.total_work_units).toFixed(1)} units
                       </Typography>
                     </Box>
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#16a34a', fontFamily: 'monospace' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                    <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.875rem' }}>
                       {formatCurrency(site.total_labour_expense)}
                     </Typography>
-                    <ChevronRightIcon sx={{ color: '#94a3b8', fontSize: 18 }} />
+                    <ChevronRightIcon sx={{ color: '#555f6f', fontSize: 18 }} />
                   </Box>
                 </Box>
               </Box>
@@ -390,148 +463,156 @@ const Dashboard = () => {
       </Box>
 
       {/* 5. Quick Actions Section */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#0f172a' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f', px: 0.5 }}>
           Quick Actions
         </Typography>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.25 }}>
           {/* Action 1: Mark Attendance */}
           <Card
-            variant="outlined"
+            elevation={0}
             onClick={() => navigate('/attendance')}
             sx={{
-              borderRadius: 2,
-              borderColor: '#e2e8f0',
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
               bgcolor: '#ffffff',
               cursor: 'pointer',
               textAlign: 'center',
-              p: 1.25,
-              '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' }
+              p: 1.5,
+              transition: 'all 0.15s ease',
+              '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+              '&:active': { transform: 'scale(0.96)' }
             }}
           >
             <Box
               sx={{
                 width: 40,
                 height: 40,
-                borderRadius: '50%',
-                bgcolor: '#eff6ff',
-                color: '#2563eb',
+                borderRadius: '12px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
-                mb: 0.75
+                mb: 1
               }}
             >
               <FactCheckIcon sx={{ fontSize: 20 }} />
             </Box>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1e293b', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+            <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
               Mark Attendance
             </Typography>
           </Card>
 
           {/* Action 2: Add Worker */}
           <Card
-            variant="outlined"
+            elevation={0}
             onClick={() => navigate('/workers')}
             sx={{
-              borderRadius: 2,
-              borderColor: '#e2e8f0',
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
               bgcolor: '#ffffff',
               cursor: 'pointer',
               textAlign: 'center',
-              p: 1.25,
-              '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' }
+              p: 1.5,
+              transition: 'all 0.15s ease',
+              '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+              '&:active': { transform: 'scale(0.96)' }
             }}
           >
             <Box
               sx={{
                 width: 40,
                 height: 40,
-                borderRadius: '50%',
-                bgcolor: '#f5f3ff',
-                color: '#7c3aed',
+                borderRadius: '12px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
-                mb: 0.75
+                mb: 1
               }}
             >
               <PersonAddIcon sx={{ fontSize: 20 }} />
             </Box>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1e293b', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+            <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
               Add Worker
             </Typography>
           </Card>
 
           {/* Action 3: Give Advance */}
           <Card
-            variant="outlined"
+            elevation={0}
             onClick={() => navigate('/advances')}
             sx={{
-              borderRadius: 2,
-              borderColor: '#e2e8f0',
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
               bgcolor: '#ffffff',
               cursor: 'pointer',
               textAlign: 'center',
-              p: 1.25,
-              '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' }
+              p: 1.5,
+              transition: 'all 0.15s ease',
+              '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+              '&:active': { transform: 'scale(0.96)' }
             }}
           >
             <Box
               sx={{
                 width: 40,
                 height: 40,
-                borderRadius: '50%',
-                bgcolor: '#fff7ed',
-                color: '#ea580c',
+                borderRadius: '12px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
-                mb: 0.75
+                mb: 1
               }}
             >
               <WalletIcon sx={{ fontSize: 20 }} />
             </Box>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1e293b', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+            <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
               Give Advance
             </Typography>
           </Card>
 
           {/* Action 4: Manage Sites */}
           <Card
-            variant="outlined"
+            elevation={0}
             onClick={() => navigate('/sites')}
             sx={{
-              borderRadius: 2,
-              borderColor: '#e2e8f0',
+              borderRadius: 2.5,
+              border: '1px solid #e2e8f8',
               bgcolor: '#ffffff',
               cursor: 'pointer',
               textAlign: 'center',
-              p: 1.25,
-              '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' }
+              p: 1.5,
+              transition: 'all 0.15s ease',
+              '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+              '&:active': { transform: 'scale(0.96)' }
             }}
           >
             <Box
               sx={{
                 width: 40,
                 height: 40,
-                borderRadius: '50%',
-                bgcolor: '#f0fdf4',
-                color: '#16a34a',
+                borderRadius: '12px',
+                bgcolor: '#f0f3ff',
+                color: '#151c27',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 mx: 'auto',
-                mb: 0.75
+                mb: 1
               }}
             >
               <SitesIcon sx={{ fontSize: 20 }} />
             </Box>
-            <Typography variant="caption" sx={{ fontWeight: 700, color: '#1e293b', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+            <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
               Manage Sites
             </Typography>
           </Card>

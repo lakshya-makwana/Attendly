@@ -26,7 +26,8 @@ import {
   PhoneOutlined as PhoneIcon,
   EditOutlined as EditIcon,
   DeleteOutlined as DeleteIcon,
-  ChevronRight as ChevronRightIcon
+  ChevronRight as ChevronRightIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 
@@ -147,39 +148,58 @@ const Workers = () => {
   });
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
       {/* Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography variant="h5">Workers</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
-            Manage workforce daily rates and contact details
+          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Workers
+          </Typography>
+          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+            Manage workforce roster, wages, and contacts
           </Typography>
         </Box>
 
         <Button
           variant="contained"
-          color="primary"
-          startIcon={<AddIcon fontSize="small" />}
+          startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleOpenAdd}
-          sx={{ fontSize: '0.8125rem', px: 2 }}
+          sx={{
+            bgcolor: '#000000',
+            color: '#ffffff',
+            fontSize: '0.8125rem',
+            fontWeight: 700,
+            px: 2,
+            py: 0.85,
+            borderRadius: 2.5,
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            '&:hover': { bgcolor: '#1f2937' },
+            '&:active': { transform: 'scale(0.97)' }
+          }}
         >
           Add Worker
         </Button>
       </Box>
 
       {/* Filter and Search Bar */}
-      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap' }}>
         <TextField
           size="small"
           placeholder="Search by name or phone..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ flex: 1, minWidth: 220 }}
+          sx={{
+            flex: 1,
+            minWidth: 220,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2.5,
+              bgcolor: '#ffffff'
+            }
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: 'text.secondary', fontSize: 18 }} />
+                <SearchIcon sx={{ color: '#555f6f', fontSize: 18 }} />
               </InputAdornment>
             ),
           }}
@@ -191,76 +211,144 @@ const Workers = () => {
               size="small"
               checked={showInactive}
               onChange={(e) => setShowInactive(e.target.checked)}
+              sx={{
+                '& .MuiSwitch-switchBase.Mui-checked': {
+                  color: '#000000',
+                  '& + .MuiSwitch-track': { bgcolor: '#000000' }
+                }
+              }}
             />
           }
-          label={<Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>Show Inactive</Typography>}
+          label={<Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>Show Inactive</Typography>}
         />
       </Box>
 
       {/* Workers Roster */}
       {loading ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
-          <CircularProgress size={28} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+          <CircularProgress size={30} sx={{ color: '#000000' }} />
         </Box>
       ) : filteredWorkers.length === 0 ? (
-        <Alert severity="info">No workers match your search.</Alert>
+        <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
+          No workers match your search.
+        </Alert>
       ) : (
-        <Card sx={{ overflow: 'hidden' }}>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid #e2e8f8',
+            bgcolor: '#ffffff',
+            overflow: 'hidden'
+          }}
+        >
           {filteredWorkers.map((worker, index) => (
             <Box key={worker.id}>
-              {index > 0 && <Divider />}
+              {index > 0 && <Divider sx={{ borderColor: '#f0f3ff' }} />}
               <Box
                 onClick={() => navigate(`/workers/${worker.id}`)}
                 sx={{
-                  p: { xs: 1.5, sm: 2 },
+                  p: 2,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   cursor: 'pointer',
                   opacity: worker.is_active ? 1 : 0.65,
-                  '&:hover': { bgcolor: '#f8fafc' }
+                  transition: 'background-color 0.15s ease',
+                  '&:hover': { bgcolor: '#f0f3ff' }
                 }}
               >
-                {/* Name & Phone */}
-                <Box sx={{ flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-                    <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                      {worker.name}
-                    </Typography>
-                    {!worker.is_active && (
-                      <Chip label="Inactive" size="small" sx={{ height: 18, fontSize: '0.65rem' }} />
-                    )}
+                {/* Worker Avatar, Name & Phone */}
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '12px',
+                      bgcolor: '#f0f3ff',
+                      color: '#151c27',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      flexShrink: 0
+                    }}
+                  >
+                    {worker.name ? worker.name.charAt(0).toUpperCase() : <PersonIcon />}
                   </Box>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
-                    {worker.phone ? (
-                      <Typography
-                        variant="caption"
-                        component="a"
-                        href={`tel:${worker.phone}`}
-                        onClick={(e) => e.stopPropagation()}
-                        sx={{ color: 'text.secondary', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 0.3 }}
-                      >
-                        <PhoneIcon sx={{ fontSize: '0.8rem' }} /> {worker.phone}
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2 }}>
+                        {worker.name}
                       </Typography>
-                    ) : (
-                      <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                        No phone
-                      </Typography>
-                    )}
+                      {!worker.is_active && (
+                        <Box
+                          component="span"
+                          sx={{
+                            bgcolor: '#e2e8f8',
+                            color: '#555f6f',
+                            px: 1,
+                            py: 0.2,
+                            borderRadius: 1,
+                            fontSize: '0.625rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          Inactive
+                        </Box>
+                      )}
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
+                      {worker.phone ? (
+                        <Typography
+                          variant="caption"
+                          component="a"
+                          href={`tel:${worker.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            color: '#555f6f',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.3,
+                            fontSize: '0.75rem',
+                            '&:hover': { color: '#000000', textDecoration: 'underline' }
+                          }}
+                        >
+                          <PhoneIcon sx={{ fontSize: 13 }} /> {worker.phone}
+                        </Typography>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#76777c', fontSize: '0.75rem' }}>
+                          No phone
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
 
                 {/* Wage & Actions */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                  <Box
+                    sx={{
+                      bgcolor: '#f0f3ff',
+                      px: 1.5,
+                      py: 0.5,
+                      borderRadius: 1.5,
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      color: '#151c27'
+                    }}
+                  >
                     ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
-                  </Typography>
+                  </Box>
 
                   <IconButton
                     size="small"
                     onClick={(e) => handleOpenEdit(worker, e)}
-                    sx={{ color: '#64748b' }}
+                    sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
                   >
                     <EditIcon sx={{ fontSize: 18 }} />
                   </IconButton>
@@ -268,12 +356,12 @@ const Workers = () => {
                   <IconButton
                     size="small"
                     onClick={(e) => handleOpenDelete(worker, e)}
-                    sx={{ color: '#64748b', '&:hover': { color: '#b91c1c' } }}
+                    sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
                   >
                     <DeleteIcon sx={{ fontSize: 18 }} />
                   </IconButton>
 
-                  <ChevronRightIcon sx={{ color: '#94a3b8', fontSize: 18 }} />
+                  <ChevronRightIcon sx={{ color: '#bdc7d9', fontSize: 18 }} />
                 </Box>
               </Box>
             </Box>
@@ -282,8 +370,21 @@ const Workers = () => {
       )}
 
       {/* Add / Edit Worker Modal */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#151c27' }}>
           {editingWorker ? 'Edit Worker' : 'Add Worker'}
         </DialogTitle>
         <DialogContent>
@@ -297,6 +398,7 @@ const Workers = () => {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               error={!!formErrors.name}
               helperText={formErrors.name}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
@@ -306,6 +408,7 @@ const Workers = () => {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               helperText="Contact info only"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
@@ -321,16 +424,25 @@ const Workers = () => {
               InputProps={{
                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
               }}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Box>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDialogOpen(false)} size="small" variant="outlined">Cancel</Button>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
           <Button
             variant="contained"
             size="small"
             onClick={handleSaveWorker}
             disabled={saving}
+            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
           >
             {saving ? 'Saving...' : editingWorker ? 'Update' : 'Save'}
           </Button>
@@ -338,16 +450,42 @@ const Workers = () => {
       </Dialog>
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1rem' }}>Delete Worker?</DialogTitle>
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+          Delete Worker?
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+          <Typography variant="body2" sx={{ color: '#555f6f' }}>
             Permanently delete <strong>{workerToDelete?.name}</strong> and all associated attendance and advance records?
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setDeleteDialogOpen(false)} size="small" variant="outlined">Cancel</Button>
-          <Button variant="contained" color="error" size="small" onClick={handleDeleteWorker}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleDeleteWorker}
+            sx={{ borderRadius: 2, bgcolor: '#ba1a1a', color: '#ffffff', fontWeight: 700, '&:hover': { bgcolor: '#93000a' } }}
+          >
             Delete
           </Button>
         </DialogActions>
@@ -360,7 +498,7 @@ const Workers = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 1, fontSize: '0.8125rem' }}>
+        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>

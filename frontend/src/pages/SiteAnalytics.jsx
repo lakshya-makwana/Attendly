@@ -14,7 +14,6 @@ import {
   Alert,
   Snackbar,
   Grid,
-  Paper,
   Table,
   TableBody,
   TableCell,
@@ -25,8 +24,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
-  Stack
+  Divider
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -102,70 +100,85 @@ const SiteAnalytics = () => {
 
   const formatCurrency = (val) => {
     const num = parseFloat(val || 0);
-    return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
       {/* Page Header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography variant="h5">Site Analytics</Typography>
-          <Typography variant="body2" sx={{ color: 'text.secondary', mt: 0.25 }}>
-            Monthly workforce deployment and labour expenses by job site
+          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+            Site Analytics
+          </Typography>
+          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+            Monthly workforce deployment and expenses by location
           </Typography>
         </Box>
 
         <Button
           variant="outlined"
-          color="inherit"
           onClick={() => navigate('/sites')}
-          startIcon={<SitesIcon fontSize="small" />}
-          sx={{ color: 'text.secondary', borderColor: '#cbd5e1' }}
+          startIcon={<SitesIcon sx={{ fontSize: 16 }} />}
+          sx={{
+            color: '#151c27',
+            borderColor: '#dce2f3',
+            fontSize: '0.775rem',
+            fontWeight: 600,
+            borderRadius: 2,
+            bgcolor: '#ffffff',
+            '&:hover': { bgcolor: '#f0f3ff' }
+          }}
         >
           Manage Sites
         </Button>
       </Box>
 
-      {/* Month & Year Filter Bar */}
+      {/* Month & Year Capsule */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          p: 1.25,
-          bgcolor: '#ffffff',
-          borderRadius: 1.5,
-          border: '1px solid #e2e8f0'
+          p: 1,
+          bgcolor: '#f0f3ff',
+          borderRadius: 9999,
+          border: '1px solid #e2e8f8'
         }}
       >
-        <IconButton onClick={handlePrevMonth} size="small" sx={{ color: 'text.secondary' }}>
-          <PrevIcon fontSize="small" />
+        <IconButton
+          onClick={handlePrevMonth}
+          size="small"
+          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
+        >
+          <PrevIcon sx={{ fontSize: 18 }} />
         </IconButton>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <FormControl size="small" sx={{ minWidth: 130 }}>
+          <FormControl size="small" variant="standard">
             <Select
+              disableUnderline
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              sx={{ fontWeight: 600, fontSize: '0.875rem' }}
+              sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27' }}
             >
               {monthNames.map((name, i) => (
-                <MenuItem key={i + 1} value={i + 1}>
+                <MenuItem key={i + 1} value={i + 1} sx={{ fontSize: '0.8125rem' }}>
                   {name}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 90 }}>
+          <FormControl size="small" variant="standard">
             <Select
+              disableUnderline
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              sx={{ fontWeight: 600, fontSize: '0.875rem' }}
+              sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27' }}
             >
               {[2024, 2025, 2026, 2027].map((y) => (
-                <MenuItem key={y} value={y}>
+                <MenuItem key={y} value={y} sx={{ fontSize: '0.8125rem' }}>
                   {y}
                 </MenuItem>
               ))}
@@ -173,329 +186,234 @@ const SiteAnalytics = () => {
           </FormControl>
         </Box>
 
-        <IconButton onClick={handleNextMonth} size="small" sx={{ color: 'text.secondary' }}>
-          <NextIcon fontSize="small" />
+        <IconButton
+          onClick={handleNextMonth}
+          size="small"
+          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
+        >
+          <NextIcon sx={{ fontSize: 18 }} />
         </IconButton>
       </Box>
 
       {/* 4 Summary Metrics Panel */}
-      <Grid container spacing={1.5}>
+      <Grid container spacing={1.25}>
         <Grid item xs={6} sm={3}>
-          <Paper variant="outlined" sx={{ p: 2, borderColor: '#e2e8f0' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <Card elevation={0} sx={{ p: 1.75, borderRadius: 2.5, border: '1px solid #e2e8f8', bgcolor: '#ffffff' }}>
+            <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Active Sites
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25, fontFamily: 'monospace' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', mt: 0.5 }}>
               {analyticsData?.total_sites_used || 0}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
               With labour logged
             </Typography>
-          </Paper>
+          </Card>
         </Grid>
 
         <Grid item xs={6} sm={3}>
-          <Paper variant="outlined" sx={{ p: 2, borderColor: '#e2e8f0' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <Card elevation={0} sx={{ p: 1.75, borderRadius: 2.5, border: '1px solid #e2e8f8', bgcolor: '#ffffff' }}>
+            <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Unique Workers
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25, fontFamily: 'monospace' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', mt: 0.5 }}>
               {analyticsData?.total_unique_workers || 0}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Deployed across sites
+            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
+              Deployed this month
             </Typography>
-          </Paper>
+          </Card>
         </Grid>
 
         <Grid item xs={6} sm={3}>
-          <Paper variant="outlined" sx={{ p: 2, borderColor: '#e2e8f0' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Total Work Units
+          <Card elevation={0} sx={{ p: 1.75, borderRadius: 2.5, border: '1px solid #e2e8f8', bgcolor: '#ffffff' }}>
+            <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+              Total Units
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25, fontFamily: 'monospace' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', mt: 0.5 }}>
               {parseFloat(analyticsData?.total_work_units || 0).toFixed(1)}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
+            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
               Total man-days
             </Typography>
-          </Paper>
+          </Card>
         </Grid>
 
         <Grid item xs={6} sm={3}>
-          <Paper variant="outlined" sx={{ p: 2, borderColor: '#e2e8f0' }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Total Labour Cost
+          <Card elevation={0} sx={{ p: 1.75, borderRadius: 2.5, border: '1px solid #e2e8f8', bgcolor: '#ffffff' }}>
+            <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+              Total Expense
             </Typography>
-            <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.25, fontFamily: 'monospace', color: '#0f766e' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', mt: 0.5 }}>
               {formatCurrency(analyticsData?.total_labour_expense)}
             </Typography>
-            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-              Monthly wage expense
+            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
+              Monthly wage cost
             </Typography>
-          </Paper>
+          </Card>
         </Grid>
       </Grid>
 
-      {/* Sites Breakdown Table / Cards */}
+      {/* Sites Breakdown Cards Stream */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress size={28} />
+          <CircularProgress size={30} sx={{ color: '#000000' }} />
         </Box>
       ) : !analyticsData || analyticsData.sites.length === 0 ? (
-        <Alert severity="info" sx={{ border: '1px solid #e2e8f0' }}>
+        <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
           No work sites configured.
         </Alert>
       ) : (
-        <>
-          {/* Desktop Table */}
-          <Paper
-            variant="outlined"
-            sx={{
-              display: { xs: 'none', md: 'block' },
-              overflow: 'hidden',
-              borderColor: '#e2e8f0',
-            }}
-          >
-            <TableContainer>
-              <Table size="small">
-                <TableHead sx={{ bgcolor: '#f8fafc' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 600, color: '#475569', py: 1.25 }}>Site Name</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600, color: '#475569', py: 1.25, width: 130 }}>Workers</TableCell>
-                    <TableCell align="center" sx={{ fontWeight: 600, color: '#475569', py: 1.25, width: 140 }}>Work Units</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#475569', py: 1.25, width: 180 }}>Labour Expense</TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600, color: '#475569', py: 1.25, width: 100 }}>Breakdown</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {analyticsData.sites.map((site) => {
-                    const hasActivity = site.total_work_units > 0;
-                    return (
-                      <TableRow
-                        key={site.site_id}
-                        hover
-                        sx={{
-                          opacity: site.is_active ? 1 : 0.65,
-                          '&:last-child td': { borderBottom: 0 }
-                        }}
-                      >
-                        <TableCell>
-                          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-                            {site.site_name}
-                          </Typography>
-                          {site.address && (
-                            <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                              {site.address}
-                            </Typography>
-                          )}
-                          {!site.is_active && (
-                            <Chip label="Archived" size="small" sx={{ height: 18, fontSize: '0.65rem', mt: 0.5 }} />
-                          )}
-                        </TableCell>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {analyticsData.sites.map((site) => (
+            <Card
+              key={site.site_id}
+              elevation={0}
+              sx={{
+                borderRadius: 3,
+                border: '1px solid #e2e8f8',
+                bgcolor: '#ffffff',
+                p: 2,
+                opacity: site.is_active ? 1 : 0.65,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                <Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2 }}>
+                    {site.site_name}
+                  </Typography>
+                  {site.address && (
+                    <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', mt: 0.25 }}>
+                      {site.address}
+                    </Typography>
+                  )}
+                </Box>
 
-                        <TableCell align="center">
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                            {site.unique_worker_count}
-                          </Typography>
-                        </TableCell>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleOpenDetail(site)}
+                  sx={{
+                    fontSize: '0.75rem',
+                    px: 1.5,
+                    py: 0.4,
+                    borderRadius: 2,
+                    borderColor: '#dce2f3',
+                    color: '#151c27',
+                    fontWeight: 600,
+                    '&:hover': { bgcolor: '#f0f3ff' }
+                  }}
+                >
+                  Details
+                </Button>
+              </Box>
 
-                        <TableCell align="center">
-                          <Typography variant="body2" sx={{ fontFamily: 'monospace', fontWeight: 600 }}>
-                            {parseFloat(site.total_work_units).toFixed(1)}
-                          </Typography>
-                        </TableCell>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, pt: 1.25, borderTop: '1px solid #f0f3ff' }}>
+                <Box>
+                  <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600 }}>
+                    Workers
+                  </Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#151c27', mt: 0.25 }}>
+                    {site.unique_worker_count}
+                  </Typography>
+                </Box>
 
-                        <TableCell align="right">
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 600,
-                              fontFamily: 'monospace',
-                              color: hasActivity ? '#0f766e' : 'text.secondary'
-                            }}
-                          >
-                            {formatCurrency(site.total_labour_expense)}
-                          </Typography>
-                        </TableCell>
+                <Box>
+                  <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600 }}>
+                    Units
+                  </Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#151c27', mt: 0.25 }}>
+                    {parseFloat(site.total_work_units).toFixed(1)}
+                  </Typography>
+                </Box>
 
-                        <TableCell align="right">
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => handleOpenDetail(site)}
-                            sx={{ fontSize: '0.75rem', px: 1 }}
-                          >
-                            View
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-
-          {/* Mobile Information Cards */}
-          <Stack spacing={1.5} sx={{ display: { xs: 'flex', md: 'none' } }}>
-            {analyticsData.sites.map((site) => (
-              <Card
-                key={site.site_id}
-                variant="outlined"
-                sx={{
-                  borderColor: '#e2e8f0',
-                  opacity: site.is_active ? 1 : 0.65,
-                }}
-              >
-                <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
-                    <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        {site.site_name}
-                      </Typography>
-                      {site.address && (
-                        <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                          {site.address}
-                        </Typography>
-                      )}
-                    </Box>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => handleOpenDetail(site)}
-                      sx={{ fontSize: '0.75rem', px: 1.5 }}
-                    >
-                      Details
-                    </Button>
-                  </Box>
-
-                  <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, pt: 1, borderTop: '1px solid #f1f5f9' }}>
-                    <Box>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                        Workers
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                        {site.unique_worker_count}
-                      </Typography>
-                    </Box>
-
-                    <Box>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                        Units
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace' }}>
-                        {parseFloat(site.total_work_units).toFixed(1)}
-                      </Typography>
-                    </Box>
-
-                    <Box sx={{ textAlign: 'right' }}>
-                      <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
-                        Labour Cost
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#0f766e' }}>
-                        {formatCurrency(site.total_labour_expense)}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </CardContent>
-              </Card>
-            ))}
-          </Stack>
-        </>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600 }}>
+                    Labour Cost
+                  </Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: '1rem', color: '#151c27', mt: 0.25 }}>
+                    {formatCurrency(site.total_labour_expense)}
+                  </Typography>
+                </Box>
+              </Box>
+            </Card>
+          ))}
+        </Box>
       )}
 
       {/* Detailed Site Labour Report Modal */}
-      <Dialog open={detailModalOpen} onClose={() => setDetailModalOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>
+      <Dialog
+        open={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
           {selectedSite?.site_name} — Site Report
         </DialogTitle>
         <DialogContent>
           {selectedSite && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              {/* Site Metrics Header */}
-              <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 1.5, border: '1px solid #e2e8f0' }}>
-                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block' }}>
+              <Box sx={{ p: 1.5, bgcolor: '#f0f3ff', borderRadius: 2, border: '1px solid #e2e8f8' }}>
+                <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 600 }}>
                   Billing Month: {analyticsData?.month_name}
                 </Typography>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1, flexWrap: 'wrap', gap: 1 }}>
-                  <Typography variant="body2">
-                    <span style={{ color: '#64748b' }}>Workers:</span> <strong>{selectedSite.unique_worker_count}</strong>
+                  <Typography sx={{ fontSize: '0.8125rem' }}>
+                    <span style={{ color: '#555f6f' }}>Workers:</span> <strong>{selectedSite.unique_worker_count}</strong>
                   </Typography>
-                  <Typography variant="body2">
-                    <span style={{ color: '#64748b' }}>Work Units:</span> <strong>{parseFloat(selectedSite.total_work_units).toFixed(1)}</strong>
+                  <Typography sx={{ fontSize: '0.8125rem' }}>
+                    <span style={{ color: '#555f6f' }}>Work Units:</span> <strong>{parseFloat(selectedSite.total_work_units).toFixed(1)}</strong>
                   </Typography>
-                  <Typography variant="body2" sx={{ color: '#0f766e', fontWeight: 700 }}>
-                    <span style={{ color: '#64748b' }}>Total Cost:</span> {formatCurrency(selectedSite.total_labour_expense)}
+                  <Typography sx={{ fontSize: '0.8125rem', fontWeight: 700, color: '#151c27' }}>
+                    <span style={{ color: '#555f6f' }}>Total Cost:</span> {formatCurrency(selectedSite.total_labour_expense)}
                   </Typography>
                 </Box>
               </Box>
 
-              <Typography variant="subtitle2" sx={{ fontWeight: 600 }}>
-                Worker Roster ({selectedSite.workers.length})
+              <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27' }}>
+                Worker Deployment ({selectedSite.workers.length})
               </Typography>
 
               {selectedSite.workers.length === 0 ? (
-                <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 3 }}>
+                <Typography sx={{ color: '#555f6f', textAlign: 'center', py: 3, fontSize: '0.8125rem' }}>
                   No workers logged attendance at this site in {analyticsData?.month_name}.
                 </Typography>
               ) : (
-                <TableContainer component={Paper} variant="outlined" sx={{ borderColor: '#e2e8f0' }}>
+                <TableContainer sx={{ border: '1px solid #e2e8f8', borderRadius: 2 }}>
                   <Table size="small">
-                    <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                    <TableHead sx={{ bgcolor: '#f0f3ff' }}>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 600, color: '#475569' }}>Worker</TableCell>
-                        <TableCell align="center" sx={{ fontWeight: 600, color: '#475569' }}>Units</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600, color: '#475569' }}>Daily Rate</TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 600, color: '#475569' }}>Total</TableCell>
+                        <TableCell sx={{ fontWeight: 700, fontSize: '0.72rem', color: '#555f6f' }}>Worker</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.72rem', color: '#555f6f' }}>Units</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.72rem', color: '#555f6f' }}>Rate</TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.72rem', color: '#555f6f' }}>Total</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {selectedSite.workers.map((w) => (
-                        <React.Fragment key={w.worker_id}>
-                          <TableRow hover>
-                            <TableCell sx={{ fontWeight: 600 }}>
-                              {w.worker_name}
-                            </TableCell>
-                            <TableCell align="center" sx={{ fontFamily: 'monospace' }}>
-                              {parseFloat(w.work_units).toFixed(1)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                              ₹{parseFloat(w.daily_wage).toFixed(0)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700, fontFamily: 'monospace', color: '#0f766e' }}>
-                              {formatCurrency(w.labour_expense)}
-                            </TableCell>
-                          </TableRow>
-                          {/* Dates worked breakdown */}
-                          <TableRow>
-                            <TableCell colSpan={4} sx={{ py: 0.75, bgcolor: '#fcfcfc', borderBottom: '1px solid #f1f5f9' }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
-                                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                                  Dates:
-                                </Typography>
-                                {w.dates_worked.map((dw, idx) => (
-                                  <Box
-                                    key={idx}
-                                    sx={{
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      px: 0.75,
-                                      py: 0.2,
-                                      bgcolor: '#f1f5f9',
-                                      borderRadius: 0.75,
-                                      fontSize: '0.7rem',
-                                      fontFamily: 'monospace',
-                                      color: '#334155'
-                                    }}
-                                  >
-                                    {formatDateIndian(dw.date)} ({parseFloat(dw.work_units)}d)
-                                  </Box>
-                                ))}
-                              </Box>
-                            </TableCell>
-                          </TableRow>
-                        </React.Fragment>
+                        <TableRow key={w.worker_id} hover>
+                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                            {w.worker_name}
+                          </TableCell>
+                          <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8125rem' }}>
+                            {parseFloat(w.work_units).toFixed(1)}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontSize: '0.8125rem', color: '#555f6f' }}>
+                            ₹{parseFloat(w.daily_wage).toFixed(0)}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                            {formatCurrency(w.labour_expense)}
+                          </TableCell>
+                        </TableRow>
                       ))}
                     </TableBody>
                   </Table>
@@ -504,16 +422,21 @@ const SiteAnalytics = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5 }}>
-          <Button onClick={() => setDetailModalOpen(false)} sx={{ color: 'text.secondary' }}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setDetailModalOpen(false)}
+            variant="outlined"
+            size="small"
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+          >
             Close
           </Button>
           <Button
-            variant="outlined"
-            color="inherit"
-            startIcon={<PrintIcon fontSize="small" />}
+            variant="contained"
+            size="small"
+            startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
             onClick={() => window.print()}
-            sx={{ borderColor: '#cbd5e1' }}
+            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
           >
             Print
           </Button>
@@ -527,7 +450,7 @@ const SiteAnalytics = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', fontWeight: 600 }}>
+        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
           {snackbar.message}
         </Alert>
       </Snackbar>
