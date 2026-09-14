@@ -1,11 +1,14 @@
 // Attendly - Service Worker for PWA
-const CACHE_NAME = 'attendly-v1';
+const CACHE_NAME = 'attendly-v2';
 
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/favicon.ico',
   '/favicon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
   '/apple-touch-icon.png'
