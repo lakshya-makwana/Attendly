@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Button,
   IconButton,
   TextField,
@@ -126,11 +125,11 @@ const Advances = () => {
   const quickAmounts = ['500', '1000', '2000', '5000'];
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Page Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Advances
           </Typography>
           <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
@@ -169,13 +168,13 @@ const Advances = () => {
           p: 2,
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: 1.5
+          alignItems: { xs: 'flex-start', sm: 'center' },
+          flexDirection: { xs: 'column', sm: 'row' },
+          gap: 2
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 200 }}>
-          <FormControl size="small" sx={{ minWidth: 160 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 220 } }}>
+          <FormControl size="small" sx={{ flex: 1, minWidth: { xs: 160, sm: 180 } }}>
             <InputLabel id="filter-worker-label" sx={{ fontSize: '0.8125rem' }}>Filter Worker</InputLabel>
             <Select
               labelId="filter-worker-label"
@@ -203,7 +202,7 @@ const Advances = () => {
           )}
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'space-between', sm: 'flex-end' }, width: { xs: '100%', sm: 'auto' }, gap: 2 }}>
           <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
             <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
               Total Advances
@@ -238,7 +237,7 @@ const Advances = () => {
           No advance transactions found. Click "Give Advance" to record a payment.
         </Alert>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5 }}>
           {filteredAdvances.map((adv) => (
             <Card
               key={adv.id}

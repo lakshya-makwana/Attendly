@@ -85,13 +85,14 @@ const AppLayout = () => {
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: 'rgba(249, 249, 255, 0.85)',
+          bgcolor: 'rgba(249, 249, 255, 0.88)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderBottom: '1px solid #e2e8f8',
           zIndex: 1100,
           color: '#151c27',
-          top: 0
+          top: 0,
+          pt: 'env(safe-area-inset-top, 0px)'
         }}
       >
         <Toolbar
@@ -339,8 +340,8 @@ const AppLayout = () => {
         maxWidth="lg"
         sx={{
           flex: 1,
-          py: { xs: 2, sm: 2.5 },
-          pb: { xs: 12, sm: 4 },
+          py: { xs: 2, sm: 3 },
+          pb: { xs: 'calc(76px + env(safe-area-inset-bottom, 0px))', sm: 4 },
           px: { xs: 2, sm: 3 }
         }}
       >
@@ -357,16 +358,19 @@ const AppLayout = () => {
           left: 0,
           right: 0,
           zIndex: 1000,
-          height: 64,
-          bgcolor: 'rgba(255, 255, 255, 0.92)',
+          minHeight: 'calc(60px + env(safe-area-inset-bottom, 0px))',
+          height: 'calc(60px + env(safe-area-inset-bottom, 0px))',
+          pb: 'env(safe-area-inset-bottom, 0px)',
+          pt: 0,
+          bgcolor: 'rgba(255, 255, 255, 0.94)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
           borderTop: '1px solid #e2e8f8',
           boxShadow: '0 -2px 12px rgba(0,0,0,0.03)',
-          px: 1,
-          pb: 'env(safe-area-inset-bottom, 0px)',
+          px: 0.5,
           alignItems: 'center',
-          justifyContent: 'space-around'
+          justifyContent: 'space-around',
+          userSelect: 'none'
         }}
       >
         {BOTTOM_NAV_ITEMS.map((tab) => {
@@ -379,16 +383,17 @@ const AppLayout = () => {
               key={tab.path}
               onClick={() => navigate(tab.path)}
               sx={{
+                flex: 1,
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                py: 0.75,
-                px: 1.25,
+                py: 0.5,
                 cursor: 'pointer',
                 color: isActive ? '#000000' : '#555f6f',
                 transition: 'all 0.15s ease',
                 userSelect: 'none',
+                minWidth: 0,
                 '&:active': { transform: 'scale(0.93)' }
               }}
             >
@@ -398,10 +403,13 @@ const AppLayout = () => {
                   alignItems: 'center',
                   justifyContent: 'center',
                   color: isActive ? '#000000' : '#555f6f',
-                  transition: 'color 0.15s ease',
+                  bgcolor: isActive ? '#f0f3ff' : 'transparent',
+                  px: 1.5,
+                  py: 0.35,
+                  borderRadius: 9999,
+                  transition: 'all 0.15s ease',
                   '& .MuiSvgIcon-root': {
-                    fontSize: 22,
-                    strokeWidth: isActive ? 0.5 : 0
+                    fontSize: 21,
                   }
                 }}
               >
@@ -414,7 +422,11 @@ const AppLayout = () => {
                   color: isActive ? '#000000' : '#555f6f',
                   mt: 0.25,
                   letterSpacing: '0.01em',
-                  lineHeight: 1
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '100%'
                 }}
               >
                 {tab.label}

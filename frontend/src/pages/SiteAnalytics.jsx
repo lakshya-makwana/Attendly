@@ -4,7 +4,6 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Button,
   IconButton,
   Select,
@@ -23,8 +22,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  Divider
+  DialogActions
 } from '@mui/material';
 import {
   ChevronLeft as PrevIcon,
@@ -33,7 +31,6 @@ import {
   PrintOutlined as PrintIcon
 } from '@mui/icons-material';
 import api from '../api/client';
-import { formatDateIndian } from '../utils/dateUtils';
 
 const SiteAnalytics = () => {
   const navigate = useNavigate();
@@ -104,11 +101,11 @@ const SiteAnalytics = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Page Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Site Analytics
           </Typography>
           <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
@@ -264,7 +261,7 @@ const SiteAnalytics = () => {
           No work sites configured.
         </Alert>
       ) : (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.75 }}>
           {analyticsData.sites.map((site) => (
             <Card
               key={site.site_id}

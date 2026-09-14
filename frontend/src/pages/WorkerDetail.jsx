@@ -128,7 +128,7 @@ const WorkerDetail = () => {
   const isPositiveNet = parseFloat(detail.month_net_payable || 0) >= 0;
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Top Header Bar */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
@@ -333,7 +333,7 @@ const WorkerDetail = () => {
           <Tab label={`Advances Ledger (${detail.recent_advances.length})`} />
         </Tabs>
 
-        {/* Tab 0: Attendance History Table */}
+        {/* Tab 0: Attendance History */}
         {tabIndex === 0 && (
           <Box sx={{ p: 0 }}>
             {detail.recent_attendance.length === 0 ? (
@@ -341,44 +341,85 @@ const WorkerDetail = () => {
                 <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>No attendance records found.</Typography>
               </Box>
             ) : (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
-                      <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Site</TableCell>
-                      <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Units</TableCell>
-                      <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Earnings</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {detail.recent_attendance.map((att) => {
-                      const units = parseFloat(att.work_units || 0);
-                      return (
-                        <TableRow key={att.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
-                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+              <>
+                {/* Mobile Cards View */}
+                <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
+                  {detail.recent_attendance.map((att) => {
+                    const units = parseFloat(att.work_units || 0);
+                    return (
+                      <Box
+                        key={att.id}
+                        sx={{
+                          p: 1.5,
+                          bgcolor: '#f9f9ff',
+                          borderRadius: 2,
+                          border: '1px solid #f0f3ff',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Box>
+                          <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
                             {formatDateIndian(att.date)}
-                          </TableCell>
-                          <TableCell sx={{ fontSize: '0.8125rem', color: '#555f6f' }}>
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
                             {att.site_name || (units === 0 ? 'Absent' : '—')}
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
-                            {units.toFixed(1)}
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#151c27' }}>
+                            {units.toFixed(1)} Units
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
                             ₹{parseFloat(att.wage_earned || 0).toFixed(0)}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+
+                {/* Tablet / Desktop Table View */}
+                <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
+                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Site</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Units</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Earnings</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {detail.recent_attendance.map((att) => {
+                        const units = parseFloat(att.work_units || 0);
+                        return (
+                          <TableRow key={att.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
+                            <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                              {formatDateIndian(att.date)}
+                            </TableCell>
+                            <TableCell sx={{ fontSize: '0.8125rem', color: '#555f6f' }}>
+                              {att.site_name || (units === 0 ? 'Absent' : '—')}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                              {units.toFixed(1)}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                              ₹{parseFloat(att.wage_earned || 0).toFixed(0)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
             )}
           </Box>
         )}
 
-        {/* Tab 1: Advances History Table */}
+        {/* Tab 1: Advances History */}
         {tabIndex === 1 && (
           <Box sx={{ p: 0 }}>
             {detail.recent_advances.length === 0 ? (
@@ -386,40 +427,82 @@ const WorkerDetail = () => {
                 <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>No advance transactions recorded.</Typography>
               </Box>
             ) : (
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
-                      <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Amount</TableCell>
-                      <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Note</TableCell>
-                      <TableCell align="center" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Action</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {detail.recent_advances.map((adv) => (
-                      <TableRow key={adv.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
-                        <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+              <>
+                {/* Mobile Cards View */}
+                <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
+                  {detail.recent_advances.map((adv) => (
+                    <Box
+                      key={adv.id}
+                      sx={{
+                        p: 1.5,
+                        bgcolor: '#f9f9ff',
+                        borderRadius: 2,
+                        border: '1px solid #f0f3ff',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}
+                    >
+                      <Box>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
                           {formatDateIndian(adv.date)}
-                        </TableCell>
-                        <TableCell align="right" sx={{ fontWeight: 700, color: '#ba1a1a', fontSize: '0.8125rem' }}>
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
+                          {adv.note || 'No note'}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '0.925rem', color: '#ba1a1a' }}>
                           ₹{parseFloat(adv.amount || 0).toFixed(0)}
-                        </TableCell>
-                        <TableCell sx={{ color: '#555f6f', fontSize: '0.8125rem' }}>{adv.note || '—'}</TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDeleteAdvance(adv.id)}
-                            sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
-                          >
-                            <DeleteIcon sx={{ fontSize: 17 }} />
-                          </IconButton>
-                        </TableCell>
+                        </Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDeleteAdvance(adv.id)}
+                          sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* Tablet / Desktop Table View */}
+                <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
+                        <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Amount</TableCell>
+                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Note</TableCell>
+                        <TableCell align="center" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Action</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+                    </TableHead>
+                    <TableBody>
+                      {detail.recent_advances.map((adv) => (
+                        <TableRow key={adv.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
+                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                            {formatDateIndian(adv.date)}
+                          </TableCell>
+                          <TableCell align="right" sx={{ fontWeight: 700, color: '#ba1a1a', fontSize: '0.8125rem' }}>
+                            ₹{parseFloat(adv.amount || 0).toFixed(0)}
+                          </TableCell>
+                          <TableCell sx={{ color: '#555f6f', fontSize: '0.8125rem' }}>{adv.note || '—'}</TableCell>
+                          <TableCell align="center">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleDeleteAdvance(adv.id)}
+                              sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
+                            >
+                              <DeleteIcon sx={{ fontSize: 17 }} />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </>
             )}
           </Box>
         )}

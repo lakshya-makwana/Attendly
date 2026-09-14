@@ -11,14 +11,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Chip,
   CircularProgress,
   Alert,
   Snackbar,
   InputAdornment,
   Switch,
-  FormControlLabel,
-  Divider
+  FormControlLabel
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -148,11 +146,11 @@ const Workers = () => {
   });
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Workers
           </Typography>
           <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
@@ -189,8 +187,8 @@ const Workers = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{
-            flex: 1,
-            minWidth: 220,
+            flex: { xs: '1 1 100%', sm: 1 },
+            minWidth: { xs: '100%', sm: 240 },
             '& .MuiOutlinedInput-root': {
               borderRadius: 2.5,
               bgcolor: '#ffffff'
@@ -233,140 +231,136 @@ const Workers = () => {
           No workers match your search.
         </Alert>
       ) : (
-        <Card
-          elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: '1px solid #e2e8f8',
-            bgcolor: '#ffffff',
-            overflow: 'hidden'
-          }}
-        >
-          {filteredWorkers.map((worker, index) => (
-            <Box key={worker.id}>
-              {index > 0 && <Divider sx={{ borderColor: '#f0f3ff' }} />}
-              <Box
-                onClick={() => navigate(`/workers/${worker.id}`)}
-                sx={{
-                  p: 2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  opacity: worker.is_active ? 1 : 0.65,
-                  transition: 'background-color 0.15s ease',
-                  '&:hover': { bgcolor: '#f0f3ff' }
-                }}
-              >
-                {/* Worker Avatar, Name & Phone */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1 }}>
-                  <Box
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: '12px',
-                      bgcolor: '#f0f3ff',
-                      color: '#151c27',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
-                      fontSize: '0.95rem',
-                      flexShrink: 0
-                    }}
-                  >
-                    {worker.name ? worker.name.charAt(0).toUpperCase() : <PersonIcon />}
-                  </Box>
-
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2 }}>
-                        {worker.name}
-                      </Typography>
-                      {!worker.is_active && (
-                        <Box
-                          component="span"
-                          sx={{
-                            bgcolor: '#e2e8f8',
-                            color: '#555f6f',
-                            px: 1,
-                            py: 0.2,
-                            borderRadius: 1,
-                            fontSize: '0.625rem',
-                            fontWeight: 700
-                          }}
-                        >
-                          Inactive
-                        </Box>
-                      )}
-                    </Box>
-
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
-                      {worker.phone ? (
-                        <Typography
-                          variant="caption"
-                          component="a"
-                          href={`tel:${worker.phone}`}
-                          onClick={(e) => e.stopPropagation()}
-                          sx={{
-                            color: '#555f6f',
-                            textDecoration: 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 0.3,
-                            fontSize: '0.75rem',
-                            '&:hover': { color: '#000000', textDecoration: 'underline' }
-                          }}
-                        >
-                          <PhoneIcon sx={{ fontSize: 13 }} /> {worker.phone}
-                        </Typography>
-                      ) : (
-                        <Typography variant="caption" sx={{ color: '#76777c', fontSize: '0.75rem' }}>
-                          No phone
-                        </Typography>
-                      )}
-                    </Box>
-                  </Box>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5 }}>
+          {filteredWorkers.map((worker) => (
+            <Card
+              key={worker.id}
+              elevation={0}
+              onClick={() => navigate(`/workers/${worker.id}`)}
+              sx={{
+                borderRadius: 3,
+                border: '1px solid #e2e8f8',
+                bgcolor: '#ffffff',
+                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer',
+                opacity: worker.is_active ? 1 : 0.65,
+                transition: 'all 0.15s ease',
+                '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+                '&:active': { transform: 'scale(0.99)' }
+              }}
+            >
+              {/* Worker Avatar, Name & Phone */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
+                <Box
+                  sx={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '12px',
+                    bgcolor: '#f0f3ff',
+                    color: '#151c27',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    flexShrink: 0
+                  }}
+                >
+                  {worker.name ? worker.name.charAt(0).toUpperCase() : <PersonIcon />}
                 </Box>
 
-                {/* Wage & Actions */}
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                  <Box
-                    sx={{
-                      bgcolor: '#f0f3ff',
-                      px: 1.5,
-                      py: 0.5,
-                      borderRadius: 1.5,
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      color: '#151c27'
-                    }}
-                  >
-                    ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {worker.name}
+                    </Typography>
+                    {!worker.is_active && (
+                      <Box
+                        component="span"
+                        sx={{
+                          bgcolor: '#e2e8f8',
+                          color: '#555f6f',
+                          px: 1,
+                          py: 0.2,
+                          borderRadius: 1,
+                          fontSize: '0.625rem',
+                          fontWeight: 700,
+                          flexShrink: 0
+                        }}
+                      >
+                        Inactive
+                      </Box>
+                    )}
                   </Box>
 
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleOpenEdit(worker, e)}
-                    sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
-                  >
-                    <EditIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-
-                  <IconButton
-                    size="small"
-                    onClick={(e) => handleOpenDelete(worker, e)}
-                    sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
-                  >
-                    <DeleteIcon sx={{ fontSize: 18 }} />
-                  </IconButton>
-
-                  <ChevronRightIcon sx={{ color: '#bdc7d9', fontSize: 18 }} />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
+                    {worker.phone ? (
+                      <Typography
+                        variant="caption"
+                        component="a"
+                        href={`tel:${worker.phone}`}
+                        onClick={(e) => e.stopPropagation()}
+                        sx={{
+                          color: '#555f6f',
+                          textDecoration: 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 0.3,
+                          fontSize: '0.75rem',
+                          '&:hover': { color: '#000000', textDecoration: 'underline' }
+                        }}
+                      >
+                        <PhoneIcon sx={{ fontSize: 13 }} /> {worker.phone}
+                      </Typography>
+                    ) : (
+                      <Typography variant="caption" sx={{ color: '#76777c', fontSize: '0.75rem' }}>
+                        No phone
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
               </Box>
-            </Box>
+
+              {/* Wage & Actions */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: 1 }}>
+                <Box
+                  sx={{
+                    bgcolor: '#f0f3ff',
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 1.5,
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    color: '#151c27'
+                  }}
+                >
+                  ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
+                </Box>
+
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleOpenEdit(worker, e)}
+                  sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
+                >
+                  <EditIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+
+                <IconButton
+                  size="small"
+                  onClick={(e) => handleOpenDelete(worker, e)}
+                  sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
+                >
+                  <DeleteIcon sx={{ fontSize: 18 }} />
+                </IconButton>
+
+                <ChevronRightIcon sx={{ color: '#bdc7d9', fontSize: 18 }} />
+              </Box>
+            </Card>
           ))}
-        </Card>
+        </Box>
       )}
 
       {/* Add / Edit Worker Modal */}

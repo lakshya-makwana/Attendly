@@ -11,7 +11,6 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  Paper,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -25,8 +24,7 @@ import {
   LocationOn as LocationIcon,
   DoneAll as DoneAllIcon,
   CalendarToday as CalendarIcon,
-  Person as PersonIcon,
-  Schedule as ScheduleIcon
+  Person as PersonIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { formatDateIndian, getTodayInputDate } from '../utils/dateUtils';
@@ -194,7 +192,7 @@ const Attendance = () => {
   const isToday = selectedDate === getTodayInputDate();
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 600, mx: 'auto', pb: 16 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, maxWidth: { xs: 600, md: 800 }, width: '100%', mx: 'auto', pb: { xs: 'calc(140px + env(safe-area-inset-bottom, 0px))', md: 10 } }}>
       {/* 1. Top Operational Bar: Date Capsule & Live Sync State */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.5 }}>
         <Box
@@ -374,7 +372,7 @@ const Attendance = () => {
               {markedRecords.length}
             </Typography>
             <Typography sx={{ fontWeight: 500, fontSize: '0.875rem', color: '#555f6f' }}>
-              / {workers.length} Marked
+              / {workers.length} Marked · {totalWorkUnits.toFixed(1)} units
             </Typography>
           </Box>
 
@@ -697,7 +695,7 @@ const Attendance = () => {
       <Box
         sx={{
           position: 'fixed',
-          bottom: { xs: 72, md: 24 },
+          bottom: { xs: 'calc(60px + env(safe-area-inset-bottom, 0px) + 12px)', md: 24 },
           left: 0,
           right: 0,
           px: 2.5,

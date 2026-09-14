@@ -102,7 +102,7 @@ const Payroll = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 640, mx: 'auto', pb: 8 }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* 1. Page Header & Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
@@ -352,111 +352,212 @@ const Payroll = () => {
             No worker activity recorded for {monthNames[selectedMonth - 1]} {selectedYear}.
           </Alert>
         ) : (
-          <Card
-            elevation={0}
-            sx={{
-              borderRadius: 3,
-              border: '1px solid #e2e8f8',
-              bgcolor: '#ffffff',
-              overflow: 'hidden'
-            }}
-          >
-            <TableContainer sx={{ overflowX: 'auto' }}>
-              <Table size="small" sx={{ minWidth: { xs: 520, sm: '100%' } }}>
-                <TableHead sx={{ bgcolor: '#f0f3ff' }}>
-                  <TableRow>
-                    <TableCell sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
-                      Worker
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
-                      Rate/day
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
-                      Units
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
-                      Gross
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
-                      Advances
-                    </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
-                      Net Payable
-                    </TableCell>
-                    <TableCell sx={{ width: 28, py: 1.25 }}></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {payrollData.rows.map((row, index) => {
-                    const hasAdvance = parseFloat(row.total_advances || 0) > 0;
-                    return (
-                      <TableRow
-                        key={row.worker_id}
-                        onClick={() => handleOpenSlip(row)}
-                        sx={{
-                          cursor: 'pointer',
-                          borderTop: index > 0 ? '1px solid #f0f3ff' : 'none',
-                          transition: 'background-color 0.12s ease',
-                          '&:hover': { bgcolor: '#f0f3ff' }
-                        }}
-                      >
-                        {/* Worker Name */}
-                        <TableCell sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
-                          {row.worker_name}
-                        </TableCell>
-
-                        {/* Rate / day */}
-                        <TableCell align="right" sx={{ color: '#555f6f', fontSize: '0.85rem', py: 1.5 }}>
-                          {formatCurrency(row.daily_wage)}
-                        </TableCell>
-
-                        {/* Work Units */}
-                        <TableCell align="right" sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
-                          {parseFloat(row.total_work_units).toFixed(1)}
-                        </TableCell>
-
-                        {/* Gross */}
-                        <TableCell align="right" sx={{ color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
-                          {formatCurrency(row.gross_earnings)}
-                        </TableCell>
-
-                        {/* Advance */}
-                        <TableCell
-                          align="right"
+          <>
+            {/* Mobile Worker Cards (< 600px) */}
+            <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1.5 }}>
+              {payrollData.rows.map((row) => {
+                const hasAdvance = parseFloat(row.total_advances || 0) > 0;
+                return (
+                  <Card
+                    key={row.worker_id}
+                    elevation={0}
+                    onClick={() => handleOpenSlip(row)}
+                    sx={{
+                      borderRadius: 3,
+                      border: '1px solid #e2e8f8',
+                      bgcolor: '#ffffff',
+                      p: 2,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      '&:active': { transform: 'scale(0.98)', bgcolor: '#f0f3ff' }
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                        <Box
                           sx={{
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                            color: hasAdvance ? '#ba1a1a' : '#555f6f',
-                            py: 1.5
-                          }}
-                        >
-                          {formatCurrency(row.total_advances)}
-                        </TableCell>
-
-                        {/* Net Payable */}
-                        <TableCell
-                          align="right"
-                          sx={{
-                            fontWeight: 800,
-                            fontSize: '0.9rem',
+                            width: 36,
+                            height: 36,
+                            borderRadius: '10px',
+                            bgcolor: '#f0f3ff',
                             color: '#151c27',
-                            py: 1.5
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            fontSize: '0.85rem'
                           }}
                         >
-                          {formatCurrency(row.net_payable)}
-                        </TableCell>
+                          {row.worker_name ? row.worker_name.charAt(0).toUpperCase() : 'W'}
+                        </Box>
+                        <Box>
+                          <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.925rem', lineHeight: 1.2 }}>
+                            {row.worker_name}
+                          </Typography>
+                          <Typography sx={{ color: '#555f6f', fontSize: '0.72rem', mt: 0.25 }}>
+                            Wage: {formatCurrency(row.daily_wage)}/day
+                          </Typography>
+                        </Box>
+                      </Box>
 
-                        {/* Chevron */}
-                        <TableCell sx={{ py: 1.5, pr: 1.5, textAlign: 'center' }}>
-                          <NextIcon sx={{ color: '#bdc7d9', fontSize: 16 }} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Card>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#151c27' }}>
+                          {formatCurrency(row.net_payable)}
+                        </Typography>
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#555f6f', textTransform: 'uppercase' }}>
+                          Net Payable
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: 1,
+                        p: 1.25,
+                        bgcolor: '#f9f9ff',
+                        borderRadius: 2,
+                        border: '1px solid #f0f3ff'
+                      }}
+                    >
+                      <Box>
+                        <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>Units</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27', mt: 0.25 }}>
+                          {parseFloat(row.total_work_units).toFixed(1)}
+                        </Typography>
+                      </Box>
+                      <Box>
+                        <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>Gross</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27', mt: 0.25 }}>
+                          {formatCurrency(row.gross_earnings)}
+                        </Typography>
+                      </Box>
+                      <Box sx={{ textAlign: 'right' }}>
+                        <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>Advances</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: hasAdvance ? '#ba1a1a' : '#555f6f', mt: 0.25 }}>
+                          {hasAdvance ? `-${formatCurrency(row.total_advances)}` : '₹0'}
+                        </Typography>
+                      </Box>
+                    </Box>
+
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, mt: 1.25, color: '#000000', fontSize: '0.75rem', fontWeight: 600 }}>
+                      <span>View Salary Slip</span>
+                      <NextIcon sx={{ fontSize: 14 }} />
+                    </Box>
+                  </Card>
+                );
+              })}
+            </Box>
+
+            {/* Desktop / Tablet Data Table (>= 600px) */}
+            <Card
+              elevation={0}
+              sx={{
+                display: { xs: 'none', sm: 'block' },
+                borderRadius: 3,
+                border: '1px solid #e2e8f8',
+                bgcolor: '#ffffff',
+                overflow: 'hidden'
+              }}
+            >
+              <TableContainer sx={{ overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 600 }}>
+                  <TableHead sx={{ bgcolor: '#f0f3ff' }}>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                        Worker
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                        Rate/day
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                        Units
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                        Gross
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                        Advances
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                        Net Payable
+                      </TableCell>
+                      <TableCell sx={{ width: 28, py: 1.25 }}></TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {payrollData.rows.map((row, index) => {
+                      const hasAdvance = parseFloat(row.total_advances || 0) > 0;
+                      return (
+                        <TableRow
+                          key={row.worker_id}
+                          onClick={() => handleOpenSlip(row)}
+                          sx={{
+                            cursor: 'pointer',
+                            borderTop: index > 0 ? '1px solid #f0f3ff' : 'none',
+                            transition: 'background-color 0.12s ease',
+                            '&:hover': { bgcolor: '#f0f3ff' }
+                          }}
+                        >
+                          {/* Worker Name */}
+                          <TableCell sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
+                            {row.worker_name}
+                          </TableCell>
+
+                          {/* Rate / day */}
+                          <TableCell align="right" sx={{ color: '#555f6f', fontSize: '0.85rem', py: 1.5 }}>
+                            {formatCurrency(row.daily_wage)}
+                          </TableCell>
+
+                          {/* Work Units */}
+                          <TableCell align="right" sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
+                            {parseFloat(row.total_work_units).toFixed(1)}
+                          </TableCell>
+
+                          {/* Gross */}
+                          <TableCell align="right" sx={{ color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
+                            {formatCurrency(row.gross_earnings)}
+                          </TableCell>
+
+                          {/* Advance */}
+                          <TableCell
+                            align="right"
+                            sx={{
+                              fontWeight: 600,
+                              fontSize: '0.85rem',
+                              color: hasAdvance ? '#ba1a1a' : '#555f6f',
+                              py: 1.5
+                            }}
+                          >
+                            {formatCurrency(row.total_advances)}
+                          </TableCell>
+
+                          {/* Net Payable */}
+                          <TableCell
+                            align="right"
+                            sx={{
+                              fontWeight: 800,
+                              fontSize: '0.9rem',
+                              color: '#151c27',
+                              py: 1.5
+                            }}
+                          >
+                            {formatCurrency(row.net_payable)}
+                          </TableCell>
+
+                          {/* Chevron */}
+                          <TableCell sx={{ py: 1.5, pr: 1.5, textAlign: 'center' }}>
+                            <NextIcon sx={{ color: '#bdc7d9', fontSize: 16 }} />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Card>
+          </>
         )}
       </Box>
 
