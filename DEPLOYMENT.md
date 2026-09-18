@@ -1,213 +1,288 @@
 # Attendly — Production Deployment Guide
 
-This guide walks you through deploying the **Attendly** workforce attendance and payroll PWA to production using:
-- **Neon PostgreSQL** for serverless database hosting
-- **Render Web Service** for the FastAPI backend
-- **Render Static Site** for the React + Vite frontend
+This guide documents the current production architecture and deployment process for **Attendly**, a progressive web application (PWA) for contractor workforce attendance, site tracking, advances, and payroll management.
 
 ---
 
-## Architecture Overview
+## Current Production Architecture
 
-```
-┌──────────────────────────────────────┐       ┌─────────────────────────────────────┐
-│  Render Static Site (Frontend)       │       │  Render Web Service (Backend)       │
-│  - Root Dir: frontend                │ HTTP  │  - Root Dir: backend                │
-│  - Build: npm install && npm build   ├──────►│  - Build: pip install -r reqs.txt   │
-│  - Publish: dist                     │ (CORS)│  - Start: uvicorn app.main:app      │
-│  - PWA: Manifest + Service Worker    │       │  - Port: $PORT, Host: 0.0.0.0       │
-└──────────────────────────────────────┘       └──────────────────┬──────────────────┘
-                                                                  │
-                                                                  │ SSL Connection
-                                                                  ▼
-                                               ┌─────────────────────────────────────┐
-                                               │  Neon PostgreSQL Database           │
-                                               │  - Pooled Connection String         │
-                                               │  - Auto-reconnect & pre-ping        │
-                                               └─────────────────────────────────────┘
-```
+Attendly is deployed and hosted on **Vercel** as a unified multi-service project linked to GitHub.
 
----
-
-## Step 1: Initialize Git and Push to GitHub
-
-From your project root (`Attendly`):
-
-```bash
-# Initialize git if not already initialized
-git init
-
-# Verify .gitignore is recognized (it excludes .env, node_modules, and venv)
-git status
-
-# Stage all files
-git add .
-
-# Create initial commit
-git commit -m "feat: production deployment setup for Render and Neon"
-
-# Create a new repository on GitHub (e.g. dad-attendance-pwa)
-# Then link and push:
-git remote add origin https://github.com/YOUR_USERNAME/dad-attendance-pwa.git
-git branch -M main
-git push -u origin main
+```text
+GitHub (main branch)
+       │
+       ▼ (Automatic Git Deployments)
+Vercel (Production Environment)
+   ├── Frontend Service: React + Vite + PWA (root: frontend/)
+   │     • Build: npm run build
+   │     • Output: dist/
+   │     • Routing: Vercel SPA rewrites to index.html
+   │
+   └── Backend Service: FastAPI + Python (root: backend/)
+         • Entrypoint: app.main:app
+         • API Routes: /api/* (routed via vercel.json)
+         │
+         ▼ (Encrypted SSL Connection)
+   PostgreSQL Database (Neon Serverless PostgreSQL)
+         • Tables: workers, sites, attendance, advances, admin_settings
+         • Automatic schema synchronization on startup
 ```
 
-> [!IMPORTANT]
-> The `.gitignore` file is configured to strictly exclude `.env`, `venv/`, and `node_modules/`. Real database credentials and tokens will **never** be committed to GitHub.
+---
+
+## Service Configuration (`vercel.json`)
+
+Vercel manages both the frontend and backend using the root [`vercel.json`](file:///Users/lakshya/Documents/Attendly/vercel.json) configuration:
+
+```json
+{
+  "services": {
+    "frontend": {
+      "root": "frontend/",
+      "framework": "vite"
+    },
+    "backend": {
+      "root": "backend/",
+      "entrypoint": "app.main:app"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": {
+        "service": "backend"
+      }
+    },
+    {
+      "source": "/(.*)",
+      "destination": {
+        "service": "frontend"
+      }
+    }
+  ]
+}
+```
+
+### Key Architectural Benefits:
+1. **Unified Domain**: Both the frontend application and backend API share the same Vercel production domain.
+2. **Zero CORS Friction**: Because `/api/*` is rewritten internally to the backend service, requests from the frontend are same-origin, eliminating cross-origin browser issues.
+3. **Automated Continuous Delivery**: Every commit pushed to GitHub's `main` branch triggers an automated Vercel deployment of both services.
 
 ---
 
-## Step 2: Create a Neon PostgreSQL Database
+## 1. Frontend Deployment
 
-1. Go to [Neon Console](https://console.neon.tech/) and sign in.
-2. Click **Create Project**:
-   - **Project name**: `contractor-attendance` (or any name you prefer)
-   - **Database name**: `neondb` (default)
-   - **Region**: Choose the region closest to your users (e.g., `Asia Pacific (Mumbai)` or `AWS US East`).
-3. Once created, in the **Dashboard**:
-   - Locate the **Connection Details** panel.
-   - Choose **Connection string** and check **Pooled connection** (recommended for serverless).
-   - The connection string will look like:
-     ```text
-     postgresql://neondb_owner:npg_AbCdEfGh1234@ep-cool-river-a1b2c3d4-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
-     ```
-   - Copy this connection string.
+- **Technology Stack**: React 19, Vite 8, Tailwind CSS v4, Material UI.
+- **Root Directory**: `frontend`
+- **Build Command**: `npm run build` (executes `vite build`)
+- **Publish / Output Directory**: `dist`
+- **Client Entry Point**: `src/main.jsx`
+- **Routing**: `react-router-dom` with client-side routes:
+  - `/` (Redirects to `/dashboard`)
+  - `/login` (Admin 6-digit MPIN authentication)
+  - `/dashboard` (Operational metrics, MTD payroll summary, active sites)
+  - `/attendance` (Daily shift muster roll with 0, 0.5, 1, 1.5, 2 unit logging)
+  - `/workers` (Worker registry, rate management, attendance/advance records)
+  - `/workers/:id` (Worker detailed ledger)
+  - `/sites` (Construction project sites management)
+  - `/advances` (Advance payout entries and ledger history)
+  - `/payroll` (Monthly payroll calculation, worker slips, settlement workflow)
 
 ---
 
-## Step 3: Deploy Backend on Render (Web Service)
+## 2. Backend Deployment
 
-1. Sign in to [Render Dashboard](https://dashboard.render.com/).
-2. Click **New +** > **Web Service**.
-3. Connect your GitHub repository (`dad-attendance-pwa`).
-4. Configure the Web Service settings:
+- **Technology Stack**: FastAPI 0.115.0, Uvicorn, Python 3.11+, SQLAlchemy 2.0.35, psycopg2-binary.
+- **Root Directory**: `backend`
+- **Entrypoint**: `app.main:app`
+- **Dependencies**: Listed in `backend/requirements.txt`.
+- **Database Initialization**: The backend automatically ensures database tables exist upon server startup inside FastAPI's async lifespan handler (`Base.metadata.create_all(bind=engine)`).
+- **Interactive Documentation**: Available at `/docs` (Swagger UI) and `/redoc` on your Vercel domain.
+- **Health Check Endpoint**: Available at `/health` (returns `{"status": "healthy"}`).
 
-| Setting | Value |
-| :--- | :--- |
-| **Name** | `dad-attendance-backend` (or your choice) |
-| **Region** | Choose the same region or closest to Neon |
-| **Branch** | `main` |
-| **Root Directory** | `backend` |
-| **Runtime** | `Python 3` |
-| **Build Command** | `pip install -r requirements.txt` |
-| **Start Command** | `uvicorn app.main:app --host 0.0.0.0 --port $PORT` |
-| **Plan** | Free (or Starter) |
+---
 
-5. Scroll down to **Environment Variables** and add the following:
+## 3. Environment Variables
 
-| Key | Value | Description |
-| :--- | :--- | :--- |
-| `DATABASE_URL` | *(Paste your Neon connection string from Step 2)* | Neon PostgreSQL connection |
-| `JWT_SECRET` | *(Generate a 32+ character random string)* | Secret for signing JWT tokens |
-| `ADMIN_MPIN` | `1234` *(or your custom 4-6 digit numeric PIN)* | MPIN your dad will enter to log in |
-| `FRONTEND_URL` | `http://localhost:5173` *(temporary placeholder until Step 5)* | Allowed CORS origin |
-| `PYTHON_VERSION` | `3.11.9` | Python runtime version |
+Environment variables are configured in the **Vercel Project Settings** under **Settings > Environment Variables**.
+
+### Backend Service Variables:
+
+| Variable Name | Required | Example / Format | Purpose |
+| :--- | :--- | :--- | :--- |
+| `DATABASE_URL` | **Yes** | `postgresql://user:pass@ep-xyz.aws.neon.tech/neondb?sslmode=require` | Pooled PostgreSQL connection string with SSL. |
+| `JWT_SECRET` | **Yes** | `f9c2d1b8...` (32+ character random hex string) | Cryptographic key used to sign and verify admin session JWTs. |
+| `ADMIN_MPIN` | **Yes** | `1234` (4 to 6-digit numeric string) | Admin PIN entered by the contractor on the login screen. |
+| `FRONTEND_URL` | Optional | `https://your-domain.vercel.app` | Comma-separated allowed CORS origins (used when accessing API from external domains). |
+| `ENVIRONMENT` | Optional | `production` | Environment flag (`production` or `development`). |
 
 > [!TIP]
-> To generate a secure `JWT_SECRET`, run in your local terminal:
+> Generate a secure `JWT_SECRET` locally using:
 > ```bash
 > openssl rand -hex 32
 > ```
 
-6. Click **Create Web Service**.
-7. Render will build and deploy the backend.
-8. Once deployment is marked **Live**:
-   - Note your backend URL (e.g., `https://dad-attendance-backend.onrender.com`).
-   - Test it by opening in your browser:
-     - `https://dad-attendance-backend.onrender.com/health` (should return `{"status": "healthy"}`)
-     - `https://dad-attendance-backend.onrender.com/docs` (interactive Swagger API docs)
+### Frontend Service Variables:
+
+| Variable Name | Required | Default if Omitted | Purpose |
+| :--- | :--- | :--- | :--- |
+| `VITE_API_URL` | Optional | `""` (defaults to `/api`) | Base API URL. In production Vercel, omit this variable or leave blank so requests use relative `/api` paths routed seamlessly by Vercel. |
 
 ---
 
-## Step 4: Deploy Frontend on Render (Static Site)
+## 4. How Frontend Connects to Backend
 
-1. In the [Render Dashboard](https://dashboard.render.com/), click **New +** > **Static Site**.
-2. Select your GitHub repository (`dad-attendance-pwa`).
-3. Configure the Static Site settings:
-
-| Setting | Value |
-| :--- | :--- |
-| **Name** | `dad-attendance-frontend` (or your choice) |
-| **Branch** | `main` |
-| **Root Directory** | `frontend` |
-| **Build Command** | `npm install && npm run build` |
-| **Publish Directory** | `dist` |
-
-4. Scroll to **Environment Variables** and add:
-
-| Key | Value | Description |
-| :--- | :--- | :--- |
-| `VITE_API_URL` | `https://dad-attendance-backend.onrender.com` | Your live Render backend URL from Step 3 |
-
-5. Click **Create Static Site**.
-6. Render will run `npm install && npm run build` and publish the site.
-7. Once finished, note your frontend URL (e.g., `https://dad-attendance-frontend.onrender.com`).
+1. The API client is configured in [`frontend/src/api/client.js`](file:///Users/lakshya/Documents/Attendly/frontend/src/api/client.js).
+2. When `VITE_API_URL` is omitted, `getBaseUrl()` defaults to relative `/api`.
+3. In production, Vercel's rewrite rule matches `/api/:path*` and forwards the request to the `backend` service.
+4. The client automatically:
+   - Attaches the contractor's JWT token via `Authorization: Bearer <token>` from `localStorage`.
+   - Handles `401 Unauthorized` responses by clearing credentials and redirecting to `/login`.
 
 ---
 
-## Step 5: Update Backend CORS with Frontend URL
+## 5. GitHub → Vercel Deployment Workflow
 
-1. In Render, go back to your **Backend Web Service** (`dad-attendance-backend`).
-2. Go to **Environment**.
-3. Find `FRONTEND_URL` and update it to your actual frontend URL:
-   ```text
-   FRONTEND_URL=https://dad-attendance-frontend.onrender.com
-   ```
-4. Click **Save Changes**. Render will automatically redeploy the backend with the new CORS configuration.
-
----
-
-## Step 6: Full Verification Checklist
-
-1. **Verify Backend**:
-   - Visit `https://dad-attendance-backend.onrender.com/health` &rarr; `{"status":"healthy"}`
-   - Visit `https://dad-attendance-backend.onrender.com/docs` &rarr; Swagger UI renders cleanly.
-2. **Verify Frontend & Authentication**:
-   - Visit `https://dad-attendance-frontend.onrender.com` &rarr; Redirects to `/login`.
-   - Enter your `ADMIN_MPIN` (e.g., `1234`) and tap **Login**.
-   - Dashboard loads with metrics and site overview.
-3. **Verify Routing & Refresh (404 Prevention)**:
-   - Navigate to `https://dad-attendance-frontend.onrender.com/attendance`
-   - Refresh the page &rarr; Should reload cleanly without 404 (handled by `_redirects`).
-   - Navigate to `/payroll` and `/workers` and refresh each &rarr; Works smoothly.
-4. **Verify Database Operations**:
-   - Add a worker (e.g. "Ramesh", ₹800/day).
-   - Add a work site (e.g. "Main Tower").
-   - Mark attendance on `/attendance` and click **Save Attendance**.
-   - Give an advance on `/advances` (e.g. ₹500).
-   - Check `/payroll` &rarr; Net payable reflects ₹800 − ₹500 = ₹300.
-   - In [Neon Console](https://console.neon.tech/), check the **Tables** tab &rarr; `workers`, `sites`, `attendance`, `advances`, `admin_settings` populated.
-5. **Verify PWA Installation on Mobile (Android & iOS)**:
-   - **Android (Chrome)**:
-     - Open `https://dad-attendance-frontend.onrender.com`.
-     - A banner or menu option **"Install app"** / **"Add to Home screen"** will appear.
-     - Tap Install &rarr; Attendly appears as a standalone app with the Attendly icon on the home screen.
-   - **iOS (Safari)**:
-     - Open `https://dad-attendance-frontend.onrender.com` in Safari.
-     - Tap the **Share** button (box with arrow pointing up).
-     - Tap **"Add to Home Screen"**.
-     - Attendly launches full-screen in standalone mode without browser URL bars.
+1. **Connect Repository**:
+   - The repository on GitHub is linked to the project in the [Vercel Dashboard](https://vercel.com).
+2. **Branch Tracking**:
+   - The `main` branch is designated as the Production branch.
+3. **Automated Deployments**:
+   - Pushing commits to `main` (`git push origin main`) immediately triggers a Vercel production build.
+   - Pull Requests and other branches generate isolated Preview Deployments.
+4. **Build Pipeline**:
+   - Vercel installs Python dependencies from `backend/requirements.txt`.
+   - Vercel installs Node dependencies from `frontend/package.json` and executes `npm run build`.
+   - Vercel deploys the build artifact and provisions HTTP routes per `vercel.json`.
 
 ---
 
-## Render Blueprint Alternative (`render.yaml`)
+## 6. Production Build & Verification Checklist
 
-If you prefer automated infrastructure as code, the repository includes a `render.yaml` file.
+Before pushing changes to `main`:
 
-1. In Render, click **New +** > **Blueprint**.
-2. Connect your repository.
-3. Render will detect `render.yaml` and configure both the backend and frontend services.
-4. Fill in the prompted values (`DATABASE_URL`, `ADMIN_MPIN`, etc.) and deploy.
+```bash
+# 1. Verify frontend build passes locally
+cd frontend
+npm run lint
+npm run build
+cd ..
+
+# 2. Verify git status is clean and secrets are not staged
+git status
+```
+
+### Post-Deployment Verification Steps:
+1. **Health Check**: Open `https://<your-vercel-domain>/health` &rarr; verify `{"status": "healthy"}`.
+2. **API Documentation**: Open `https://<your-vercel-domain>/docs` &rarr; verify Swagger UI renders.
+3. **Authentication**: Open `https://<your-vercel-domain>/login` &rarr; enter your configured `ADMIN_MPIN` &rarr; dashboard loads.
+4. **Client-Side Refresh**: Navigate to `/attendance` and `/payroll` &rarr; press browser reload &rarr; confirm no 404 error occurs.
+5. **Data Flow**: Add a test worker or check-in &rarr; verify instantaneous update and ledger persistence.
+
+---
+
+## 7. Local Development Setup
+
+To run the application locally on your computer:
+
+### Step 1: Start Backend
+```bash
+cd backend
+
+# Create virtual environment if not present
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start backend server on port 8001
+uvicorn app.main:app --reload --port 8001
+```
+
+### Step 2: Start Frontend
+```bash
+cd frontend
+
+# Install Node dependencies
+npm install
+
+# Start Vite dev server (runs on port 5174 or 5173)
+npm run dev
+```
+
+> [!NOTE]
+> During local development, [`frontend/vite.config.js`](file:///Users/lakshya/Documents/Attendly/frontend/vite.config.js) proxies `/api` requests directly to `http://localhost:8001`.
+
+---
+
+## 8. Safe Local Testing & Data Protection
+
+> [!CAUTION]
+> **PROTECT PRODUCTION DATA AT ALL TIMES**
+> 
+> Never allow local development or test suites to connect directly to the live production database.
+
+Follow these strict safety rules:
+1. **Local Database Only**:
+   - For local development and testing, use a local PostgreSQL database (e.g. `postgresql://localhost:5432/contractor_db`) or an isolated test database.
+   - Verify `DATABASE_URL` in `backend/.env` before launching local services.
+2. **Never Seed or Reset Production**:
+   - Do not run migration scripts, table drops, or seed scripts (`backend/scripts/seed.py`) against production URLs.
+3. **Protect Environment Secrets**:
+   - `.env` files are ignored in `.gitignore`. Never commit real credentials, database strings, or tokens to GitHub.
+4. **Zero Live Deployment During Tests**:
+   - Do not push experimental or unverified commits to `main`.
+
+---
+
+## 9. PWA (Progressive Web App) Deployment
+
+Attendly is engineered as an offline-capable, standalone mobile Progressive Web App.
+
+### PWA Components:
+- **Web App Manifest**: [`frontend/public/manifest.json`](file:///Users/lakshya/Documents/Attendly/frontend/public/manifest.json) defines app name (`Attendly`), theme color (`#0F172A`), background color (`#FFFFFF`), display mode (`standalone`), and app icons.
+- **Service Worker**: [`frontend/public/sw.js`](file:///Users/lakshya/Documents/Attendly/frontend/public/sw.js) caches core static assets for offline performance. Registered in `frontend/src/main.jsx` for all production builds (`!import.meta.env.DEV`).
+- **Icons**:
+  - `pwa-192x192.png`, `icon-192.png`, `icon-maskable-192.png`
+  - `pwa-512x512.png`, `icon-512.png`, `icon-maskable-512.png`
+  - `apple-touch-icon.png` (for iOS Safari home screen)
+- **HTTPS Enforcement**: Vercel automatically secures all traffic with SSL certificates, which is an absolute requirement for browsers to enable Service Workers and PWA installation.
+
+### Mobile Installation Instructions:
+- **Android (Chrome)**:
+  1. Navigate to the Attendly Vercel URL in Chrome.
+  2. Tap the browser menu (three dots) or the **"Install Attendly"** banner.
+  3. The app is installed directly to the home screen and launches without browser address bars.
+- **iOS (Safari)**:
+  1. Open the Attendly URL in Safari.
+  2. Tap the **Share** button (box with an upward arrow).
+  3. Scroll down and select **"Add to Home Screen"**.
+  4. Confirm the name **Attendly** and tap **Add**.
+
+---
+
+## 10. Payroll Cycle & Settlement Safety
+
+Attendly uses a contractor-controlled, cumulative payroll model designed specifically for field operations:
+- **No Automatic Calendar Month Resets**: The application does **not** reset payroll on the 1st of each calendar month.
+- **Contractor-Controlled Cycles**: A cycle runs continuously (e.g. Sept 11 &rarr; Oct 10) until the contractor reviews earnings, subtracts advances, pays workers, and manually clicks **"Settle & Start New Cycle"**.
+- **Historical Data Preservation**: The settlement process archives the cycle totals without deleting underlying attendance logs, advance transactions, worker profiles, or site history.
+
+---
+
+## Legacy Configuration Note (`render.yaml`)
+
+The repository contains a file named `render.yaml`. This file is **legacy / unused** from a previous hosting setup. It is retained strictly for archival reference and has no effect on the active Vercel deployment. Do not use or configure Render for this project.
 
 ---
 
 ## Troubleshooting Common Issues
 
-| Issue | Cause | Solution |
+| Issue | Cause | Resolution |
 | :--- | :--- | :--- |
-| **CORS error in browser console** | `FRONTEND_URL` on backend does not match frontend origin | Verify `FRONTEND_URL` in Render backend env matches your frontend domain exactly (no trailing slash). |
-| **Database connection error** | Neon connection string format | Ensure the URL begins with `postgresql://` and includes `?sslmode=require`. The app automatically normalizes `postgres://`. |
-| **Refreshing `/attendance` returns 404** | Static site rewrite missing | Ensure `frontend/public/_redirects` is in place. Vite copies it to `dist/_redirects` on build. |
-| **Cold start delay** | Render free tier sleeps after 15 mins of inactivity | First request after sleep may take ~30-50 seconds to spin up. Subsequent requests are immediate. Upgrade to Render Starter plan for zero sleep if needed. |
-| **PWA install prompt doesn't show** | Insecure HTTP connection or missing icon | Render serves over HTTPS automatically. Ensure `pwa-192x192.png`, `pwa-512x512.png`, and `manifest.json` are loaded. |
+| **API returns 404 on Vercel** | Missing rewrite rule or path mismatch | Verify `vercel.json` contains `"source": "/api/:path*", "destination": { "service": "backend" }`. |
+| **Database connection failure** | Malformed connection string or SSL mismatch | Verify `DATABASE_URL` in Vercel backend environment variables begins with `postgresql://` and includes `?sslmode=require`. |
+| **Refreshing client pages returns 404** | Client-side routing not rewritten to `index.html` | Ensure `vercel.json` includes `"source": "/(.*)", "destination": { "service": "frontend" }`. |
+| **PWA Install banner doesn't appear** | Non-HTTPS connection or cached manifest | Vercel provides HTTPS automatically. Ensure icons in `public/manifest.json` resolve with HTTP 200. |
+| **Session expires unexpectedly** | Invalid or rotated `JWT_SECRET` | Ensure `JWT_SECRET` is set consistently across Vercel deployments. |
