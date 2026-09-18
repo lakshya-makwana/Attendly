@@ -271,12 +271,6 @@ Attendly uses a contractor-controlled, cumulative payroll model designed specifi
 
 ---
 
-## Legacy Configuration Note (`render.yaml`)
-
-The repository contains a file named `render.yaml`. This file is **legacy / unused** from a previous hosting setup. It is retained strictly for archival reference and has no effect on the active Vercel deployment. Do not use or configure Render for this project.
-
----
-
 ## Troubleshooting Common Issues
 
 | Issue | Cause | Resolution |
