@@ -1,9 +1,8 @@
 // Attendly - Service Worker for PWA
-const CACHE_NAME = 'attendly-v2';
+const CACHE_NAME = 'attendly-v3';
 
 const STATIC_ASSETS = [
   '/',
-  '/login',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',
@@ -60,7 +59,7 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(() => cachedResponse);
+        .catch(() => cachedResponse || (event.request.mode === 'navigate' ? caches.match('/index.html') : null));
 
       return cachedResponse || fetchPromise;
     })

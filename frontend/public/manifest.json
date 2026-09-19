@@ -2,6 +2,7 @@
   "name": "Attendly",
   "short_name": "Attendly",
   "description": "Attendance management made simple.",
+  "id": "/login",
   "start_url": "/login",
   "scope": "/",
   "display": "standalone",
