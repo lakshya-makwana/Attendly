@@ -61,12 +61,27 @@ This document provides a technical reference for the **Attendly Backend API**, b
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "token_type": "bearer",
-  "app_title": "Attendly"
+  "app_title": "Attendly",
+  "is_demo": false
 }
 ```
 - **Errors**: `401 Unauthorized` if MPIN is incorrect.
 
-### 2.2 Verify Session
+### 2.2 Demo Account Login ("Try Demo")
+- **Method**: `POST`
+- **Route**: `/api/auth/demo-login`
+- **Auth Required**: No
+- **Response**: `200 OK`
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "token_type": "bearer",
+  "app_title": "Attendly (Demo)",
+  "is_demo": true
+}
+```
+
+### 2.3 Verify Session
 - **Method**: `GET`
 - **Route**: `/api/auth/verify`
 - **Auth Required**: Yes (`Bearer <token>`)
@@ -74,12 +89,14 @@ This document provides a technical reference for the **Attendly Backend API**, b
 ```json
 {
   "authenticated": true,
-  "role": "admin"
+  "role": "admin",
+  "account_id": 1,
+  "is_demo": false
 }
 ```
 - **Errors**: `401 Unauthorized` if token is missing, expired, or invalid.
 
-### 2.3 Change Admin MPIN
+### 2.4 Change Admin MPIN
 - **Method**: `POST`
 - **Route**: `/api/auth/change-mpin`
 - **Auth Required**: Yes (`Bearer <token>`)

@@ -3,6 +3,7 @@ const CACHE_NAME = 'attendly-v2';
 
 const STATIC_ASSETS = [
   '/',
+  '/login',
   '/index.html',
   '/manifest.json',
   '/favicon.ico',

@@ -5,10 +5,19 @@ from .config import settings, fix_database_url
 
 db_url = fix_database_url(settings.DATABASE_URL)
 
+# Safety check: sanitize and log the target database
+import urllib.parse
+try:
+    parsed_db = urllib.parse.urlparse(db_url)
+    sanitized_host = f"{parsed_db.hostname}:{parsed_db.port or 5432}{parsed_db.path}"
+    print(f"[DATABASE SAFETY] Connected to database target: {sanitized_host}")
+except Exception as e:
+    print(f"[DATABASE SAFETY] Could not parse DB URL: {e}")
+
 engine = create_engine(
     db_url,
-    pool_pre_ping=True,  # Crucial for Neon serverless auto-suspend and auto-reconnect
-    pool_recycle=300,    # Recycle idle connections every 5 mins to prevent dropped sockets
+    pool_pre_ping=True,
+    pool_recycle=300,
     pool_size=5,
     max_overflow=10,
 )

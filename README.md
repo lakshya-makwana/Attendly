@@ -57,7 +57,7 @@ Traditional construction contracting relies on physical paper diaries, fragmente
 | **Worker Management** | Crew Registry & Ledger | Worker profiles, daily wage rates, active/inactive toggle, phone call action, wage edit modal, and complete attendance/advance history. |
 | **Site Management** | Project Tracking | Construction site registry, site status toggles, and deletion protection against sites with historical records. |
 | **Advance Ledger** | Instant Payouts | Record cash or UPI advances with date and notes; immediate balance recalculation and deduplication. |
-| **Payroll Settlement** | End-of-Cycle Disbursals | Cumulative monthly payroll ledger, worker wage slips, advance deductions, and manual cycle settlement without automatic calendar month resets. |
+| **Monthly Payroll** | Automated Calendar Ledgers | Calendar-month payroll ledger (1st to last day), worker wage slips, advance deductions, and automatic monthly resets with full historical retention. |
 | **Site Analytics** | Cost Intelligence | Monthly labor expenditure breakdown per site, unique worker counts, and day-by-day cost auditing. |
 
 ---
@@ -100,10 +100,10 @@ Attendly models labor shifts using exact numeric units validated at both client 
 
 $$\text{Gross Wage for Entry} = \text{Work Units} \times \text{Worker Daily Wage}$$
 
-### 2. Manual Payroll Settlement (No Calendar Resets)
-- **Rule**: Attendly does **not** automatically reset payroll on the 1st of every calendar month.
-- **Contractor-Controlled**: A payroll cycle runs continuously until the contractor physically pays the workers and clicks **"Settle & Start New Cycle"** (e.g., September 11 &rarr; October 10).
-- **Historical Retention**: Settlement archives the period totals without deleting workers, sites, attendance entries, or advance records.
+### 2. Automatic Calendar-Month Payroll Reset
+- **Rule**: Payroll runs from the 1st through the last day of each calendar month.
+- **Automated Monthly Reset**: When a new calendar month begins, payroll calculations automatically start from ₹0.
+- **Historical Retention**: Past months remain permanently available in Payroll History without deleting attendance, advance, or worker records.
 
 $$\text{Net Payable Due} = \sum (\text{Gross Labour}) - \sum (\text{Advances Disbursed})$$
 
@@ -118,10 +118,10 @@ A database-level unique constraint (`uq_worker_attendance_date`) prevents record
 
 ## Authentication & Security
 
-- **Admin-Only**: Attendly is a dedicated single-tenant contractor tool. There are no worker portals, supervisor roles, or public user registrations.
-- **6-Digit MPIN**: Access is protected by a numeric MPIN (default `1234`, customizable in settings).
-- **Cryptographic Hashing**: The MPIN is hashed using Passlib `bcrypt` and stored in the `admin_settings` table.
-- **JWT Sessions**: Successful login issues a signed JSON Web Token (HS256) stored in client `localStorage` with a 30-day expiration window.
+- **Multi-Account Architecture**: Dedicated tenant isolation between Dad's production account (`account_id: 1`) and a sandboxed recruiter demo account (`account_id: 2`).
+- **MPIN Authentication**: Dad's account is protected by a 4-digit MPIN verified directly against a salted Bcrypt hash in PostgreSQL.
+- **Try Demo Flow**: Recruiter evaluation account with realistic fictional records, accessible via instant demo login without touching production data.
+- **JWT Sessions**: Successful authentication issues a signed JSON Web Token (HS256) encoding `account_id` and `is_demo`.
 - **Protected Routing**: Both client React Router guards (`ProtectedRoute`) and FastAPI dependency injection (`Depends(get_current_admin)`) reject unauthenticated requests.
 - **Data Safety**: No secrets or live production credentials are committed to version control (`.gitignore` enforces exclusions).
 

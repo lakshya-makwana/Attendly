@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Resolve API base URL from Vite environment variables (e.g. on Render: https://dad-backend.onrender.com)
+// Resolve API base URL from Vite environment variables (e.g. on Vercel or external domain)
 const rawApiUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.trim().replace(/\/+$/, '') : '';
 
 const getBaseUrl = () => {
@@ -21,7 +21,7 @@ const api = axios.create({
 
 // Attach JWT token to requests if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('contractor_token');
+  const token = sessionStorage.getItem('contractor_token') || localStorage.getItem('contractor_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -35,8 +35,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token and redirect to login if session has expired
+      // Clear token and session lock, then redirect to login
+      sessionStorage.removeItem('attendly_session_active');
+      sessionStorage.removeItem('contractor_token');
+      sessionStorage.removeItem('contractor_is_demo');
       localStorage.removeItem('contractor_token');
+      localStorage.removeItem('contractor_is_demo');
       if (window.location.pathname !== '/login') {
         window.location.href = '/login';
       }

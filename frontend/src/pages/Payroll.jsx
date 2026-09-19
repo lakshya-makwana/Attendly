@@ -191,19 +191,9 @@ const Payroll = () => {
                 '& .MuiSelect-select': { py: 0.25, pr: '22px !important' }
               }}
             >
-              {[
-                { y: 2026, m: 9 },
-                { y: 2026, m: 8 },
-                { y: 2026, m: 7 },
-                { y: 2026, m: 6 },
-                { y: 2026, m: 5 },
-                { y: 2026, m: 4 },
-                { y: 2026, m: 3 },
-                { y: 2026, m: 2 },
-                { y: 2026, m: 1 }
-              ].map(({ y, m }) => (
-                <MenuItem key={`${y}-${m}`} value={`${y}-${m}`} sx={{ fontSize: '0.8125rem' }}>
-                  {monthNames[m - 1]} {y}
+              {[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((m) => (
+                <MenuItem key={`${selectedYear}-${m}`} value={`${selectedYear}-${m}`} sx={{ fontSize: '0.8125rem' }}>
+                  {monthNames[m - 1]} {selectedYear}
                 </MenuItem>
               ))}
             </Select>

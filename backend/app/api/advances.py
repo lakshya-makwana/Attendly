@@ -9,17 +9,25 @@ from ..models.worker import Worker
 from ..models.advance import Advance
 from ..schemas.schemas import AdvanceCreate, AdvanceResponse
 
-router = APIRouter(prefix="/advances", tags=["Advances"], dependencies=[Depends(get_current_admin)])
+router = APIRouter(prefix="/advances", tags=["Advances"])
 
 @router.get("", response_model=List[AdvanceResponse])
 def get_advances(
     worker_id: Optional[int] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
 ):
-    query = db.query(Advance).join(Worker, Advance.worker_id == Worker.id)
+    account_id = current_admin["account_id"]
+    query = db.query(Advance).join(Worker, Advance.worker_id == Worker.id).filter(
+        Advance.account_id == account_id,
+        Worker.account_id == account_id
+    )
     if worker_id:
+        worker = db.query(Worker).filter(Worker.id == worker_id, Worker.account_id == account_id).first()
+        if not worker:
+            return []
         query = query.filter(Advance.worker_id == worker_id)
     if start_date:
         query = query.filter(Advance.date >= start_date)
@@ -41,12 +49,21 @@ def get_advances(
     return result
 
 @router.post("", response_model=AdvanceResponse, status_code=status.HTTP_201_CREATED)
-def record_advance(advance_in: AdvanceCreate, db: Session = Depends(get_db)):
-    worker = db.query(Worker).filter(Worker.id == advance_in.worker_id).first()
+def record_advance(
+    advance_in: AdvanceCreate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    worker = db.query(Worker).filter(
+        Worker.id == advance_in.worker_id,
+        Worker.account_id == account_id
+    ).first()
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
 
     adv = Advance(
+        account_id=account_id,
         worker_id=advance_in.worker_id,
         amount=advance_in.amount,
         date=advance_in.date,
@@ -67,8 +84,16 @@ def record_advance(advance_in: AdvanceCreate, db: Session = Depends(get_db)):
     )
 
 @router.delete("/{advance_id}", status_code=status.HTTP_200_OK)
-def delete_advance(advance_id: int, db: Session = Depends(get_db)):
-    adv = db.query(Advance).filter(Advance.id == advance_id).first()
+def delete_advance(
+    advance_id: int,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    adv = db.query(Advance).filter(
+        Advance.id == advance_id,
+        Advance.account_id == account_id
+    ).first()
     if not adv:
         raise HTTPException(status_code=404, detail="Advance transaction not found")
 

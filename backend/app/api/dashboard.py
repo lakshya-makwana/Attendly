@@ -11,24 +11,39 @@ from ..models.attendance import Attendance
 from ..models.advance import Advance
 from ..schemas.schemas import DashboardMetricsResponse
 
-router = APIRouter(prefix="/dashboard", tags=["Dashboard"], dependencies=[Depends(get_current_admin)])
+router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
 @router.get("", response_model=DashboardMetricsResponse)
-def get_dashboard_metrics(db: Session = Depends(get_db)):
+def get_dashboard_metrics(
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
     today = date.today()
 
-    # Active workers and sites
-    active_workers_count = db.query(Worker).filter(Worker.is_active == True).count()
-    active_sites_count = db.query(Site).filter(Site.is_active == True).count()
+    # Active workers and sites scoped to account
+    active_workers_count = db.query(Worker).filter(
+        Worker.account_id == account_id,
+        Worker.is_active == True
+    ).count()
+    active_sites_count = db.query(Site).filter(
+        Site.account_id == account_id,
+        Site.is_active == True
+    ).count()
 
-    # Today's attendance records
-    today_records = db.query(Attendance).filter(Attendance.date == today).all()
+    # Today's attendance records scoped to account
+    today_records = db.query(Attendance).filter(
+        Attendance.account_id == account_id,
+        Attendance.date == today
+    ).all()
     today_marked_count = len(today_records)
     today_unmarked_count = max(0, active_workers_count - today_marked_count)
     today_work_units = sum((Decimal(str(a.work_units)) for a in today_records), Decimal("0.0"))
 
-    # Current month's financial calculations
+    # Current month's financial calculations scoped to account
     month_attendances = db.query(Attendance).join(Worker, Attendance.worker_id == Worker.id).filter(
+        Attendance.account_id == account_id,
+        Worker.account_id == account_id,
         extract("year", Attendance.date) == today.year,
         extract("month", Attendance.date) == today.month
     ).all()
@@ -38,6 +53,7 @@ def get_dashboard_metrics(db: Session = Depends(get_db)):
         current_month_gross += Decimal(str(att.work_units)) * att.worker.daily_wage
 
     month_advances = db.query(Advance).filter(
+        Advance.account_id == account_id,
         extract("year", Advance.date) == today.year,
         extract("month", Advance.date) == today.month
     ).all()

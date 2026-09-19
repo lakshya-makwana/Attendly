@@ -112,7 +112,7 @@ Environment variables are configured in the **Vercel Project Settings** under **
 | :--- | :--- | :--- | :--- |
 | `DATABASE_URL` | **Yes** | `postgresql://user:pass@ep-xyz.aws.neon.tech/neondb?sslmode=require` | Pooled PostgreSQL connection string with SSL. |
 | `JWT_SECRET` | **Yes** | `f9c2d1b8...` (32+ character random hex string) | Cryptographic key used to sign and verify admin session JWTs. |
-| `ADMIN_MPIN` | **Yes** | `1234` (4 to 6-digit numeric string) | Admin PIN entered by the contractor on the login screen. |
+| `ADMIN_MPIN` | Optional | `1234` | Cold-start seed fallback only if `admin_settings` is completely empty. Not used for normal login verification (MPIN is verified against PostgreSQL hash). |
 | `FRONTEND_URL` | Optional | `https://your-domain.vercel.app` | Comma-separated allowed CORS origins (used when accessing API from external domains). |
 | `ENVIRONMENT` | Optional | `production` | Environment flag (`production` or `development`). |
 
@@ -262,12 +262,12 @@ Attendly is engineered as an offline-capable, standalone mobile Progressive Web 
 
 ---
 
-## 10. Payroll Cycle & Settlement Safety
+## 10. Automatic Monthly Payroll Reset
 
-Attendly uses a contractor-controlled, cumulative payroll model designed specifically for field operations:
-- **No Automatic Calendar Month Resets**: The application does **not** reset payroll on the 1st of each calendar month.
-- **Contractor-Controlled Cycles**: A cycle runs continuously (e.g. Sept 11 &rarr; Oct 10) until the contractor reviews earnings, subtracts advances, pays workers, and manually clicks **"Settle & Start New Cycle"**.
-- **Historical Data Preservation**: The settlement process archives the cycle totals without deleting underlying attendance logs, advance transactions, worker profiles, or site history.
+Attendly uses a calendar-month payroll model designed specifically for field labor accounting:
+- **Automatic Calendar Month Reset**: Payroll calculations run from the 1st through the last day of each calendar month. When a new month begins, payroll metrics automatically start from ₹0.
+- **Permanent Historical Preservation**: Past calendar months remain permanently selectable and fully detailed in the Payroll History ledger.
+- **Zero Data Loss**: Monthly resets are non-destructive; all underlying attendance logs, advance records, worker wage histories, and site links remain permanently intact.
 
 ---
 

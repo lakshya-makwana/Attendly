@@ -45,7 +45,26 @@ def get_current_admin(credentials: Optional[HTTPAuthorizationCredentials] = Depe
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Access denied. Admin privileges required.",
             )
-        return payload
+
+        # Resolve account_id from payload (default to 1 for backward compatibility with legacy tokens)
+        account_id = payload.get("account_id")
+        if account_id is None:
+            sub = payload.get("sub")
+            if sub and str(sub).isdigit():
+                account_id = int(sub)
+            else:
+                account_id = 1
+        else:
+            account_id = int(account_id)
+
+        is_demo = bool(payload.get("is_demo", False))
+
+        return {
+            "account_id": account_id,
+            "is_demo": is_demo,
+            "role": role,
+            "sub": payload.get("sub")
+        }
     except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -19,6 +19,7 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     app_title: str = "Attendly"
+    is_demo: bool = False
 
 class ChangeMPINRequest(BaseModel):
     current_mpin: str

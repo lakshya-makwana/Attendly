@@ -14,22 +14,30 @@ from ..schemas.schemas import (
     AttendanceResponse
 )
 
-router = APIRouter(prefix="/attendance", tags=["Attendance"], dependencies=[Depends(get_current_admin)])
+router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
 @router.get("/by-date", response_model=DailyAttendanceResponse)
 def get_daily_attendance(
     target_date: Optional[date] = Query(default=None, alias="date"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
 ):
+    account_id = current_admin["account_id"]
     selected_date = target_date or date.today()
-    workers = db.query(Worker).filter(Worker.is_active == True).order_by(Worker.name.asc()).all()
+    workers = db.query(Worker).filter(
+        Worker.account_id == account_id,
+        Worker.is_active == True
+    ).order_by(Worker.name.asc()).all()
 
-    # Existing attendance records for this date
-    records = db.query(Attendance).filter(Attendance.date == selected_date).all()
+    # Existing attendance records for this date scoped to account
+    records = db.query(Attendance).filter(
+        Attendance.account_id == account_id,
+        Attendance.date == selected_date
+    ).all()
     record_map = {r.worker_id: r for r in records}
 
-    # Fetch all sites to map names
-    sites = db.query(Site).all()
+    # Fetch sites belonging to account to map names
+    sites = db.query(Site).filter(Site.account_id == account_id).all()
     site_map = {s.id: s.name for s in sites}
 
     rows = []
@@ -78,24 +86,39 @@ def get_daily_attendance(
 @router.post("/batch-save", status_code=status.HTTP_200_OK)
 def batch_save_attendance(
     payload: AttendanceBatchSaveRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
 ):
+    account_id = current_admin["account_id"]
     target_date = payload.date
     saved_count = 0
 
     for item in payload.records:
-        worker = db.query(Worker).filter(Worker.id == item.worker_id).first()
+        # Verify worker belongs to current account
+        worker = db.query(Worker).filter(
+            Worker.id == item.worker_id,
+            Worker.account_id == account_id
+        ).first()
         if not worker:
             continue
 
         existing = db.query(Attendance).filter(
             Attendance.worker_id == item.worker_id,
+            Attendance.account_id == account_id,
             Attendance.date == target_date
         ).first()
 
         units = Decimal(str(item.work_units)).quantize(Decimal("0.1"))
-        # If 0 (absent), site_id can be null or kept
-        site_id_to_save = item.site_id if units > Decimal("0") else None
+
+        # Verify site belongs to current account if provided
+        site_id_to_save = None
+        if units > Decimal("0") and item.site_id:
+            site = db.query(Site).filter(
+                Site.id == item.site_id,
+                Site.account_id == account_id
+            ).first()
+            if site:
+                site_id_to_save = site.id
 
         if existing:
             existing.work_units = units
@@ -103,6 +126,7 @@ def batch_save_attendance(
             existing.notes = item.notes
         else:
             new_att = Attendance(
+                account_id=account_id,
                 worker_id=item.worker_id,
                 site_id=site_id_to_save,
                 date=target_date,
@@ -122,13 +146,26 @@ def get_attendance_history(
     site_id: Optional[int] = None,
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
 ):
-    query = db.query(Attendance)
+    account_id = current_admin["account_id"]
+    query = db.query(Attendance).filter(Attendance.account_id == account_id)
+
     if worker_id:
+        # Ensure worker belongs to account
+        worker = db.query(Worker).filter(Worker.id == worker_id, Worker.account_id == account_id).first()
+        if not worker:
+            return []
         query = query.filter(Attendance.worker_id == worker_id)
+
     if site_id:
+        # Ensure site belongs to account
+        site = db.query(Site).filter(Site.id == site_id, Site.account_id == account_id).first()
+        if not site:
+            return []
         query = query.filter(Attendance.site_id == site_id)
+
     if start_date:
         query = query.filter(Attendance.date >= start_date)
     if end_date:
@@ -137,8 +174,16 @@ def get_attendance_history(
     return query.order_by(desc(Attendance.date), desc(Attendance.created_at)).limit(200).all()
 
 @router.delete("/{attendance_id}", status_code=status.HTTP_200_OK)
-def delete_attendance(attendance_id: int, db: Session = Depends(get_db)):
-    rec = db.query(Attendance).filter(Attendance.id == attendance_id).first()
+def delete_attendance(
+    attendance_id: int,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    rec = db.query(Attendance).filter(
+        Attendance.id == attendance_id,
+        Attendance.account_id == account_id
+    ).first()
     if not rec:
         raise HTTPException(status_code=404, detail="Attendance record not found")
     db.delete(rec)

@@ -13,24 +13,27 @@ from ..schemas.schemas import (
     MonthlySiteAnalyticsResponse, SiteAnalyticsItem, SiteWorkerDetail, SiteDateWorkDetail
 )
 
-router = APIRouter(prefix="/sites/analytics", tags=["Site Analytics"], dependencies=[Depends(get_current_admin)])
+router = APIRouter(prefix="/sites/analytics", tags=["Site Analytics"])
 
 @router.get("", response_model=MonthlySiteAnalyticsResponse)
 def get_site_monthly_analytics(
     year: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
 ):
+    account_id = current_admin["account_id"]
     today = date.today()
     target_year = year or today.year
     target_month = month or today.month
 
-    # All sites (active and inactive, to preserve historical view)
-    sites = db.query(Site).order_by(Site.name.asc()).all()
+    # All sites belonging to account (active and inactive, to preserve historical view)
+    sites = db.query(Site).filter(Site.account_id == account_id).order_by(Site.name.asc()).all()
 
-    # Query all attendance records for target year and month where site_id is not null and work_units > 0
-    # Do NOT count absent records toward site workers or site expenses!
+    # Query attendance records for target year and month where site_id is not null and work_units > 0
     attendances = db.query(Attendance).join(Worker, Attendance.worker_id == Worker.id).filter(
+        Attendance.account_id == account_id,
+        Worker.account_id == account_id,
         Attendance.site_id.isnot(None),
         Attendance.work_units > Decimal("0"),
         extract("year", Attendance.date) == target_year,

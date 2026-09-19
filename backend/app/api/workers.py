@@ -15,18 +15,29 @@ from ..schemas.schemas import (
     WorkerAttendanceHistoryItem, AdvanceResponse
 )
 
-router = APIRouter(prefix="/workers", tags=["Workers"], dependencies=[Depends(get_current_admin)])
+router = APIRouter(prefix="/workers", tags=["Workers"])
 
 @router.get("", response_model=List[WorkerResponse])
-def get_workers(active_only: bool = False, db: Session = Depends(get_db)):
-    query = db.query(Worker)
+def get_workers(
+    active_only: bool = False,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    query = db.query(Worker).filter(Worker.account_id == account_id)
     if active_only:
         query = query.filter(Worker.is_active == True)
     return query.order_by(Worker.name.asc()).all()
 
 @router.post("", response_model=WorkerResponse, status_code=status.HTTP_201_CREATED)
-def create_worker(worker_in: WorkerCreate, db: Session = Depends(get_db)):
+def create_worker(
+    worker_in: WorkerCreate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
     worker = Worker(
+        account_id=account_id,
         name=worker_in.name.strip(),
         phone=worker_in.phone.strip() if worker_in.phone else None,
         daily_wage=worker_in.daily_wage,
@@ -38,8 +49,14 @@ def create_worker(worker_in: WorkerCreate, db: Session = Depends(get_db)):
     return worker
 
 @router.put("/{worker_id}", response_model=WorkerResponse)
-def update_worker(worker_id: int, worker_in: WorkerUpdate, db: Session = Depends(get_db)):
-    worker = db.query(Worker).filter(Worker.id == worker_id).first()
+def update_worker(
+    worker_id: int,
+    worker_in: WorkerUpdate,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    worker = db.query(Worker).filter(Worker.id == worker_id, Worker.account_id == account_id).first()
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
 
@@ -57,8 +74,13 @@ def update_worker(worker_id: int, worker_in: WorkerUpdate, db: Session = Depends
     return worker
 
 @router.patch("/{worker_id}/toggle-status", response_model=WorkerResponse)
-def toggle_worker_status(worker_id: int, db: Session = Depends(get_db)):
-    worker = db.query(Worker).filter(Worker.id == worker_id).first()
+def toggle_worker_status(
+    worker_id: int,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    worker = db.query(Worker).filter(Worker.id == worker_id, Worker.account_id == account_id).first()
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
 
@@ -68,8 +90,13 @@ def toggle_worker_status(worker_id: int, db: Session = Depends(get_db)):
     return worker
 
 @router.delete("/{worker_id}", status_code=status.HTTP_200_OK)
-def delete_worker(worker_id: int, db: Session = Depends(get_db)):
-    worker = db.query(Worker).filter(Worker.id == worker_id).first()
+def delete_worker(
+    worker_id: int,
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    worker = db.query(Worker).filter(Worker.id == worker_id, Worker.account_id == account_id).first()
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
 
@@ -82,9 +109,11 @@ def get_worker_detail(
     worker_id: int,
     year: Optional[int] = Query(None),
     month: Optional[int] = Query(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
 ):
-    worker = db.query(Worker).filter(Worker.id == worker_id).first()
+    account_id = current_admin["account_id"]
+    worker = db.query(Worker).filter(Worker.id == worker_id, Worker.account_id == account_id).first()
     if not worker:
         raise HTTPException(status_code=404, detail="Worker not found")
 
@@ -92,8 +121,9 @@ def get_worker_detail(
     target_year = year or today.year
     target_month = month or today.month
 
-    # Current month attendance
+    # Current month attendance scoped to account
     month_attendances = db.query(Attendance).filter(
+        Attendance.account_id == account_id,
         Attendance.worker_id == worker_id,
         extract("year", Attendance.date) == target_year,
         extract("month", Attendance.date) == target_month
@@ -107,8 +137,9 @@ def get_worker_detail(
         month_work_units += units
         gross_earnings += units * worker.daily_wage
 
-    # Current month advances
+    # Current month advances scoped to account
     month_advances = db.query(Advance).filter(
+        Advance.account_id == account_id,
         Advance.worker_id == worker_id,
         extract("year", Advance.date) == target_year,
         extract("month", Advance.date) == target_month
@@ -116,13 +147,15 @@ def get_worker_detail(
     month_total_advances = sum((a.amount for a in month_advances), Decimal("0.00"))
     month_net_payable = gross_earnings - month_total_advances
 
-    # All time advances
+    # All time advances scoped to account
     all_advances_sum = db.query(func.coalesce(func.sum(Advance.amount), Decimal("0.00"))).filter(
+        Advance.account_id == account_id,
         Advance.worker_id == worker_id
     ).scalar()
 
-    # Recent attendances (last 50 records)
+    # Recent attendances (last 50 records) scoped to account
     recent_att = db.query(Attendance).filter(
+        Attendance.account_id == account_id,
         Attendance.worker_id == worker_id
     ).order_by(desc(Attendance.date)).limit(50).all()
 
@@ -139,13 +172,16 @@ def get_worker_detail(
             wage_earned=earned
         ))
 
-    # Recent advances (last 30)
+    # Recent advances (last 30) scoped to account
     recent_adv = db.query(Advance).filter(
+        Advance.account_id == account_id,
         Advance.worker_id == worker_id
     ).order_by(desc(Advance.date), desc(Advance.created_at)).limit(30).all()
 
-    # Unique sites worked
+    # Unique sites worked scoped to account
     site_names = db.query(Site.name).join(Attendance, Attendance.site_id == Site.id).filter(
+        Attendance.account_id == account_id,
+        Site.account_id == account_id,
         Attendance.worker_id == worker_id,
         Attendance.work_units > Decimal("0")
     ).distinct().all()

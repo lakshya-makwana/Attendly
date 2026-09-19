@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 *.local
+*.dump
+*backup*.sql
+*backup*.json
 
 # Python & Virtual Environments
 __pycache__/

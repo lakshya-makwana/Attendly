@@ -8,6 +8,7 @@ class Advance(Base):
     __tablename__ = "advances"
 
     id = Column(Integer, primary_key=True, index=True)
+    account_id = Column(Integer, ForeignKey("admin_settings.id", ondelete="CASCADE"), nullable=False, index=True)
     worker_id = Column(Integer, ForeignKey("workers.id", ondelete="CASCADE"), nullable=False, index=True)
     amount = Column(Numeric(10, 2), nullable=False, default=Decimal("0.00"))
     date = Column(Date, nullable=False, index=True)

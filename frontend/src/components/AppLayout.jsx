@@ -18,7 +18,9 @@ import {
   DialogContent,
   DialogActions,
   Button,
-  Divider
+  Divider,
+  Chip,
+  Tooltip
 } from '@mui/material';
 import {
   DashboardOutlined as DashboardIcon,
@@ -31,7 +33,8 @@ import {
   Menu as MenuIcon,
   LockOutlined as LockIcon,
   Close as CloseIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  ScienceOutlined as DemoIcon
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
@@ -56,7 +59,7 @@ const BOTTOM_NAV_ITEMS = [
 const AppLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout, appTitle } = useAuth();
+  const { logout, appTitle, isDemo } = useAuth();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
@@ -180,7 +183,29 @@ const AppLayout = () => {
           </Box>
 
           {/* Right Controls: Lock & Profile */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+            {isDemo && (
+              <Tooltip title="Recruiter Demo Mode: All data is fictional and completely isolated from production." arrow>
+                <Chip
+                  icon={<DemoIcon sx={{ fontSize: '14px !important', color: '#1e40af !important' }} />}
+                  label="Demo Account"
+                  size="small"
+                  sx={{
+                    height: 26,
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    bgcolor: '#eff6ff',
+                    color: '#1e40af',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: 9999,
+                    letterSpacing: '0.02em',
+                    cursor: 'default',
+                    '& .MuiChip-label': { px: 1 }
+                  }}
+                />
+              </Tooltip>
+            )}
+
             <IconButton
               onClick={() => setLogoutDialogOpen(true)}
               aria-label="Lock application"
@@ -263,6 +288,21 @@ const AppLayout = () => {
               <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>
                 Workforce Management
               </Typography>
+              {isDemo && (
+                <Chip
+                  label="Demo Account"
+                  size="small"
+                  sx={{
+                    height: 18,
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    bgcolor: '#eff6ff',
+                    color: '#1e40af',
+                    border: '1px solid #bfdbfe',
+                    mt: 0.5
+                  }}
+                />
+              )}
             </Box>
           </Box>
           <IconButton size="small" onClick={() => setDrawerOpen(false)} sx={{ color: '#555f6f' }}>
