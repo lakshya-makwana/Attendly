@@ -68,6 +68,7 @@ def root():
     }
 
 @app.get("/health", tags=["System"])
+@app.get("/api/health", tags=["System"])
 def health_check():
     return {
         "status": "healthy"

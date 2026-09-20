@@ -23,11 +23,40 @@
       }
     },
     {
-      "source": "/((?!(api$|api/|.*\\.)).*)$",
-      "destination": {
-        "service": "frontend",
-        "path": "/index.html"
-      }
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/attendance",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/workers/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/workers",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sites",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/advances",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/payroll",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/analytics",
+      "destination": "/index.html"
     },
     {
       "source": "/(.*)",
