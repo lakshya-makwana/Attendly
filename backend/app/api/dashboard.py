@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import extract
 from ..core.database import get_db
 from ..core.security import get_current_admin
@@ -41,7 +41,9 @@ def get_dashboard_metrics(
     today_work_units = sum((Decimal(str(a.work_units)) for a in today_records), Decimal("0.0"))
 
     # Current month's financial calculations scoped to account
-    month_attendances = db.query(Attendance).join(Worker, Attendance.worker_id == Worker.id).filter(
+    month_attendances = db.query(Attendance).join(Worker, Attendance.worker_id == Worker.id).options(
+        selectinload(Attendance.worker)
+    ).filter(
         Attendance.account_id == account_id,
         Worker.account_id == account_id,
         extract("year", Attendance.date) == today.year,
