@@ -20,12 +20,15 @@ router = APIRouter(prefix="/workers", tags=["Workers"])
 @router.get("", response_model=List[WorkerResponse])
 def get_workers(
     active_only: bool = False,
+    is_active: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
     current_admin: dict = Depends(get_current_admin)
 ):
     account_id = current_admin["account_id"]
     query = db.query(Worker).filter(Worker.account_id == account_id)
-    if active_only:
+    if is_active is not None:
+        query = query.filter(Worker.is_active == is_active)
+    elif active_only:
         query = query.filter(Worker.is_active == True)
     return query.order_by(Worker.name.asc()).all()
 
@@ -41,7 +44,7 @@ def create_worker(
         name=worker_in.name.strip(),
         phone=worker_in.phone.strip() if worker_in.phone else None,
         daily_wage=worker_in.daily_wage,
-        is_active=True
+        is_active=worker_in.is_active if worker_in.is_active is not None else True
     )
     db.add(worker)
     db.commit()

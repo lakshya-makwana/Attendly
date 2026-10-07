@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, or_
 from ..core.database import get_db
 from ..core.security import get_current_admin
 from ..models.worker import Worker
@@ -24,10 +24,6 @@ def get_daily_attendance(
 ):
     account_id = current_admin["account_id"]
     selected_date = target_date or date.today()
-    workers = db.query(Worker).filter(
-        Worker.account_id == account_id,
-        Worker.is_active == True
-    ).order_by(Worker.name.asc()).all()
 
     # Existing attendance records for this date scoped to account
     records = db.query(Attendance).filter(
@@ -35,6 +31,19 @@ def get_daily_attendance(
         Attendance.date == selected_date
     ).all()
     record_map = {r.worker_id: r for r in records}
+
+    # Active workers, plus any inactive workers who already have attendance on this date
+    # Inactive workers without attendance on selected_date are excluded from new attendance selection
+    if record_map:
+        workers = db.query(Worker).filter(
+            Worker.account_id == account_id,
+            or_(Worker.is_active == True, Worker.id.in_(list(record_map.keys())))
+        ).order_by(Worker.name.asc()).all()
+    else:
+        workers = db.query(Worker).filter(
+            Worker.account_id == account_id,
+            Worker.is_active == True
+        ).order_by(Worker.name.asc()).all()
 
     # Fetch sites belonging to account to map names
     sites = db.query(Site).filter(Site.account_id == account_id).all()
@@ -55,6 +64,7 @@ def get_daily_attendance(
                 worker_name=w.name,
                 phone=w.phone,
                 daily_wage=w.daily_wage,
+                is_active=w.is_active,
                 site_id=rec.site_id,
                 site_name=site_map.get(rec.site_id) if rec.site_id else None,
                 work_units=units,
@@ -66,6 +76,7 @@ def get_daily_attendance(
                 worker_name=w.name,
                 phone=w.phone,
                 daily_wage=w.daily_wage,
+                is_active=w.is_active,
                 site_id=None,
                 site_name=None,
                 work_units=None,

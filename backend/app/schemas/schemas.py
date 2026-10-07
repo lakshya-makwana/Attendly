@@ -40,7 +40,7 @@ class WorkerBase(BaseModel):
     daily_wage: Decimal = Field(..., ge=0, description="Daily wage in rupees")
 
 class WorkerCreate(WorkerBase):
-    pass
+    is_active: Optional[bool] = True
 
 class WorkerUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=120)
@@ -118,6 +118,7 @@ class DailyAttendanceRow(BaseModel):
     worker_name: str
     daily_wage: Decimal
     phone: Optional[str] = None
+    is_active: bool = True
     site_id: Optional[int] = None
     site_name: Optional[str] = None
     work_units: Optional[Decimal] = None
