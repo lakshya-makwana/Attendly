@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import desc
 from ..core.database import get_db
 from ..core.security import get_current_admin
@@ -20,7 +20,9 @@ def get_advances(
     current_admin: dict = Depends(get_current_admin)
 ):
     account_id = current_admin["account_id"]
-    query = db.query(Advance).join(Worker, Advance.worker_id == Worker.id).filter(
+    query = db.query(Advance).options(
+        selectinload(Advance.worker)
+    ).join(Worker, Advance.worker_id == Worker.id).filter(
         Advance.account_id == account_id,
         Worker.account_id == account_id
     )
