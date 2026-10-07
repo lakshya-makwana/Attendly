@@ -229,38 +229,52 @@ def run_security_tests():
     print("✔ Test 13: Demo advance visible and manageable ONLY by Demo account.")
 
     # 10. Automatic Monthly Reset & Cross-Account Isolation
-    # September 2026 payroll (current month with shifts)
+    # September 2026 payroll (baseline month with shifts)
     demo_sept = client.get("/api/payroll/monthly?year=2026&month=9", headers=demo_headers).json()
     dad_sept = client.get("/api/payroll/monthly?year=2026&month=9", headers=dad_headers).json()
     assert Decimal(str(demo_sept["total_gross_wages"])) > Decimal("0.00")
     assert Decimal(str(dad_sept["total_gross_wages"])) > Decimal("0.00")
 
-    # October 2026 payroll (new month begins - automatic reset to ₹0 without deleting any historical records)
-    demo_oct_init = client.get("/api/payroll/monthly?year=2026&month=10", headers=demo_headers).json()
-    dad_oct_init = client.get("/api/payroll/monthly?year=2026&month=10", headers=dad_headers).json()
-    assert Decimal(str(demo_oct_init["total_gross_wages"])) == Decimal("0.00")
-    assert Decimal(str(demo_oct_init["total_advances"])) == Decimal("0.00")
-    assert Decimal(str(demo_oct_init["total_net_payable"])) == Decimal("0.00")
-    assert Decimal(str(dad_oct_init["total_gross_wages"])) == Decimal("0.00")
-    assert Decimal(str(dad_oct_init["total_advances"])) == Decimal("0.00")
-    assert Decimal(str(dad_oct_init["total_net_payable"])) == Decimal("0.00")
+    # Dynamically select a future month (next calendar month) to verify that a new month starts at ₹0
+    today = date.today()
+    if today.month == 12:
+        future_year = today.year + 1
+        future_month = 1
+    else:
+        future_year = today.year
+        future_month = today.month + 1
 
-    # Add a new October shift for Demo worker to verify new attendance contributes to the new month
-    oct_save_res = client.post("/api/attendance/batch-save", json={
-        "date": "2026-10-05",
+    future_shift_date = date(future_year, future_month, 5).isoformat()
+    future_start_date = date(future_year, future_month, 1).isoformat()
+    last_day = 28 if future_month == 2 else 30
+    future_end_date = date(future_year, future_month, last_day).isoformat()
+
+    # Future month payroll (new month begins - automatic reset to ₹0 without deleting any historical records)
+    demo_fut_init = client.get(f"/api/payroll/monthly?year={future_year}&month={future_month}", headers=demo_headers).json()
+    dad_fut_init = client.get(f"/api/payroll/monthly?year={future_year}&month={future_month}", headers=dad_headers).json()
+    assert Decimal(str(demo_fut_init["total_gross_wages"])) == Decimal("0.00")
+    assert Decimal(str(demo_fut_init["total_advances"])) == Decimal("0.00")
+    assert Decimal(str(demo_fut_init["total_net_payable"])) == Decimal("0.00")
+    assert Decimal(str(dad_fut_init["total_gross_wages"])) == Decimal("0.00")
+    assert Decimal(str(dad_fut_init["total_advances"])) == Decimal("0.00")
+    assert Decimal(str(dad_fut_init["total_net_payable"])) == Decimal("0.00")
+
+    # Add a new future shift for Demo worker to verify new attendance contributes to the new month
+    fut_save_res = client.post("/api/attendance/batch-save", json={
+        "date": future_shift_date,
         "records": [{
             "worker_id": demo_worker_id,
             "site_id": demo_sites[0]["id"],
             "work_units": 1.5,
-            "notes": "October test shift"
+            "notes": "Future test shift"
         }]
     }, headers=demo_headers)
-    assert oct_save_res.status_code == 200
+    assert fut_save_res.status_code == 200
 
-    # Verify Demo October payroll now reflects new shift
-    demo_oct_after = client.get("/api/payroll/monthly?year=2026&month=10", headers=demo_headers).json()
-    assert Decimal(str(demo_oct_after["total_gross_wages"])) > Decimal("0.00")
-    assert Decimal(str(demo_oct_after["total_work_units"])) == Decimal("1.5")
+    # Verify Demo future payroll now reflects new shift
+    demo_fut_after = client.get(f"/api/payroll/monthly?year={future_year}&month={future_month}", headers=demo_headers).json()
+    assert Decimal(str(demo_fut_after["total_gross_wages"])) > Decimal("0.00")
+    assert Decimal(str(demo_fut_after["total_work_units"])) == Decimal("1.5")
 
     # Verify Demo September payroll remains 100% intact and available in history (no historical records deleted)
     demo_sept_after = client.get("/api/payroll/monthly?year=2026&month=9", headers=demo_headers).json()
@@ -268,15 +282,15 @@ def run_security_tests():
     assert demo_sept_after["total_advances"] == demo_sept["total_advances"]
     assert demo_sept_after["total_net_payable"] == demo_sept["total_net_payable"]
 
-    # Verify Dad's October and September payrolls are completely untouched
-    dad_oct_after = client.get("/api/payroll/monthly?year=2026&month=10", headers=dad_headers).json()
+    # Verify Dad's future and September payrolls are completely untouched
+    dad_fut_after = client.get(f"/api/payroll/monthly?year={future_year}&month={future_month}", headers=dad_headers).json()
     dad_sept_after = client.get("/api/payroll/monthly?year=2026&month=9", headers=dad_headers).json()
-    assert Decimal(str(dad_oct_after["total_gross_wages"])) == Decimal("0.00")
+    assert Decimal(str(dad_fut_after["total_gross_wages"])) == Decimal("0.00")
     assert dad_sept_after["total_gross_wages"] == dad_sept["total_gross_wages"]
 
-    # Clean up test October attendance
-    oct_hist = client.get("/api/attendance/history?start_date=2026-10-01&end_date=2026-10-31", headers=demo_headers).json()
-    for rec in oct_hist:
+    # Clean up test future attendance
+    fut_hist = client.get(f"/api/attendance/history?start_date={future_start_date}&end_date={future_end_date}", headers=demo_headers).json()
+    for rec in fut_hist:
         client.delete(f"/api/attendance/{rec['id']}", headers=demo_headers)
     print("✔ Test 14: Automatic monthly reset verified (new month starts at ₹0, previous month intact, zero cross-account impact).")
 
