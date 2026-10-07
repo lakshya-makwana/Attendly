@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import extract, func, desc
 from ..core.database import get_db
 from ..core.security import get_current_admin
@@ -154,7 +154,9 @@ def get_worker_detail(
     ).scalar()
 
     # Recent attendances (last 50 records) scoped to account
-    recent_att = db.query(Attendance).filter(
+    recent_att = db.query(Attendance).options(
+        selectinload(Attendance.site)
+    ).filter(
         Attendance.account_id == account_id,
         Attendance.worker_id == worker_id
     ).order_by(desc(Attendance.date)).limit(50).all()
