@@ -1,3 +1,4 @@
+import calendar
 from datetime import date
 from decimal import Decimal
 from typing import List, Optional
@@ -12,7 +13,9 @@ from ..models.advance import Advance
 from ..models.site import Site
 from ..schemas.schemas import (
     WorkerCreate, WorkerUpdate, WorkerResponse, WorkerDetailResponse,
-    WorkerAttendanceHistoryItem, AdvanceResponse
+    WorkerAttendanceHistoryItem, AdvanceResponse,
+    MonthlyWorkerRecordResponse, MonthlyWorkerInfo, MonthlyWorkerMonthInfo,
+    MonthlyWorkerSummary, MonthlyWorkerAttendanceItem, MonthlyWorkerAdvanceItem
 )
 
 router = APIRouter(prefix="/workers", tags=["Workers"])
@@ -211,4 +214,114 @@ def get_worker_detail(
             created_at=a.created_at
         ) for a in recent_adv],
         unique_sites_worked=unique_sites
+    )
+
+@router.get("/{worker_id}/monthly", response_model=MonthlyWorkerRecordResponse)
+def get_worker_monthly_record(
+    worker_id: int,
+    year: Optional[int] = Query(None, description="Calendar year, e.g. 2026"),
+    month: Optional[int] = Query(None, description="Calendar month 1-12"),
+    db: Session = Depends(get_db),
+    current_admin: dict = Depends(get_current_admin)
+):
+    account_id = current_admin["account_id"]
+    today = date.today()
+    target_year = year if year is not None else today.year
+    target_month = month if month is not None else today.month
+
+    if target_month < 1 or target_month > 12:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Month must be between 1 and 12."
+        )
+    if target_year < 1900 or target_year > 2100:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid year. Year must be between 1900 and 2100."
+        )
+
+    # Scoped strictly to authenticated account_id (preserves account isolation)
+    worker = db.query(Worker).filter(
+        Worker.id == worker_id,
+        Worker.account_id == account_id
+    ).first()
+    if not worker:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Worker not found"
+        )
+
+    # Calculate exact date boundaries of the calendar month
+    _, last_day = calendar.monthrange(target_year, target_month)
+    start_d = date(target_year, target_month, 1)
+    end_d = date(target_year, target_month, last_day)
+
+    # Attendance query scoped to account and date range with eager site loading (prevents N+1)
+    attendances = db.query(Attendance).options(
+        selectinload(Attendance.site)
+    ).filter(
+        Attendance.account_id == account_id,
+        Attendance.worker_id == worker_id,
+        Attendance.date >= start_d,
+        Attendance.date <= end_d
+    ).order_by(Attendance.date.asc(), Attendance.id.asc()).all()
+
+    # Advances query scoped to account and date range
+    advances = db.query(Advance).filter(
+        Advance.account_id == account_id,
+        Advance.worker_id == worker_id,
+        Advance.date >= start_d,
+        Advance.date <= end_d
+    ).order_by(Advance.date.asc(), Advance.id.asc()).all()
+
+    total_units = Decimal("0.0")
+    gross_earnings = Decimal("0.00")
+    total_advances = Decimal("0.00")
+
+    attendance_items = []
+    for att in attendances:
+        units = Decimal(str(att.work_units))
+        earnings = units * worker.daily_wage
+        total_units += units
+        gross_earnings += earnings
+        attendance_items.append(MonthlyWorkerAttendanceItem(
+            date=att.date,
+            site_id=att.site_id,
+            site_name=att.site.name if att.site else None,
+            work_units=units,
+            earnings=earnings
+        ))
+
+    advance_items = []
+    for adv in advances:
+        adv_amount = Decimal(str(adv.amount))
+        total_advances += adv_amount
+        advance_items.append(MonthlyWorkerAdvanceItem(
+            id=adv.id,
+            date=adv.date,
+            amount=adv_amount,
+            note=adv.note
+        ))
+
+    net_payable = gross_earnings - total_advances
+
+    return MonthlyWorkerRecordResponse(
+        worker=MonthlyWorkerInfo(
+            id=worker.id,
+            name=worker.name,
+            daily_wage=worker.daily_wage,
+            is_active=worker.is_active
+        ),
+        month=MonthlyWorkerMonthInfo(
+            year=target_year,
+            month=target_month
+        ),
+        summary=MonthlyWorkerSummary(
+            total_units=total_units,
+            gross_earnings=gross_earnings,
+            total_advances=total_advances,
+            net_payable=net_payable
+        ),
+        attendance=attendance_items,
+        advances=advance_items
     )

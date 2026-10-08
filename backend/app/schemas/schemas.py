@@ -172,6 +172,46 @@ class WorkerDetailResponse(BaseModel):
     recent_advances: List[AdvanceResponse]
     unique_sites_worked: List[str]
 
+# --- Monthly Worker Record Schemas ---
+class MonthlyWorkerInfo(BaseModel):
+    id: int
+    name: str
+    daily_wage: Decimal
+    is_active: bool
+
+    class Config:
+        from_attributes = True
+
+class MonthlyWorkerMonthInfo(BaseModel):
+    year: int
+    month: int
+
+class MonthlyWorkerSummary(BaseModel):
+    total_units: Decimal
+    gross_earnings: Decimal
+    total_advances: Decimal
+    net_payable: Decimal
+
+class MonthlyWorkerAttendanceItem(BaseModel):
+    date: date
+    site_id: Optional[int] = None
+    site_name: Optional[str] = None
+    work_units: Decimal
+    earnings: Decimal
+
+class MonthlyWorkerAdvanceItem(BaseModel):
+    id: int
+    date: date
+    amount: Decimal
+    note: Optional[str] = None
+
+class MonthlyWorkerRecordResponse(BaseModel):
+    worker: MonthlyWorkerInfo
+    month: MonthlyWorkerMonthInfo
+    summary: MonthlyWorkerSummary
+    attendance: List[MonthlyWorkerAttendanceItem]
+    advances: List[MonthlyWorkerAdvanceItem]
+
 # --- Payroll Schemas ---
 class WorkerPayrollRow(BaseModel):
     worker_id: int
