@@ -385,7 +385,16 @@ const Workers = () => {
               </Box>
 
               {/* Right Column: Status Badge, Mark Active/Inactive button, Edit & Delete */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: { xs: 0, sm: 'auto' } }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  flexShrink: 0,
+                  flexWrap: 'wrap',
+                  ml: { xs: 0, sm: 'auto' }
+                }}
+              >
                 {/* Status Indicator Pill */}
                 <Box
                   sx={{

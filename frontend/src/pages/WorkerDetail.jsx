@@ -52,6 +52,36 @@ const WorkerDetail = () => {
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
+  // Status Change Confirmation Dialog State
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  const handleConfirmStatusChange = async () => {
+    if (!detail?.worker) return;
+    setStatusLoading(true);
+    try {
+      const res = await api.patch(`/workers/${id}/toggle-status`);
+      setDetail((prev) => ({
+        ...prev,
+        worker: { ...prev.worker, is_active: res.data.is_active }
+      }));
+      setSnackbar({
+        open: true,
+        message: `Marked ${detail.worker.name} as ${res.data.is_active ? 'active' : 'inactive'}.`,
+        severity: 'success'
+      });
+      setStatusDialogOpen(false);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.detail || 'Failed to update worker status.',
+        severity: 'error'
+      });
+    } finally {
+      setStatusLoading(false);
+    }
+  };
+
   const fetchDetail = async () => {
     try {
       setLoading(true);
@@ -194,6 +224,32 @@ const WorkerDetail = () => {
                   </Box>
                   {worker.is_active ? 'Active' : 'Inactive'}
                 </Box>
+
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => setStatusDialogOpen(true)}
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 600,
+                    px: 1.25,
+                    py: 0.25,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    borderColor: '#dce2f3',
+                    color: '#555f6f',
+                    bgcolor: '#ffffff',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      bgcolor: '#f0f3ff',
+                      color: '#151c27',
+                      borderColor: '#bdc7d9'
+                    }
+                  }}
+                >
+                  {worker.is_active ? 'Mark Inactive' : 'Mark Active'}
+                </Button>
               </Box>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
@@ -242,6 +298,22 @@ const WorkerDetail = () => {
           Give Advance
         </Button>
       </Box>
+
+      {/* Inactive Worker Warning Banner */}
+      {!worker.is_active && (
+        <Alert
+          severity="info"
+          sx={{
+            borderRadius: 2.5,
+            bgcolor: '#f4f6f8',
+            color: '#555f6f',
+            border: '1px solid #e2e8f8',
+            fontSize: '0.8125rem'
+          }}
+        >
+          This worker is currently inactive and excluded from recording new attendance. All historical shifts, wages, and advances remain intact.
+        </Alert>
+      )}
 
       {/* Financial Summary Ledger Panel */}
       <Card
@@ -586,6 +658,69 @@ const WorkerDetail = () => {
             sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
           >
             {advanceSaving ? 'Recording...' : 'Save'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Status Change Confirmation Modal */}
+      <Dialog
+        open={statusDialogOpen}
+        onClose={() => !statusLoading && setStatusDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+          {worker?.is_active
+            ? `Mark ${worker?.name} as inactive?`
+            : `Mark ${worker?.name} as active?`}
+        </DialogTitle>
+        <DialogContent>
+          {worker?.is_active ? (
+            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+              This worker will no longer appear when recording new attendance. Their historical records will be preserved.
+            </Typography>
+          ) : (
+            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+              This worker will become available for recording attendance and issuing advances.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setStatusDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            disabled={statusLoading}
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleConfirmStatusChange}
+            disabled={statusLoading}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#000000',
+              color: '#ffffff',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#1f2937' }
+            }}
+          >
+            {statusLoading
+              ? 'Updating...'
+              : worker?.is_active
+              ? 'Mark Inactive'
+              : 'Mark Active'}
           </Button>
         </DialogActions>
       </Dialog>
