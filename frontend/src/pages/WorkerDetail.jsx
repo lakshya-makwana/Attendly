@@ -31,10 +31,12 @@ import {
   PhoneOutlined as PhoneIcon,
   Add as AddIcon,
   DeleteOutlined as DeleteIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  ChevronLeft as PrevIcon,
+  ChevronRight as NextIcon
 } from '@mui/icons-material';
 import api from '../api/client';
-import { formatDateIndian } from '../utils/dateUtils';
+import { formatDateIndian, formatMonthYear } from '../utils/dateUtils';
 
 const WorkerDetail = () => {
   const { id } = useParams();
@@ -42,6 +44,14 @@ const WorkerDetail = () => {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tabIndex, setTabIndex] = useState(0);
+
+  // Monthly Worker Record State
+  const currentDate = new Date();
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+  const [monthlyData, setMonthlyData] = useState(null);
+  const [monthlyLoading, setMonthlyLoading] = useState(false);
+  const [monthlyError, setMonthlyError] = useState(null);
 
   // Add Advance modal
   const [advanceDialogOpen, setAdvanceDialogOpen] = useState(false);
@@ -55,6 +65,11 @@ const WorkerDetail = () => {
   // Status Change Confirmation Dialog State
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  const formatCurrency = (val) => {
+    const num = parseFloat(val || 0);
+    return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  };
 
   const handleConfirmStatusChange = async () => {
     if (!detail?.worker) return;
@@ -94,9 +109,59 @@ const WorkerDetail = () => {
     }
   };
 
+  const fetchMonthlyRecord = async (year, month) => {
+    try {
+      setMonthlyLoading(true);
+      setMonthlyError(null);
+      const res = await api.get(`/workers/${id}/monthly`, {
+        params: { year, month }
+      });
+      setMonthlyData(res.data);
+    } catch (err) {
+      setMonthlyError(err.response?.data?.detail || 'Failed to load records for this month.');
+      setSnackbar({
+        open: true,
+        message: 'Failed to load records for the selected month.',
+        severity: 'error'
+      });
+    } finally {
+      setMonthlyLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchDetail();
   }, [id]);
+
+  useEffect(() => {
+    if (id) {
+      fetchMonthlyRecord(selectedYear, selectedMonth);
+    }
+  }, [id, selectedYear, selectedMonth]);
+
+  const handlePrevMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear((y) => y - 1);
+    } else {
+      setSelectedMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear((y) => y + 1);
+    } else {
+      setSelectedMonth((m) => m + 1);
+    }
+  };
+
+  const handleCurrentMonth = () => {
+    const now = new Date();
+    setSelectedYear(now.getFullYear());
+    setSelectedMonth(now.getMonth() + 1);
+  };
 
   const handleCreateAdvance = async () => {
     if (!advanceAmount || parseFloat(advanceAmount) <= 0) {
@@ -118,6 +183,7 @@ const WorkerDetail = () => {
       setAdvanceAmount('');
       setAdvanceNote('');
       fetchDetail();
+      fetchMonthlyRecord(selectedYear, selectedMonth);
     } catch {
       setSnackbar({ open: true, message: 'Failed to record advance.', severity: 'error' });
     } finally {
@@ -130,6 +196,7 @@ const WorkerDetail = () => {
       await api.delete(`/advances/${advanceId}`);
       setSnackbar({ open: true, message: 'Advance transaction deleted.', severity: 'info' });
       fetchDetail();
+      fetchMonthlyRecord(selectedYear, selectedMonth);
     } catch {
       setSnackbar({ open: true, message: 'Failed to delete advance.', severity: 'error' });
     }
@@ -155,7 +222,20 @@ const WorkerDetail = () => {
   }
 
   const { worker } = detail;
-  const isPositiveNet = parseFloat(detail.month_net_payable || 0) >= 0;
+  const now = new Date();
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === (now.getMonth() + 1);
+  const selectedMonthLabel = formatMonthYear(selectedYear, selectedMonth);
+
+  const summary = monthlyData?.summary || {
+    total_units: 0,
+    gross_earnings: 0,
+    total_advances: 0,
+    net_payable: 0
+  };
+  const isPositiveNet = parseFloat(summary.net_payable || 0) >= 0;
+  const attendanceList = monthlyData?.attendance || [];
+  const advancesList = monthlyData?.advances || [];
+  const isEmptyMonth = !monthlyLoading && attendanceList.length === 0 && advancesList.length === 0;
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
@@ -198,8 +278,8 @@ const WorkerDetail = () => {
             </Box>
 
             <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', lineHeight: 1.2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.1rem', sm: '1.25rem' }, color: '#151c27', lineHeight: 1.2 }}>
                   {worker.name}
                 </Typography>
                 <Box
@@ -315,6 +395,70 @@ const WorkerDetail = () => {
         </Alert>
       )}
 
+      {/* Month Selector */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: { xs: 1.25, sm: 2 },
+          py: 0.85,
+          bgcolor: '#f0f3ff',
+          borderRadius: 3,
+          border: '1px solid #e2e8f8'
+        }}
+      >
+        <IconButton
+          onClick={handlePrevMonth}
+          disabled={monthlyLoading}
+          size="small"
+          aria-label="Previous Month"
+          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' }, '&.Mui-disabled': { color: '#bdc7d9' } }}
+        >
+          <PrevIcon sx={{ fontSize: 20 }} />
+        </IconButton>
+
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Typography sx={{ fontSize: { xs: '0.875rem', sm: '0.95rem' }, fontWeight: 800, color: '#151c27', letterSpacing: '-0.01em' }}>
+            {selectedMonthLabel}
+          </Typography>
+          {monthlyLoading && (
+            <CircularProgress size={14} sx={{ color: '#151c27' }} />
+          )}
+          {!isCurrentMonth && (
+            <Button
+              size="small"
+              onClick={handleCurrentMonth}
+              sx={{
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                py: 0.2,
+                px: 1,
+                minWidth: 'auto',
+                borderRadius: 1.5,
+                bgcolor: '#ffffff',
+                color: '#151c27',
+                border: '1px solid #dce2f3',
+                textTransform: 'none',
+                '&:hover': { bgcolor: '#f0f3ff' }
+              }}
+            >
+              Current
+            </Button>
+          )}
+        </Box>
+
+        <IconButton
+          onClick={handleNextMonth}
+          disabled={monthlyLoading}
+          size="small"
+          aria-label="Next Month"
+          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' }, '&.Mui-disabled': { color: '#bdc7d9' } }}
+        >
+          <NextIcon sx={{ fontSize: 20 }} />
+        </IconButton>
+      </Box>
+
       {/* Financial Summary Ledger Panel */}
       <Card
         elevation={0}
@@ -322,53 +466,55 @@ const WorkerDetail = () => {
           borderRadius: 3,
           border: '1px solid #e2e8f8',
           bgcolor: '#ffffff',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          opacity: monthlyLoading ? 0.6 : 1,
+          transition: 'opacity 0.2s ease'
         }}
       >
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
           <Grid container>
-            <Grid item xs={6} sm={3} sx={{ p: 2, borderRight: '1px solid #e2e8f8', borderBottom: { xs: '1px solid #e2e8f8', sm: 'none' } }}>
+            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: '1px solid #e2e8f8', borderBottom: { xs: '1px solid #e2e8f8', sm: 'none' } }}>
               <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Month Work Units
+                Total Units
               </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', mt: 0.5 }}>
-                {parseFloat(detail.month_total_work_units || 0).toFixed(1)}
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#151c27', mt: 0.5 }}>
+                {parseFloat(summary.total_units || 0).toFixed(1)}
               </Typography>
               <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
-                {detail.current_month}
+                {selectedMonthLabel}
               </Typography>
             </Grid>
 
-            <Grid item xs={6} sm={3} sx={{ p: 2, borderRight: { sm: '1px solid #e2e8f8' }, borderBottom: { xs: '1px solid #e2e8f8', sm: 'none' } }}>
+            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: { sm: '1px solid #e2e8f8' }, borderBottom: { xs: '1px solid #e2e8f8', sm: 'none' } }}>
               <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                 Gross Earnings
               </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#151c27', mt: 0.5 }}>
-                ₹{parseFloat(detail.month_gross_earnings || 0).toFixed(0)}
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#151c27', mt: 0.5 }}>
+                {formatCurrency(summary.gross_earnings)}
               </Typography>
               <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
                 Units × Daily rate
               </Typography>
             </Grid>
 
-            <Grid item xs={6} sm={3} sx={{ p: 2, borderRight: '1px solid #e2e8f8' }}>
+            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: '1px solid #e2e8f8' }}>
               <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Month Advances
+                Advances
               </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: '#ba1a1a', mt: 0.5 }}>
-                −₹{parseFloat(detail.month_total_advances || 0).toFixed(0)}
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: parseFloat(summary.total_advances || 0) > 0 ? '#ba1a1a' : '#151c27', mt: 0.5 }}>
+                {formatCurrency(summary.total_advances)}
               </Typography>
               <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
-                All-time: ₹{parseFloat(detail.all_time_total_advances || 0).toFixed(0)}
+                Monthly deductions
               </Typography>
             </Grid>
 
-            <Grid item xs={6} sm={3} sx={{ p: 2, bgcolor: isPositiveNet ? '#f0f3ff' : '#ffdad6' }}>
+            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: isPositiveNet ? '#f0f3ff' : '#ffdad6' }}>
               <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                 Net Payable
               </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: '1.25rem', color: isPositiveNet ? '#151c27' : '#93000a', mt: 0.5 }}>
-                ₹{parseFloat(detail.month_net_payable || 0).toFixed(0)}
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: isPositiveNet ? '#151c27' : '#93000a', mt: 0.5 }}>
+                {formatCurrency(summary.net_payable)}
               </Typography>
               <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', mt: 0.25, fontWeight: 600 }}>
                 {isPositiveNet ? 'Disbursable' : 'Advance Due'}
@@ -378,7 +524,7 @@ const WorkerDetail = () => {
         </CardContent>
       </Card>
 
-      {/* Tabs: Attendance History vs Advances History */}
+      {/* Tabs: Attendance vs Advances */}
       <Card
         elevation={0}
         sx={{
@@ -409,182 +555,211 @@ const WorkerDetail = () => {
             }
           }}
         >
-          <Tab label={`Attendance History (${detail.recent_attendance.length})`} />
-          <Tab label={`Advances Ledger (${detail.recent_advances.length})`} />
+          <Tab label={`Attendance (${attendanceList.length})`} />
+          <Tab label={`Advances (${advancesList.length})`} />
         </Tabs>
 
-        {/* Tab 0: Attendance History */}
-        {tabIndex === 0 && (
-          <Box sx={{ p: 0 }}>
-            {detail.recent_attendance.length === 0 ? (
-              <Box sx={{ py: 4, textAlign: 'center' }}>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>No attendance records found.</Typography>
-              </Box>
-            ) : (
-              <>
-                {/* Mobile Cards View */}
-                <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
-                  {detail.recent_attendance.map((att) => {
-                    const units = parseFloat(att.work_units || 0);
-                    return (
-                      <Box
-                        key={att.id}
-                        sx={{
-                          p: 1.5,
-                          bgcolor: '#f9f9ff',
-                          borderRadius: 2,
-                          border: '1px solid #f0f3ff',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <Box>
-                          <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
-                            {formatDateIndian(att.date)}
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
-                            {att.site_name || (units === 0 ? 'Absent' : '—')}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: 'right' }}>
-                          <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#151c27' }}>
-                            {units.toFixed(1)} Units
-                          </Typography>
-                          <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
-                            ₹{parseFloat(att.wage_earned || 0).toFixed(0)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    );
-                  })}
-                </Box>
-
-                {/* Tablet / Desktop Table View */}
-                <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
-                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Site</TableCell>
-                        <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Units</TableCell>
-                        <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Earnings</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {detail.recent_attendance.map((att) => {
+        {monthlyError ? (
+          <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
+            <Typography sx={{ color: '#ba1a1a', fontSize: '0.875rem', fontWeight: 600 }}>
+              {monthlyError}
+            </Typography>
+            <Button
+              size="small"
+              onClick={() => fetchMonthlyRecord(selectedYear, selectedMonth)}
+              sx={{ mt: 1.5, color: '#151c27', fontWeight: 700, textTransform: 'none' }}
+            >
+              Retry
+            </Button>
+          </Box>
+        ) : isEmptyMonth ? (
+          <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
+            <Typography sx={{ color: '#555f6f', fontSize: '0.875rem', fontWeight: 600 }}>
+              No records for {selectedMonthLabel}
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Tab 0: Attendance */}
+            {tabIndex === 0 && (
+              <Box sx={{ p: 0 }}>
+                {attendanceList.length === 0 ? (
+                  <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
+                    <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>
+                      No attendance records for {selectedMonthLabel}
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    {/* Mobile Cards View */}
+                    <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
+                      {attendanceList.map((att, idx) => {
                         const units = parseFloat(att.work_units || 0);
                         return (
-                          <TableRow key={att.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
-                            <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
-                              {formatDateIndian(att.date)}
-                            </TableCell>
-                            <TableCell sx={{ fontSize: '0.8125rem', color: '#555f6f' }}>
-                              {att.site_name || (units === 0 ? 'Absent' : '—')}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
-                              {units.toFixed(1)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
-                              ₹{parseFloat(att.wage_earned || 0).toFixed(0)}
-                            </TableCell>
-                          </TableRow>
+                          <Box
+                            key={`${att.date}-${att.site_id || 'site'}-${idx}`}
+                            sx={{
+                              p: 1.5,
+                              bgcolor: '#f9f9ff',
+                              borderRadius: 2,
+                              border: '1px solid #f0f3ff',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: 1
+                            }}
+                          >
+                            <Box sx={{ minWidth: 0, flex: 1 }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                                {formatDateIndian(att.date)}
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25, wordBreak: 'break-word' }}>
+                                {att.site_name || (units === 0 ? 'Absent' : '—')}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#151c27' }}>
+                                {units.toFixed(1)} Units
+                              </Typography>
+                              <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
+                                {formatCurrency(att.earnings)}
+                              </Typography>
+                            </Box>
+                          </Box>
                         );
                       })}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </>
-            )}
-          </Box>
-        )}
-
-        {/* Tab 1: Advances History */}
-        {tabIndex === 1 && (
-          <Box sx={{ p: 0 }}>
-            {detail.recent_advances.length === 0 ? (
-              <Box sx={{ py: 4, textAlign: 'center' }}>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>No advance transactions recorded.</Typography>
-              </Box>
-            ) : (
-              <>
-                {/* Mobile Cards View */}
-                <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
-                  {detail.recent_advances.map((adv) => (
-                    <Box
-                      key={adv.id}
-                      sx={{
-                        p: 1.5,
-                        bgcolor: '#f9f9ff',
-                        borderRadius: 2,
-                        border: '1px solid #f0f3ff',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}
-                    >
-                      <Box>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
-                          {formatDateIndian(adv.date)}
-                        </Typography>
-                        <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
-                          {adv.note || 'No note'}
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <Typography sx={{ fontWeight: 800, fontSize: '0.925rem', color: '#ba1a1a' }}>
-                          ₹{parseFloat(adv.amount || 0).toFixed(0)}
-                        </Typography>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteAdvance(adv.id)}
-                          sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
-                        >
-                          <DeleteIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                      </Box>
                     </Box>
-                  ))}
-                </Box>
 
-                {/* Tablet / Desktop Table View */}
-                <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
-                        <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Amount</TableCell>
-                        <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Note</TableCell>
-                        <TableCell align="center" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Action</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {detail.recent_advances.map((adv) => (
-                        <TableRow key={adv.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
-                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
-                            {formatDateIndian(adv.date)}
-                          </TableCell>
-                          <TableCell align="right" sx={{ fontWeight: 700, color: '#ba1a1a', fontSize: '0.8125rem' }}>
-                            ₹{parseFloat(adv.amount || 0).toFixed(0)}
-                          </TableCell>
-                          <TableCell sx={{ color: '#555f6f', fontSize: '0.8125rem' }}>{adv.note || '—'}</TableCell>
-                          <TableCell align="center">
+                    {/* Tablet / Desktop Table View */}
+                    <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
+                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Site</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Units</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Earnings</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {attendanceList.map((att, idx) => {
+                            const units = parseFloat(att.work_units || 0);
+                            return (
+                              <TableRow key={`${att.date}-${att.site_id || 'site'}-${idx}`} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
+                                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                                  {formatDateIndian(att.date)}
+                                </TableCell>
+                                <TableCell sx={{ fontSize: '0.8125rem', color: '#555f6f' }}>
+                                  {att.site_name || (units === 0 ? 'Absent' : '—')}
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                                  {units.toFixed(1)}
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                                  {formatCurrency(att.earnings)}
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
+                )}
+              </Box>
+            )}
+
+            {/* Tab 1: Advances */}
+            {tabIndex === 1 && (
+              <Box sx={{ p: 0 }}>
+                {advancesList.length === 0 ? (
+                  <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
+                    <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>
+                      No advances this month
+                    </Typography>
+                  </Box>
+                ) : (
+                  <>
+                    {/* Mobile Cards View */}
+                    <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
+                      {advancesList.map((adv) => (
+                        <Box
+                          key={adv.id}
+                          sx={{
+                            p: 1.5,
+                            bgcolor: '#f9f9ff',
+                            borderRadius: 2,
+                            border: '1px solid #f0f3ff',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 1
+                          }}
+                        >
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
+                            <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                              {formatDateIndian(adv.date)}
+                            </Typography>
+                            <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25, wordBreak: 'break-word' }}>
+                              {adv.note || 'No note'}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.925rem', color: '#ba1a1a' }}>
+                              {formatCurrency(adv.amount)}
+                            </Typography>
                             <IconButton
                               size="small"
                               onClick={() => handleDeleteAdvance(adv.id)}
                               sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
                             >
-                              <DeleteIcon sx={{ fontSize: 17 }} />
+                              <DeleteIcon sx={{ fontSize: 16 }} />
                             </IconButton>
-                          </TableCell>
-                        </TableRow>
+                          </Box>
+                        </Box>
                       ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </>
+                    </Box>
+
+                    {/* Tablet / Desktop Table View */}
+                    <TableContainer sx={{ display: { xs: 'none', sm: 'block' } }}>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Amount</TableCell>
+                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Note</TableCell>
+                            <TableCell align="center" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Action</TableCell>
+                          </TableRow>
+                        </TableHead>
+                        <TableBody>
+                          {advancesList.map((adv) => (
+                            <TableRow key={adv.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
+                              <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                                {formatDateIndian(adv.date)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 700, color: '#ba1a1a', fontSize: '0.8125rem' }}>
+                                {formatCurrency(adv.amount)}
+                              </TableCell>
+                              <TableCell sx={{ color: '#555f6f', fontSize: '0.8125rem' }}>{adv.note || '—'}</TableCell>
+                              <TableCell align="center">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteAdvance(adv.id)}
+                                  sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
+                                >
+                                  <DeleteIcon sx={{ fontSize: 17 }} />
+                                </IconButton>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </TableContainer>
+                  </>
+                )}
+              </Box>
             )}
-          </Box>
+          </>
         )}
       </Card>
 
