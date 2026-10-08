@@ -14,9 +14,7 @@ import {
   CircularProgress,
   Alert,
   Snackbar,
-  InputAdornment,
-  Switch,
-  FormControlLabel
+  InputAdornment
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -34,7 +32,7 @@ const Workers = () => {
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showInactive, setShowInactive] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
 
   // Add/Edit Dialog State
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -47,12 +45,23 @@ const Workers = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [workerToDelete, setWorkerToDelete] = useState(null);
 
+  // Status Change Confirmation Dialog State
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [statusWorker, setStatusWorker] = useState(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const fetchWorkers = async () => {
+  const fetchWorkers = async (filter = statusFilter) => {
     try {
       setLoading(true);
-      const res = await api.get('/workers');
+      let url = '/workers';
+      if (filter === 'active') {
+        url = '/workers?is_active=true';
+      } else if (filter === 'inactive') {
+        url = '/workers?is_active=false';
+      }
+      const res = await api.get(url);
       setWorkers(res.data);
     } catch {
       setSnackbar({ open: true, message: 'Failed to fetch workers.', severity: 'error' });
@@ -62,8 +71,8 @@ const Workers = () => {
   };
 
   useEffect(() => {
-    fetchWorkers();
-  }, []);
+    fetchWorkers(statusFilter);
+  }, [statusFilter]);
 
   const handleOpenAdd = () => {
     setEditingWorker(null);
@@ -88,6 +97,48 @@ const Workers = () => {
     e.stopPropagation();
     setWorkerToDelete(worker);
     setDeleteDialogOpen(true);
+  };
+
+  const handleOpenStatusConfirm = (worker, e) => {
+    e.stopPropagation();
+    setStatusWorker(worker);
+    setStatusDialogOpen(true);
+  };
+
+  const handleConfirmStatusChange = async () => {
+    if (!statusWorker) return;
+    const workerToUpdate = statusWorker;
+    const newStatus = !workerToUpdate.is_active;
+    setStatusLoading(true);
+
+    try {
+      await api.patch(`/workers/${workerToUpdate.id}/toggle-status`);
+      setSnackbar({
+        open: true,
+        message: `Marked ${workerToUpdate.name} as ${newStatus ? 'active' : 'inactive'}.`,
+        severity: 'success'
+      });
+      setStatusDialogOpen(false);
+      setStatusWorker(null);
+
+      // Keep current filter sensible without full reload
+      if (statusFilter === 'all') {
+        setWorkers((prev) =>
+          prev.map((w) => (w.id === workerToUpdate.id ? { ...w, is_active: newStatus } : w))
+        );
+      } else {
+        // If viewing 'active' or 'inactive', remove worker that no longer belongs to this filter
+        setWorkers((prev) => prev.filter((w) => w.id !== workerToUpdate.id));
+      }
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.detail || 'Failed to update worker status.',
+        severity: 'error'
+      });
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const validateForm = () => {
@@ -118,7 +169,7 @@ const Workers = () => {
         setSnackbar({ open: true, message: 'Worker added successfully.', severity: 'success' });
       }
       setDialogOpen(false);
-      fetchWorkers();
+      fetchWorkers(statusFilter);
     } catch (err) {
       setSnackbar({ open: true, message: err.response?.data?.detail || 'Failed to save worker.', severity: 'error' });
     } finally {
@@ -132,17 +183,17 @@ const Workers = () => {
       await api.delete(`/workers/${workerToDelete.id}`);
       setSnackbar({ open: true, message: 'Worker deleted successfully.', severity: 'success' });
       setDeleteDialogOpen(false);
-      fetchWorkers();
+      fetchWorkers(statusFilter);
     } catch {
       setSnackbar({ open: true, message: 'Failed to delete worker.', severity: 'error' });
     }
   };
 
   const filteredWorkers = workers.filter((w) => {
-    const matchesSearch = w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch =
+      w.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (w.phone && w.phone.includes(searchTerm));
-    if (showInactive) return matchesSearch;
-    return matchesSearch && w.is_active;
+    return matchesSearch;
   });
 
   return (
@@ -188,7 +239,7 @@ const Workers = () => {
           onChange={(e) => setSearchTerm(e.target.value)}
           sx={{
             flex: { xs: '1 1 100%', sm: 1 },
-            minWidth: { xs: '100%', sm: 240 },
+            minWidth: { xs: '100%', sm: 220 },
             '& .MuiOutlinedInput-root': {
               borderRadius: 2.5,
               bgcolor: '#ffffff'
@@ -203,22 +254,40 @@ const Workers = () => {
           }}
         />
 
-        <FormControlLabel
-          control={
-            <Switch
+        {/* 3 Status Filters: [ All ] [ Active ] [ Inactive ] */}
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+          {[
+            { key: 'all', label: 'All' },
+            { key: 'active', label: 'Active' },
+            { key: 'inactive', label: 'Inactive' }
+          ].map((f) => (
+            <Button
+              key={f.key}
               size="small"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
+              onClick={() => setStatusFilter(f.key)}
               sx={{
-                '& .MuiSwitch-switchBase.Mui-checked': {
-                  color: '#000000',
-                  '& + .MuiSwitch-track': { bgcolor: '#000000' }
+                bgcolor: statusFilter === f.key ? '#000000' : '#ffffff',
+                color: statusFilter === f.key ? '#ffffff' : '#555f6f',
+                border: '1px solid',
+                borderColor: statusFilter === f.key ? '#000000' : '#e2e8f8',
+                borderRadius: 2.5,
+                px: 2,
+                py: 0.6,
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                textTransform: 'none',
+                minWidth: 'auto',
+                transition: 'all 0.15s ease',
+                '&:hover': {
+                  bgcolor: statusFilter === f.key ? '#1f2937' : '#f0f3ff',
+                  color: statusFilter === f.key ? '#ffffff' : '#151c27'
                 }
               }}
-            />
-          }
-          label={<Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>Show Inactive</Typography>}
-        />
+            >
+              {f.label}
+            </Button>
+          ))}
+        </Box>
       </Box>
 
       {/* Workers Roster */}
@@ -228,7 +297,11 @@ const Workers = () => {
         </Box>
       ) : filteredWorkers.length === 0 ? (
         <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
-          No workers match your search.
+          {statusFilter === 'inactive'
+            ? 'No inactive workers found.'
+            : statusFilter === 'active'
+            ? 'No active workers found.'
+            : 'No workers match your search.'}
         </Alert>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5 }}>
@@ -245,21 +318,23 @@ const Workers = () => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 1.5,
                 cursor: 'pointer',
-                opacity: worker.is_active ? 1 : 0.65,
+                opacity: worker.is_active ? 1 : 0.75,
                 transition: 'all 0.15s ease',
                 '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
                 '&:active': { transform: 'scale(0.99)' }
               }}
             >
-              {/* Worker Avatar, Name & Phone */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: 1, minWidth: 0 }}>
+              {/* Left Column: Avatar + Details */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: '1 1 200px', minWidth: 0 }}>
                 <Box
                   sx={{
                     width: 42,
                     height: 42,
                     borderRadius: '12px',
-                    bgcolor: '#f0f3ff',
+                    bgcolor: worker.is_active ? '#f0f3ff' : '#f4f6f8',
                     color: '#151c27',
                     display: 'flex',
                     alignItems: 'center',
@@ -273,30 +348,15 @@ const Workers = () => {
                 </Box>
 
                 <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {worker.name}
-                    </Typography>
-                    {!worker.is_active && (
-                      <Box
-                        component="span"
-                        sx={{
-                          bgcolor: '#e2e8f8',
-                          color: '#555f6f',
-                          px: 1,
-                          py: 0.2,
-                          borderRadius: 1,
-                          fontSize: '0.625rem',
-                          fontWeight: 700,
-                          flexShrink: 0
-                        }}
-                      >
-                        Inactive
-                      </Box>
-                    )}
-                  </Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {worker.name}
+                  </Typography>
 
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.35 }}>
+                    <Typography sx={{ color: '#151c27', fontSize: '0.75rem', fontWeight: 700 }}>
+                      ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
+                    </Typography>
+
                     {worker.phone ? (
                       <Typography
                         variant="caption"
@@ -324,21 +384,57 @@ const Workers = () => {
                 </Box>
               </Box>
 
-              {/* Wage & Actions */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: 1 }}>
+              {/* Right Column: Status Badge, Mark Active/Inactive button, Edit & Delete */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0, ml: { xs: 0, sm: 'auto' } }}>
+                {/* Status Indicator Pill */}
                 <Box
                   sx={{
-                    bgcolor: '#f0f3ff',
-                    px: 1.5,
-                    py: 0.5,
+                    bgcolor: worker.is_active ? '#f0f3ff' : '#f4f6f8',
+                    color: worker.is_active ? '#151c27' : '#555f6f',
+                    border: '1px solid',
+                    borderColor: worker.is_active ? '#dce2f3' : '#e2e8f8',
+                    px: 1.25,
+                    py: 0.35,
                     borderRadius: 1.5,
-                    fontSize: '0.75rem',
+                    fontSize: '0.6875rem',
                     fontWeight: 700,
-                    color: '#151c27'
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5
                   }}
                 >
-                  ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
+                  <Box component="span" sx={{ fontSize: '0.625rem', lineHeight: 1 }}>
+                    {worker.is_active ? '●' : '○'}
+                  </Box>
+                  {worker.is_active ? 'Active' : 'Inactive'}
                 </Box>
+
+                {/* Mark Active / Mark Inactive Button */}
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={(e) => handleOpenStatusConfirm(worker, e)}
+                  sx={{
+                    fontSize: '0.6875rem',
+                    fontWeight: 600,
+                    px: 1.25,
+                    py: 0.35,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    borderColor: '#dce2f3',
+                    color: '#555f6f',
+                    bgcolor: '#ffffff',
+                    whiteSpace: 'nowrap',
+                    minWidth: 'auto',
+                    '&:hover': {
+                      bgcolor: '#f0f3ff',
+                      color: '#151c27',
+                      borderColor: '#bdc7d9'
+                    }
+                  }}
+                >
+                  {worker.is_active ? 'Mark Inactive' : 'Mark Active'}
+                </Button>
 
                 <IconButton
                   size="small"
@@ -362,6 +458,69 @@ const Workers = () => {
           ))}
         </Box>
       )}
+
+      {/* Status Change Confirmation Modal */}
+      <Dialog
+        open={statusDialogOpen}
+        onClose={() => !statusLoading && setStatusDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 3,
+            p: 1,
+            border: '1px solid #e2e8f8',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+          }
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+          {statusWorker?.is_active
+            ? `Mark ${statusWorker?.name} as inactive?`
+            : `Mark ${statusWorker?.name} as active?`}
+        </DialogTitle>
+        <DialogContent>
+          {statusWorker?.is_active ? (
+            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+              This worker will no longer appear when recording new attendance. Their historical records will be preserved.
+            </Typography>
+          ) : (
+            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+              This worker will become available for recording attendance and issuing advances.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            onClick={() => setStatusDialogOpen(false)}
+            variant="outlined"
+            size="small"
+            disabled={statusLoading}
+            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleConfirmStatusChange}
+            disabled={statusLoading}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#000000',
+              color: '#ffffff',
+              fontWeight: 700,
+              '&:hover': { bgcolor: '#1f2937' }
+            }}
+          >
+            {statusLoading
+              ? 'Updating...'
+              : statusWorker?.is_active
+              ? 'Mark Inactive'
+              : 'Mark Active'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add / Edit Worker Modal */}
       <Dialog

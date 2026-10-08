@@ -175,15 +175,23 @@ const WorkerDetail = () => {
                 <Box
                   component="span"
                   sx={{
-                    bgcolor: worker.is_active ? '#f0f3ff' : '#e2e8f8',
+                    bgcolor: worker.is_active ? '#f0f3ff' : '#f4f6f8',
                     color: worker.is_active ? '#151c27' : '#555f6f',
+                    border: '1px solid',
+                    borderColor: worker.is_active ? '#dce2f3' : '#e2e8f8',
                     px: 1.25,
                     py: 0.25,
-                    borderRadius: 1,
+                    borderRadius: 1.5,
                     fontSize: '0.6875rem',
-                    fontWeight: 700
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5
                   }}
                 >
+                  <Box component="span" sx={{ fontSize: '0.625rem', lineHeight: 1 }}>
+                    {worker.is_active ? '●' : '○'}
+                  </Box>
                   {worker.is_active ? 'Active' : 'Inactive'}
                 </Box>
               </Box>
