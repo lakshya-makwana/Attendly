@@ -48,9 +48,80 @@ const Payroll = () => {
 
   const [selectedSlipWorker, setSelectedSlipWorker] = useState(null);
   const [slipModalOpen, setSlipModalOpen] = useState(false);
+  const [slipLoading, setSlipLoading] = useState(false);
+  const [slipSites, setSlipSites] = useState([]);
+  const [workerMonthlyCache, setWorkerMonthlyCache] = useState({});
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+
+  // Manage body class for clean printing of the salary slip
+  useEffect(() => {
+    if (slipModalOpen) {
+      document.body.classList.add('salary-slip-open');
+    } else {
+      document.body.classList.remove('salary-slip-open');
+    }
+    return () => {
+      document.body.classList.remove('salary-slip-open');
+    };
+  }, [slipModalOpen]);
+
+  const computeSitesWorked = (attendanceList, dailyWage) => {
+    const wage = parseFloat(dailyWage || 0);
+    const siteMap = {};
+
+    (attendanceList || []).forEach((item) => {
+      const units = parseFloat(item.work_units || 0);
+      if (units <= 0) return;
+
+      const key = item.site_id ? `site_${item.site_id}` : 'no_site';
+      const name = item.site_name || 'No site assigned';
+
+      if (!siteMap[key]) {
+        siteMap[key] = {
+          site_id: item.site_id || null,
+          site_name: name,
+          work_units: 0,
+          earnings: 0
+        };
+      }
+
+      siteMap[key].work_units += units;
+      const shiftEarnings = item.earnings !== undefined && item.earnings !== null
+        ? parseFloat(item.earnings)
+        : units * wage;
+      siteMap[key].earnings += shiftEarnings;
+    });
+
+    return Object.values(siteMap);
+  };
+
+  const handleOpenSlip = async (workerRow) => {
+    setSelectedSlipWorker(workerRow);
+    setSlipModalOpen(true);
+
+    const cacheKey = `${workerRow.worker_id}_${selectedYear}_${selectedMonth}`;
+    if (workerMonthlyCache[cacheKey]) {
+      const sites = computeSitesWorked(workerMonthlyCache[cacheKey].attendance, workerRow.daily_wage);
+      setSlipSites(sites);
+      setSlipLoading(false);
+      return;
+    }
+
+    setSlipLoading(true);
+    setSlipSites([]);
+    try {
+      const res = await api.get(`/workers/${workerRow.worker_id}/monthly?year=${selectedYear}&month=${selectedMonth}`);
+      setWorkerMonthlyCache((prev) => ({ ...prev, [cacheKey]: res.data }));
+      const sites = computeSitesWorked(res.data?.attendance, workerRow.daily_wage);
+      setSlipSites(sites);
+    } catch {
+      setSlipSites([]);
+    } finally {
+      setSlipLoading(false);
+    }
+  };
 
   const fetchPayroll = async (year, month) => {
     try {
@@ -91,10 +162,6 @@ const Payroll = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  const handleOpenSlip = (workerRow) => {
-    setSelectedSlipWorker(workerRow);
-    setSlipModalOpen(true);
-  };
 
   const formatCurrency = (val) => {
     const num = parseFloat(val || 0);
@@ -686,7 +753,9 @@ const Payroll = () => {
         onClose={() => setSlipModalOpen(false)}
         maxWidth="xs"
         fullWidth
+        className="salary-slip-dialog"
         PaperProps={{
+          className: 'salary-slip-paper',
           sx: {
             borderRadius: '14px',
             p: 1,
@@ -695,8 +764,23 @@ const Payroll = () => {
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#09090b' }}>Salary Slip</DialogTitle>
-        <DialogContent>
+        <DialogTitle
+          sx={{
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            pb: 1,
+            color: '#09090b',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <span>Salary Slip</span>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#71717a' }}>
+            Attendly
+          </Typography>
+        </DialogTitle>
+        <DialogContent className="salary-slip-content">
           {selectedSlipWorker && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5 }}>
               <Box sx={{ bgcolor: '#f4f4f5', p: 1.5, borderRadius: 2, border: '1px solid #e4e4e7' }}>
@@ -709,6 +793,121 @@ const Payroll = () => {
                 <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontVariantNumeric: 'tabular-nums' }}>
                   Daily Wage: {formatCurrency(selectedSlipWorker.daily_wage)} / day
                 </Typography>
+              </Box>
+
+              {/* Sites Worked Section */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#09090b', letterSpacing: '-0.01em' }}>
+                    Sites Worked
+                  </Typography>
+                  {slipLoading && (
+                    <CircularProgress size={14} sx={{ color: '#ea580c' }} />
+                  )}
+                </Box>
+
+                {slipLoading && slipSites.length === 0 ? (
+                  <Box sx={{ py: 2, textAlign: 'center', bgcolor: '#fafafa', borderRadius: 2, border: '1px solid #f4f4f5' }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#71717a' }}>
+                      Loading site breakdown...
+                    </Typography>
+                  </Box>
+                ) : slipSites.length === 0 ? (
+                  <Box sx={{ py: 1.5, px: 2, bgcolor: '#fafafa', borderRadius: 2, border: '1px solid #f4f4f5', textAlign: 'center' }}>
+                    <Typography sx={{ fontSize: '0.75rem', color: '#71717a' }}>
+                      No sites worked this month
+                    </Typography>
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      borderRadius: 2,
+                      border: '1px solid #e4e4e7',
+                      bgcolor: '#ffffff',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {/* Header */}
+                    <Box
+                      sx={{
+                        display: 'grid',
+                        gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+                        gap: 1.5,
+                        py: 0.75,
+                        px: 1.25,
+                        bgcolor: '#f4f4f5',
+                        borderBottom: '1px solid #e4e4e7'
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#71717a' }}>
+                        Site
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#71717a', textAlign: 'right', minWidth: 65 }}>
+                        Work Units
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#71717a', textAlign: 'right', minWidth: 60 }}>
+                        Earnings
+                      </Typography>
+                    </Box>
+
+                    {/* Site rows */}
+                    {slipSites.map((site, sIdx) => (
+                      <Box
+                        key={`${site.site_id || 'nosite'}-${sIdx}`}
+                        className="salary-slip-row"
+                        sx={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(0, 1fr) auto auto',
+                          gap: 1.5,
+                          py: 0.85,
+                          px: 1.25,
+                          alignItems: 'center',
+                          borderBottom: sIdx < slipSites.length - 1 ? '1px solid #f4f4f5' : 'none'
+                        }}
+                      >
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography
+                            sx={{
+                              fontSize: '0.8125rem',
+                              fontWeight: 600,
+                              color: site.site_id ? '#09090b' : '#71717a',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title={site.site_name}
+                          >
+                            {site.site_name}
+                          </Typography>
+                        </Box>
+                        <Typography
+                          sx={{
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                            color: '#09090b',
+                            textAlign: 'right',
+                            minWidth: 65,
+                            fontVariantNumeric: 'tabular-nums'
+                          }}
+                        >
+                          {site.work_units.toFixed(1)} units
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: '0.8125rem',
+                            fontWeight: 700,
+                            color: '#09090b',
+                            textAlign: 'right',
+                            minWidth: 60,
+                            fontVariantNumeric: 'tabular-nums'
+                          }}
+                        >
+                          {formatCurrency(site.earnings)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: '0.8125rem' }}>
@@ -783,6 +982,7 @@ const Payroll = () => {
             size="small"
             startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
             onClick={() => window.print()}
+            disabled={slipLoading}
             sx={{
               borderRadius: 2,
               bgcolor: '#09090b',
