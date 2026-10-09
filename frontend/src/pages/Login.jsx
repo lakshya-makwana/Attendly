@@ -92,7 +92,7 @@ const Login = () => {
     <Box
       sx={{
         minHeight: '100dvh',
-        bgcolor: '#f8fafc',
+        bgcolor: '#faf9f6',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -104,26 +104,38 @@ const Login = () => {
         {/* Attendly Branding & Lock Icon */}
         <Box
           sx={{
+            position: 'relative',
             width: 48,
             height: 48,
             borderRadius: '14px',
-            bgcolor: '#000000',
+            bgcolor: '#09090b',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             mx: 'auto',
             mb: 1.5,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)'
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)'
           }}
         >
           <LockIcon sx={{ fontSize: 24 }} />
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              bgcolor: '#ea580c'
+            }}
+          />
         </Box>
         <Typography
           sx={{
             fontWeight: 800,
             fontSize: '1.5rem',
-            color: '#0f172a',
+            color: '#09090b',
             letterSpacing: '-0.02em',
             lineHeight: 1.2
           }}
@@ -132,8 +144,9 @@ const Login = () => {
         </Typography>
         <Typography
           sx={{
-            color: '#64748b',
+            color: '#71717a',
             fontSize: '0.875rem',
+            fontWeight: 500,
             mt: 0.5,
             mb: 3
           }}
@@ -144,9 +157,9 @@ const Login = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: 3,
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 20px rgba(15, 23, 42, 0.03)',
+            borderRadius: '14px',
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
             bgcolor: '#ffffff',
             p: { xs: 2.5, sm: 3 },
           }}
@@ -171,9 +184,10 @@ const Login = () => {
                     width: 14,
                     height: 14,
                     borderRadius: '50%',
-                    border: isFilled ? 'none' : '2px solid #cbd5e1',
-                    bgcolor: isFilled ? '#000000' : 'transparent',
-                    transform: isFilled ? 'scale(1.08)' : 'scale(1)',
+                    border: isFilled ? 'none' : '2px solid #d4d4d8',
+                    bgcolor: isFilled ? '#ea580c' : 'transparent',
+                    transform: isFilled ? 'scale(1.12)' : 'scale(1)',
+                    boxShadow: isFilled ? '0 2px 6px rgba(234, 88, 12, 0.35)' : 'none',
                     transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)',
                   }}
                 />
@@ -189,7 +203,10 @@ const Login = () => {
                 py: 0.5,
                 fontSize: '0.8125rem',
                 borderRadius: 2,
-                textAlign: 'left'
+                textAlign: 'left',
+                bgcolor: '#fef2f2',
+                color: '#991b1b',
+                border: '1px solid #fecaca'
               }}
             >
               {error}
@@ -218,20 +235,25 @@ const Login = () => {
                   maxHeight: 62,
                   fontSize: '1.45rem',
                   fontWeight: 600,
-                  color: '#0f172a',
-                  bgcolor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
+                  color: '#09090b',
+                  bgcolor: '#ffffff',
+                  border: '1px solid #e4e4e7',
                   borderRadius: '50%',
                   minWidth: 0,
                   p: 0,
+                  touchAction: 'manipulation',
                   transition: 'all 0.12s ease',
-                  '&:hover': {
-                    bgcolor: '#f1f5f9',
-                    borderColor: '#cbd5e1'
+                  '@media (hover: hover) and (pointer: fine)': {
+                    '&:hover': {
+                      bgcolor: '#f4f4f5',
+                      borderColor: '#d4d4d8'
+                    }
                   },
                   '&:active': {
                     transform: 'scale(0.92)',
-                    bgcolor: '#e2e8f0'
+                    bgcolor: '#fff7ed',
+                    borderColor: '#fed7aa',
+                    color: '#ea580c'
                   }
                 }}
               >
@@ -249,20 +271,23 @@ const Login = () => {
                 maxHeight: 62,
                 fontSize: '0.8125rem',
                 fontWeight: 600,
-                color: '#64748b',
+                color: '#71717a',
                 borderRadius: '50%',
                 minWidth: 0,
                 p: 0,
                 textTransform: 'none',
-                '&:hover': {
-                  color: '#0f172a',
-                  bgcolor: '#f1f5f9'
+                touchAction: 'manipulation',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': {
+                    color: '#09090b',
+                    bgcolor: '#f4f4f5'
+                  }
                 },
                 '&:active': {
                   transform: 'scale(0.92)'
                 },
                 '&.Mui-disabled': {
-                  color: '#cbd5e1'
+                  color: '#d4d4d8'
                 }
               }}
             >
@@ -278,20 +303,25 @@ const Login = () => {
                 maxHeight: 62,
                 fontSize: '1.45rem',
                 fontWeight: 600,
-                color: '#0f172a',
-                bgcolor: '#f8fafc',
-                border: '1px solid #e2e8f0',
+                color: '#09090b',
+                bgcolor: '#ffffff',
+                border: '1px solid #e4e4e7',
                 borderRadius: '50%',
                 minWidth: 0,
                 p: 0,
+                touchAction: 'manipulation',
                 transition: 'all 0.12s ease',
-                '&:hover': {
-                  bgcolor: '#f1f5f9',
-                  borderColor: '#cbd5e1'
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': {
+                    bgcolor: '#f4f4f5',
+                    borderColor: '#d4d4d8'
+                  }
                 },
                 '&:active': {
                   transform: 'scale(0.92)',
-                  bgcolor: '#e2e8f0'
+                  bgcolor: '#fff7ed',
+                  borderColor: '#fed7aa',
+                  color: '#ea580c'
                 }
               }}
             >
@@ -305,20 +335,23 @@ const Login = () => {
                 width: '100%',
                 aspectRatio: '1',
                 maxHeight: 62,
-                color: '#475569',
+                color: '#71717a',
                 borderRadius: '50%',
                 minWidth: 0,
                 p: 0,
+                touchAction: 'manipulation',
                 transition: 'all 0.12s ease',
-                '&:hover': {
-                  color: '#0f172a',
-                  bgcolor: '#f1f5f9'
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': {
+                    color: '#09090b',
+                    bgcolor: '#f4f4f5'
+                  }
                 },
                 '&:active': {
                   transform: 'scale(0.92)'
                 },
                 '&.Mui-disabled': {
-                  color: '#cbd5e1'
+                  color: '#d4d4d8'
                 }
               }}
             >
@@ -338,22 +371,26 @@ const Login = () => {
               sx={{
                 py: 1.25,
                 fontWeight: 700,
-                borderRadius: 2,
+                borderRadius: 2.5,
+                minHeight: 46,
                 fontSize: '0.9375rem',
-                bgcolor: '#000000',
+                bgcolor: '#09090b',
                 color: '#ffffff',
                 boxShadow: 'none',
                 textTransform: 'none',
-                '&:hover': {
-                  bgcolor: '#1e293b',
-                  boxShadow: 'none'
+                touchAction: 'manipulation',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': {
+                    bgcolor: '#27272a',
+                    boxShadow: 'none'
+                  }
                 },
                 '&:active': {
-                  transform: 'scale(0.98)'
+                  transform: 'scale(0.97)'
                 },
                 '&.Mui-disabled': {
-                  bgcolor: '#f1f5f9',
-                  color: '#94a3b8'
+                  bgcolor: '#f4f4f5',
+                  color: '#a1a1aa'
                 }
               }}
             >
@@ -370,18 +407,22 @@ const Login = () => {
               sx={{
                 py: 1.25,
                 fontWeight: 600,
-                borderRadius: 2,
+                borderRadius: 2.5,
+                minHeight: 46,
                 fontSize: '0.9375rem',
-                color: '#0f172a',
-                borderColor: '#e2e8f0',
+                color: '#09090b',
+                borderColor: '#e4e4e7',
                 bgcolor: '#ffffff',
                 textTransform: 'none',
-                '&:hover': {
-                  bgcolor: '#f8fafc',
-                  borderColor: '#0f172a'
+                touchAction: 'manipulation',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': {
+                    bgcolor: '#f4f4f5',
+                    borderColor: '#d4d4d8'
+                  }
                 },
                 '&:active': {
-                  transform: 'scale(0.98)'
+                  transform: 'scale(0.97)'
                 }
               }}
             >

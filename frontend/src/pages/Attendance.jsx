@@ -673,7 +673,7 @@ const Attendance = () => {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: `repeat(${WORK_UNIT_VALUES.length}, 1fr)`,
-                    gap: 0.5,
+                    gap: { xs: 0.35, sm: 0.5 },
                     bgcolor: '#f4f4f5',
                     p: 0.5,
                     borderRadius: '10px',
@@ -687,21 +687,25 @@ const Attendance = () => {
                         key={val}
                         onClick={() => updateWorkerRecord(worker.worker_id, 'work_units', val)}
                         sx={{
-                          minHeight: 40,
+                          minHeight: 42,
                           py: 0.75,
+                          px: 0.25,
+                          minWidth: 0,
                           borderRadius: '8px',
                           textAlign: 'center',
                           cursor: 'pointer',
                           userSelect: 'none',
-                          fontSize: '0.8125rem',
+                          fontSize: { xs: '0.8125rem', sm: '0.85rem' },
                           fontWeight: isSelected ? 700 : 500,
+                          fontVariantNumeric: 'tabular-nums',
+                          whiteSpace: 'nowrap',
                           bgcolor: isSelected ? '#000000' : 'transparent',
                           color: isSelected ? '#ffffff' : '#52525b',
                           boxShadow: isSelected ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: 0.35,
+                          gap: { xs: 0.25, sm: 0.35 },
                           transition: 'background-color 140ms ease-out, color 140ms ease-out, transform 140ms ease-out',
                           '@media (hover: hover) and (pointer: fine)': {
                             '&:hover': {
@@ -713,7 +717,14 @@ const Attendance = () => {
                           touchAction: 'manipulation'
                         }}
                       >
-                        {isSelected && <CheckIcon sx={{ fontSize: 14 }} />}
+                        {isSelected && (
+                          <CheckIcon
+                            sx={{
+                              fontSize: { xs: 12, sm: 14 },
+                              display: { xs: 'none', sm: 'inline-flex' }
+                            }}
+                          />
+                        )}
                         {val}
                       </Box>
                     );

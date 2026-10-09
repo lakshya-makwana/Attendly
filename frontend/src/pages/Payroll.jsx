@@ -106,10 +106,10 @@ const Payroll = () => {
       {/* 1. Page Header & Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: '1.4rem', color: '#09090b', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Monthly Payroll
           </Typography>
-          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+          <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
             {monthNames[selectedMonth - 1]} {selectedYear}
           </Typography>
         </Box>
@@ -123,11 +123,15 @@ const Payroll = () => {
             sx={{
               fontSize: '0.775rem',
               fontWeight: 600,
-              color: '#151c27',
-              borderColor: '#dce2f3',
+              color: '#09090b',
+              borderColor: '#e4e4e7',
               borderRadius: 2,
               bgcolor: '#ffffff',
-              '&:hover': { bgcolor: '#f0f3ff' }
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
             }}
           >
             Analytics
@@ -141,11 +145,15 @@ const Payroll = () => {
             sx={{
               fontSize: '0.775rem',
               fontWeight: 600,
-              color: '#151c27',
-              borderColor: '#dce2f3',
+              color: '#09090b',
+              borderColor: '#e4e4e7',
               borderRadius: 2,
               bgcolor: '#ffffff',
-              '&:hover': { bgcolor: '#f0f3ff' }
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
             }}
           >
             Print
@@ -160,15 +168,24 @@ const Payroll = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           p: 1,
-          bgcolor: '#f0f3ff',
+          bgcolor: '#ffffff',
           borderRadius: 9999,
-          border: '1px solid #e2e8f8'
+          border: '1px solid #e4e4e7',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
         }}
       >
         <IconButton
           onClick={handlePrevMonth}
           size="small"
-          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
+          sx={{
+            color: '#71717a',
+            touchAction: 'manipulation',
+            '@media (hover: hover) and (pointer: fine)': {
+              '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' }
+            },
+            '&:active': { transform: 'scale(0.95)' }
+          }}
+          aria-label="Previous month"
         >
           <PrevIcon sx={{ fontSize: 18 }} />
         </IconButton>
@@ -187,12 +204,13 @@ const Payroll = () => {
               sx={{
                 fontSize: '0.875rem',
                 fontWeight: 700,
-                color: '#151c27',
-                '& .MuiSelect-select': { py: 0.25, pr: '22px !important' }
+                color: '#09090b',
+                '& .MuiSelect-select': { py: 0.25, pr: '22px !important' },
+                '& .MuiSelect-icon': { color: '#71717a' }
               }}
             >
               {[12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((m) => (
-                <MenuItem key={`${selectedYear}-${m}`} value={`${selectedYear}-${m}`} sx={{ fontSize: '0.8125rem' }}>
+                <MenuItem key={`${selectedYear}-${m}`} value={`${selectedYear}-${m}`} sx={{ fontSize: '0.8125rem', color: '#09090b' }}>
                   {monthNames[m - 1]} {selectedYear}
                 </MenuItem>
               ))}
@@ -203,7 +221,15 @@ const Payroll = () => {
         <IconButton
           onClick={handleNextMonth}
           size="small"
-          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
+          sx={{
+            color: '#71717a',
+            touchAction: 'manipulation',
+            '@media (hover: hover) and (pointer: fine)': {
+              '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' }
+            },
+            '&:active': { transform: 'scale(0.95)' }
+          }}
+          aria-label="Next month"
         >
           <NextIcon sx={{ fontSize: 18 }} />
         </IconButton>
@@ -212,10 +238,10 @@ const Payroll = () => {
       {/* 3. Payroll Summary Section */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 0.5 }}>
-          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f' }}>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a' }}>
             Payroll Summary
           </Typography>
-          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 600 }}>
+          <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
             {payrollData?.worker_count || 0} workers · {parseFloat(payrollData?.total_work_units || 0).toFixed(1)} units
           </Typography>
         </Box>
@@ -232,22 +258,35 @@ const Payroll = () => {
           <Card
             elevation={0}
             sx={{
-              borderRadius: 2.5,
-              border: '1px solid #e2e8f8',
+              borderRadius: '12px',
+              border: '1px solid #e4e4e7',
               bgcolor: '#ffffff',
               p: 1.75
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-              <PeopleIcon sx={{ color: '#555f6f', fontSize: 17 }} />
-              <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '6px',
+                  bgcolor: '#f4f4f5',
+                  color: '#09090b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <PeopleIcon sx={{ fontSize: 15 }} />
+              </Box>
+              <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
                 Units Logged
               </Typography>
             </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#09090b', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
               {parseFloat(payrollData?.total_work_units || 0).toFixed(1)}
             </Typography>
-            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', mt: 0.25 }}>
               Days worked
             </Typography>
           </Card>
@@ -256,22 +295,35 @@ const Payroll = () => {
           <Card
             elevation={0}
             sx={{
-              borderRadius: 2.5,
-              border: '1px solid #e2e8f8',
+              borderRadius: '12px',
+              border: '1px solid #e4e4e7',
               bgcolor: '#ffffff',
               p: 1.75
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-              <MoneyIcon sx={{ color: '#555f6f', fontSize: 17 }} />
-              <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '6px',
+                  bgcolor: '#f4f4f5',
+                  color: '#09090b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <MoneyIcon sx={{ fontSize: 15 }} />
+              </Box>
+              <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
                 Gross Labour
               </Typography>
             </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#09090b', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
               {formatCurrency(payrollData?.total_gross_wages)}
             </Typography>
-            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', mt: 0.25 }}>
               Earned wages
             </Typography>
           </Card>
@@ -280,22 +332,35 @@ const Payroll = () => {
           <Card
             elevation={0}
             sx={{
-              borderRadius: 2.5,
-              border: '1px solid #e2e8f8',
+              borderRadius: '12px',
+              border: '1px solid #e4e4e7',
               bgcolor: '#ffffff',
               p: 1.75
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-              <MinusIcon sx={{ color: '#555f6f', fontSize: 17 }} />
-              <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '6px',
+                  bgcolor: '#fef2f2',
+                  color: '#dc2626',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <MinusIcon sx={{ fontSize: 15 }} />
+              </Box>
+              <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
                 Advances
               </Typography>
             </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#ba1a1a' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#dc2626', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
               {formatCurrency(payrollData?.total_advances)}
             </Typography>
-            <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', mt: 0.25 }}>
               Cash deductions
             </Typography>
           </Card>
@@ -304,23 +369,35 @@ const Payroll = () => {
           <Card
             elevation={0}
             sx={{
-              borderRadius: 2.5,
-              border: '1px solid #000000',
-              bgcolor: '#000000',
-              color: '#ffffff',
+              borderRadius: '12px',
+              border: '1px solid #fed7aa',
+              bgcolor: '#fff7ed',
               p: 1.75
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-              <DocumentIcon sx={{ color: '#ffffff', fontSize: 17 }} />
-              <Typography sx={{ color: '#dce2f3', fontWeight: 700, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
+              <Box
+                sx={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: '6px',
+                  bgcolor: '#ffedd5',
+                  color: '#ea580c',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <DocumentIcon sx={{ fontSize: 15 }} />
+              </Box>
+              <Typography sx={{ color: '#c2410c', fontWeight: 700, fontSize: '0.6875rem', textTransform: 'uppercase' }}>
                 Net Payable
               </Typography>
             </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#ffffff' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#ea580c', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
               {formatCurrency(payrollData?.total_net_payable)}
             </Typography>
-            <Typography sx={{ color: '#bdc7d9', fontSize: '0.6875rem', mt: 0.25 }}>
+            <Typography sx={{ color: '#78716c', fontSize: '0.6875rem', mt: 0.25 }}>
               Disbursable total
             </Typography>
           </Card>
@@ -329,16 +406,16 @@ const Payroll = () => {
 
       {/* 4. Worker-wise Breakdown Section */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f', px: 0.5 }}>
+        <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a', px: 0.5 }}>
           Worker-wise Breakdown
         </Typography>
 
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-            <CircularProgress size={30} sx={{ color: '#000000' }} />
+            <CircularProgress size={30} sx={{ color: '#ea580c' }} />
           </Box>
         ) : !payrollData || payrollData.rows.length === 0 ? (
-          <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
+          <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#ffffff', color: '#09090b', border: '1px solid #e4e4e7' }}>
             No worker activity recorded for {monthNames[selectedMonth - 1]} {selectedYear}.
           </Alert>
         ) : (
@@ -353,13 +430,20 @@ const Payroll = () => {
                     elevation={0}
                     onClick={() => handleOpenSlip(row)}
                     sx={{
-                      borderRadius: 3,
-                      border: '1px solid #e2e8f8',
+                      borderRadius: '12px',
+                      border: '1px solid #e4e4e7',
                       bgcolor: '#ffffff',
                       p: 2,
                       cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      '&:active': { transform: 'scale(0.98)', bgcolor: '#f0f3ff' }
+                      transition: 'border-color 140ms ease-out, box-shadow 140ms ease-out',
+                      touchAction: 'manipulation',
+                      '@media (hover: hover) and (pointer: fine)': {
+                        '&:hover': {
+                          borderColor: '#d4d4d8',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                        }
+                      },
+                      '&:active': { transform: 'scale(0.98)', bgcolor: '#fafaf9' }
                     }}
                   >
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
@@ -369,32 +453,33 @@ const Payroll = () => {
                             width: 36,
                             height: 36,
                             borderRadius: '10px',
-                            bgcolor: '#f0f3ff',
-                            color: '#151c27',
+                            bgcolor: '#f4f4f5',
+                            color: '#09090b',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontWeight: 700,
-                            fontSize: '0.85rem'
+                            fontSize: '0.85rem',
+                            border: '1px solid #e4e4e7'
                           }}
                         >
                           {row.worker_name ? row.worker_name.charAt(0).toUpperCase() : 'W'}
                         </Box>
                         <Box>
-                          <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.925rem', lineHeight: 1.2 }}>
+                          <Typography sx={{ fontWeight: 700, color: '#09090b', fontSize: '0.925rem', lineHeight: 1.2 }}>
                             {row.worker_name}
                           </Typography>
-                          <Typography sx={{ color: '#555f6f', fontSize: '0.72rem', mt: 0.25 }}>
+                          <Typography sx={{ color: '#71717a', fontSize: '0.72rem', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
                             Wage: {formatCurrency(row.daily_wage)}/day
                           </Typography>
                         </Box>
                       </Box>
 
                       <Box sx={{ textAlign: 'right' }}>
-                        <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#151c27' }}>
+                        <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#ea580c', fontVariantNumeric: 'tabular-nums' }}>
                           {formatCurrency(row.net_payable)}
                         </Typography>
-                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#555f6f', textTransform: 'uppercase' }}>
+                        <Typography sx={{ fontSize: '0.65rem', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>
                           Net Payable
                         </Typography>
                       </Box>
@@ -406,32 +491,32 @@ const Payroll = () => {
                         gridTemplateColumns: 'repeat(3, 1fr)',
                         gap: 1,
                         p: 1.25,
-                        bgcolor: '#f9f9ff',
+                        bgcolor: '#fafaf9',
                         borderRadius: 2,
-                        border: '1px solid #f0f3ff'
+                        border: '1px solid #f5f5f4'
                       }}
                     >
                       <Box>
-                        <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>Units</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27', mt: 0.25 }}>
+                        <Typography sx={{ color: '#71717a', fontSize: '0.6875rem' }}>Units</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#09090b', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
                           {parseFloat(row.total_work_units).toFixed(1)}
                         </Typography>
                       </Box>
                       <Box>
-                        <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>Gross</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#151c27', mt: 0.25 }}>
+                        <Typography sx={{ color: '#71717a', fontSize: '0.6875rem' }}>Gross</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: '#09090b', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
                           {formatCurrency(row.gross_earnings)}
                         </Typography>
                       </Box>
                       <Box sx={{ textAlign: 'right' }}>
-                        <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>Advances</Typography>
-                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: hasAdvance ? '#ba1a1a' : '#555f6f', mt: 0.25 }}>
+                        <Typography sx={{ color: '#71717a', fontSize: '0.6875rem' }}>Advances</Typography>
+                        <Typography sx={{ fontWeight: 700, fontSize: '0.875rem', color: hasAdvance ? '#dc2626' : '#71717a', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
                           {hasAdvance ? `-${formatCurrency(row.total_advances)}` : '₹0'}
                         </Typography>
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, mt: 1.25, color: '#000000', fontSize: '0.75rem', fontWeight: 600 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, mt: 1.25, color: '#ea580c', fontSize: '0.75rem', fontWeight: 600 }}>
                       <span>View Salary Slip</span>
                       <NextIcon sx={{ fontSize: 14 }} />
                     </Box>
@@ -445,32 +530,32 @@ const Payroll = () => {
               elevation={0}
               sx={{
                 display: { xs: 'none', sm: 'block' },
-                borderRadius: 3,
-                border: '1px solid #e2e8f8',
+                borderRadius: '12px',
+                border: '1px solid #e4e4e7',
                 bgcolor: '#ffffff',
                 overflow: 'hidden'
               }}
             >
               <TableContainer sx={{ overflowX: 'auto' }}>
                 <Table size="small" sx={{ minWidth: 600 }}>
-                  <TableHead sx={{ bgcolor: '#f0f3ff' }}>
+                  <TableHead sx={{ bgcolor: '#f4f4f5' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                      <TableCell sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.72rem', py: 1.25 }}>
                         Worker
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.72rem', py: 1.25 }}>
                         Rate/day
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.72rem', py: 1.25 }}>
                         Units
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.72rem', py: 1.25 }}>
                         Gross
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.72rem', py: 1.25 }}>
                         Advances
                       </TableCell>
-                      <TableCell align="right" sx={{ fontWeight: 700, color: '#555f6f', fontSize: '0.72rem', py: 1.25 }}>
+                      <TableCell align="right" sx={{ fontWeight: 700, color: '#71717a', fontSize: '0.72rem', py: 1.25 }}>
                         Net Payable
                       </TableCell>
                       <TableCell sx={{ width: 28, py: 1.25 }}></TableCell>
@@ -485,28 +570,30 @@ const Payroll = () => {
                           onClick={() => handleOpenSlip(row)}
                           sx={{
                             cursor: 'pointer',
-                            borderTop: index > 0 ? '1px solid #f0f3ff' : 'none',
+                            borderTop: index > 0 ? '1px solid #f4f4f5' : 'none',
                             transition: 'background-color 0.12s ease',
-                            '&:hover': { bgcolor: '#f0f3ff' }
+                            '@media (hover: hover) and (pointer: fine)': {
+                              '&:hover': { bgcolor: '#fafaf9' }
+                            }
                           }}
                         >
                           {/* Worker Name */}
-                          <TableCell sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
+                          <TableCell sx={{ fontWeight: 600, color: '#09090b', fontSize: '0.85rem', py: 1.5 }}>
                             {row.worker_name}
                           </TableCell>
 
                           {/* Rate / day */}
-                          <TableCell align="right" sx={{ color: '#555f6f', fontSize: '0.85rem', py: 1.5 }}>
+                          <TableCell align="right" sx={{ color: '#71717a', fontSize: '0.85rem', py: 1.5, fontVariantNumeric: 'tabular-nums' }}>
                             {formatCurrency(row.daily_wage)}
                           </TableCell>
 
                           {/* Work Units */}
-                          <TableCell align="right" sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
+                          <TableCell align="right" sx={{ fontWeight: 600, color: '#09090b', fontSize: '0.85rem', py: 1.5, fontVariantNumeric: 'tabular-nums' }}>
                             {parseFloat(row.total_work_units).toFixed(1)}
                           </TableCell>
 
                           {/* Gross */}
-                          <TableCell align="right" sx={{ color: '#151c27', fontSize: '0.85rem', py: 1.5 }}>
+                          <TableCell align="right" sx={{ color: '#09090b', fontSize: '0.85rem', py: 1.5, fontVariantNumeric: 'tabular-nums' }}>
                             {formatCurrency(row.gross_earnings)}
                           </TableCell>
 
@@ -516,8 +603,9 @@ const Payroll = () => {
                             sx={{
                               fontWeight: 600,
                               fontSize: '0.85rem',
-                              color: hasAdvance ? '#ba1a1a' : '#555f6f',
-                              py: 1.5
+                              color: hasAdvance ? '#dc2626' : '#71717a',
+                              py: 1.5,
+                              fontVariantNumeric: 'tabular-nums'
                             }}
                           >
                             {formatCurrency(row.total_advances)}
@@ -529,8 +617,9 @@ const Payroll = () => {
                             sx={{
                               fontWeight: 800,
                               fontSize: '0.9rem',
-                              color: '#151c27',
-                              py: 1.5
+                              color: '#ea580c',
+                              py: 1.5,
+                              fontVariantNumeric: 'tabular-nums'
                             }}
                           >
                             {formatCurrency(row.net_payable)}
@@ -538,7 +627,7 @@ const Payroll = () => {
 
                           {/* Chevron */}
                           <TableCell sx={{ py: 1.5, pr: 1.5, textAlign: 'center' }}>
-                            <NextIcon sx={{ color: '#bdc7d9', fontSize: 16 }} />
+                            <NextIcon sx={{ color: '#a1a1aa', fontSize: 16 }} />
                           </TableCell>
                         </TableRow>
                       );
@@ -557,20 +646,20 @@ const Payroll = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          bgcolor: '#f0f3ff',
+          bgcolor: '#f4f4f5',
           borderRadius: 2.5,
-          border: '1px solid #e2e8f8',
+          border: '1px solid #e4e4e7',
           p: 1.5,
           mt: 0.5
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-          <InfoIcon sx={{ color: '#151c27', fontSize: 20 }} />
+          <InfoIcon sx={{ color: '#ea580c', fontSize: 20 }} />
           <Box>
-            <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.75rem', lineHeight: 1.2 }}>
+            <Typography sx={{ fontWeight: 700, color: '#09090b', fontSize: '0.75rem', lineHeight: 1.2 }}>
               Calculation Standard
             </Typography>
-            <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', mt: 0.25 }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', mt: 0.25 }}>
               Net Payable = (Work Units × Daily Wage) − Advances
             </Typography>
           </Box>
@@ -579,12 +668,12 @@ const Payroll = () => {
         <Typography
           onClick={() => setCalcInfoOpen(true)}
           sx={{
-            color: '#000000',
+            color: '#ea580c',
             fontWeight: 700,
             cursor: 'pointer',
             fontSize: '0.75rem',
             whiteSpace: 'nowrap',
-            '&:hover': { textDecoration: 'underline' }
+            '&:hover': { color: '#c2410c', textDecoration: 'underline' }
           }}
         >
           Details
@@ -599,67 +688,68 @@ const Payroll = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: '14px',
             p: 1,
-            border: '1px solid #e2e8f8',
+            border: '1px solid #e4e4e7',
             boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#151c27' }}>Salary Slip</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#09090b' }}>Salary Slip</DialogTitle>
         <DialogContent>
           {selectedSlipWorker && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5 }}>
-              <Box sx={{ bgcolor: '#f0f3ff', p: 1.5, borderRadius: 2, border: '1px solid #e2e8f8' }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#151c27' }}>
+              <Box sx={{ bgcolor: '#f4f4f5', p: 1.5, borderRadius: 2, border: '1px solid #e4e4e7' }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#09090b' }}>
                   {selectedSlipWorker.worker_name}
                 </Typography>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', mt: 0.25 }}>
+                <Typography sx={{ color: '#71717a', fontSize: '0.75rem', mt: 0.25 }}>
                   Month: {monthNames[selectedMonth - 1]} {selectedYear}
                 </Typography>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.75rem' }}>
+                <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontVariantNumeric: 'tabular-nums' }}>
                   Daily Wage: {formatCurrency(selectedSlipWorker.daily_wage)} / day
                 </Typography>
               </Box>
 
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: '0.8125rem' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography sx={{ color: '#555f6f' }}>Work Units:</Typography>
-                  <Typography sx={{ fontWeight: 700, color: '#151c27' }}>
+                  <Typography sx={{ color: '#71717a' }}>Work Units:</Typography>
+                  <Typography sx={{ fontWeight: 700, color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                     {parseFloat(selectedSlipWorker.total_work_units).toFixed(1)} days
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography sx={{ color: '#555f6f' }}>Formula:</Typography>
-                  <Typography sx={{ color: '#555f6f' }}>
+                  <Typography sx={{ color: '#71717a' }}>Formula:</Typography>
+                  <Typography sx={{ color: '#71717a', fontVariantNumeric: 'tabular-nums' }}>
                     {parseFloat(selectedSlipWorker.total_work_units).toFixed(1)} × {formatCurrency(selectedSlipWorker.daily_wage)}
                   </Typography>
                 </Box>
 
-                <Divider sx={{ my: 0.5, borderColor: '#f0f3ff' }} />
+                <Divider sx={{ my: 0.5, borderColor: '#e4e4e7' }} />
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontWeight: 700, color: '#151c27' }}>Gross Wages:</Typography>
-                  <Typography sx={{ fontWeight: 700, color: '#151c27' }}>
+                  <Typography sx={{ fontWeight: 700, color: '#09090b' }}>Gross Wages:</Typography>
+                  <Typography sx={{ fontWeight: 700, color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                     {formatCurrency(selectedSlipWorker.gross_earnings)}
                   </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography sx={{ color: '#ba1a1a', fontWeight: 600 }}>Less Advances:</Typography>
-                  <Typography sx={{ color: '#ba1a1a', fontWeight: 700 }}>
+                  <Typography sx={{ color: '#dc2626', fontWeight: 600 }}>Less Advances:</Typography>
+                  <Typography sx={{ color: '#dc2626', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                     −{formatCurrency(selectedSlipWorker.total_advances)}
                   </Typography>
                 </Box>
 
-                <Divider sx={{ my: 0.5, borderColor: '#f0f3ff' }} />
+                <Divider sx={{ my: 0.5, borderColor: '#e4e4e7' }} />
 
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#151c27' }}>Net Payable:</Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: '0.95rem', color: '#09090b' }}>Net Payable:</Typography>
                   <Typography
                     sx={{
                       fontWeight: 800,
                       fontSize: '1.25rem',
-                      color: '#151c27'
+                      color: '#ea580c',
+                      fontVariantNumeric: 'tabular-nums'
                     }}
                   >
                     {formatCurrency(selectedSlipWorker.net_payable)}
@@ -674,7 +764,17 @@ const Payroll = () => {
             onClick={() => setSlipModalOpen(false)}
             variant="outlined"
             size="small"
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
             Close
           </Button>
@@ -683,7 +783,17 @@ const Payroll = () => {
             size="small"
             startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
             onClick={() => window.print()}
-            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#09090b',
+              color: '#ffffff',
+              fontWeight: 700,
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { bgcolor: '#27272a' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
             Print Slip
           </Button>
@@ -698,32 +808,33 @@ const Payroll = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: '14px',
             p: 1,
-            border: '1px solid #e2e8f8'
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>How Payroll is Calculated</DialogTitle>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>How Payroll is Calculated</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5 }}>
-            <Typography sx={{ color: '#555f6f', fontSize: '0.8125rem', lineHeight: 1.5 }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.8125rem', lineHeight: 1.5 }}>
               Each worker's monthly payout is determined by exact logged work days minus all cash advances borrowed during the billing cycle:
             </Typography>
 
-            <Box sx={{ p: 1.5, bgcolor: '#f0f3ff', borderRadius: 2, border: '1px solid #e2e8f8' }}>
-              <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.8125rem' }}>
+            <Box sx={{ p: 1.5, bgcolor: '#f4f4f5', borderRadius: 2, border: '1px solid #e4e4e7' }}>
+              <Typography sx={{ fontWeight: 700, color: '#09090b', fontSize: '0.8125rem' }}>
                 Formula:
               </Typography>
-              <Typography sx={{ color: '#151c27', fontWeight: 700, mt: 0.25, fontSize: '0.875rem' }}>
+              <Typography sx={{ color: '#ea580c', fontWeight: 700, mt: 0.25, fontSize: '0.875rem' }}>
                 Net Payable = Gross Earnings − Total Advances
               </Typography>
-              <Typography sx={{ color: '#555f6f', mt: 0.5, fontSize: '0.72rem' }}>
+              <Typography sx={{ color: '#71717a', mt: 0.5, fontSize: '0.72rem' }}>
                 Where Gross Earnings = Total Work Units × Daily Wage Rate
               </Typography>
             </Box>
 
-            <Typography sx={{ color: '#555f6f', fontSize: '0.75rem' }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.75rem' }}>
               Attendance work units support 0 (Absent), 0.5 (Half Day), 1 (Full Day), 1.5 (1.5 Days), and 2 (2 Days).
             </Typography>
           </Box>
@@ -733,7 +844,17 @@ const Payroll = () => {
             onClick={() => setCalcInfoOpen(false)}
             variant="contained"
             size="small"
-            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#09090b',
+              color: '#ffffff',
+              fontWeight: 700,
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { bgcolor: '#27272a' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
             Understood
           </Button>

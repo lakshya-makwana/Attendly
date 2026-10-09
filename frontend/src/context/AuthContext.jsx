@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
   const loginDemo = async () => {
     try {
       const response = await api.post('/auth/demo-login');
-      const { access_token, app_title, is_demo } = response.data;
+      const { access_token, app_title } = response.data;
       sessionStorage.setItem('attendly_session_active', 'true');
       sessionStorage.setItem('contractor_token', access_token);
       sessionStorage.setItem('contractor_is_demo', 'true');
