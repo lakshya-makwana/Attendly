@@ -73,7 +73,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh' }}>
-        <CircularProgress size={32} sx={{ color: '#000000' }} />
+        <CircularProgress size={32} sx={{ color: '#09090b' }} />
       </Box>
     );
   }
@@ -94,12 +94,12 @@ const Dashboard = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* 1. Header & Context Month Selector */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.5 }}>
-        <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pt: 0.5, gap: 1.5, flexWrap: 'wrap' }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.5rem' }, color: '#09090b', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Overview
           </Typography>
-          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+          <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
             Operations & Financial Snapshot
           </Typography>
         </Box>
@@ -108,11 +108,12 @@ const Dashboard = () => {
           sx={{
             display: 'inline-flex',
             alignItems: 'center',
-            bgcolor: '#f0f3ff',
+            bgcolor: '#ffffff',
             px: 1.5,
             py: 0.5,
             borderRadius: 9999,
-            border: '1px solid #e2e8f8'
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
           }}
         >
           <FormControl variant="standard">
@@ -127,9 +128,10 @@ const Dashboard = () => {
               IconComponent={ArrowDownIcon}
               sx={{
                 fontSize: '0.8125rem',
-                fontWeight: 700,
-                color: '#151c27',
-                '& .MuiSelect-select': { py: 0.25, pr: '20px !important' }
+                fontWeight: 600,
+                color: '#09090b',
+                '& .MuiSelect-select': { py: 0.25, pr: '22px !important' },
+                '& .MuiSelect-icon': { color: '#71717a' }
               }}
             >
               {[
@@ -143,7 +145,7 @@ const Dashboard = () => {
                 { y: 2026, m: 2 },
                 { y: 2026, m: 1 }
               ].map(({ y, m }) => (
-                <MenuItem key={`${y}-${m}`} value={`${y}-${m}`} sx={{ fontSize: '0.8125rem', fontWeight: 600 }}>
+                <MenuItem key={`${y}-${m}`} value={`${y}-${m}`} sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#09090b' }}>
                   {monthNames[m - 1]} {y}
                 </MenuItem>
               ))}
@@ -153,7 +155,7 @@ const Dashboard = () => {
       </Box>
 
       {error && (
-        <Alert severity="error" sx={{ borderRadius: 2, bgcolor: '#ffdad6', color: '#93000a', border: '1px solid #ffdad6' }}>
+        <Alert severity="error" sx={{ borderRadius: 2, bgcolor: '#fef2f2', color: '#991b1b', border: '1px solid #fecaca', fontSize: '0.8125rem' }}>
           {error}
         </Alert>
       )}
@@ -164,24 +166,26 @@ const Dashboard = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: 3,
-            border: '1px solid #e2e8f8',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
             bgcolor: '#ffffff',
-            p: 2
+            p: { xs: 1.75, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
+            <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.75rem' }}>
               Total Work Units
             </Typography>
             <Box
               sx={{
                 width: 32,
                 height: 32,
-                borderRadius: '10px',
-                bgcolor: '#f0f3ff',
-                color: '#151c27',
+                borderRadius: '8px',
+                bgcolor: '#f4f4f5',
+                color: '#09090b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -190,7 +194,7 @@ const Dashboard = () => {
               <BarChartIcon sx={{ fontSize: 18 }} />
             </Box>
           </Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', mt: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
             {monthWorkUnits}
           </Typography>
         </Card>
@@ -199,24 +203,26 @@ const Dashboard = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: 3,
-            border: '1px solid #e2e8f8',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
             bgcolor: '#ffffff',
-            p: 2
+            p: { xs: 1.75, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
+            <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.75rem' }}>
               Gross Labour
             </Typography>
             <Box
               sx={{
                 width: 32,
                 height: 32,
-                borderRadius: '10px',
-                bgcolor: '#f0f3ff',
-                color: '#151c27',
+                borderRadius: '8px',
+                bgcolor: '#f4f4f5',
+                color: '#09090b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -225,7 +231,7 @@ const Dashboard = () => {
               <CurrencyRupeeIcon sx={{ fontSize: 18 }} />
             </Box>
           </Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', mt: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
             {formatCurrency(grossLabour)}
           </Typography>
         </Card>
@@ -234,24 +240,26 @@ const Dashboard = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: 3,
-            border: '1px solid #e2e8f8',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
             bgcolor: '#ffffff',
-            p: 2
+            p: { xs: 1.75, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
+            <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.75rem' }}>
               Advances Deducted
             </Typography>
             <Box
               sx={{
                 width: 32,
                 height: 32,
-                borderRadius: '10px',
-                bgcolor: '#f0f3ff',
-                color: '#151c27',
+                borderRadius: '8px',
+                bgcolor: '#f4f4f5',
+                color: '#09090b',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -260,7 +268,7 @@ const Dashboard = () => {
               <PaidIcon sx={{ fontSize: 18 }} />
             </Box>
           </Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', mt: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
             {formatCurrency(advances)}
           </Typography>
         </Card>
@@ -269,22 +277,24 @@ const Dashboard = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: 3,
-            border: '1px solid #e2e8f8',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
             bgcolor: '#ffffff',
-            p: 2
+            p: { xs: 1.75, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
           }}
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Typography sx={{ color: '#555f6f', fontWeight: 600, fontSize: '0.75rem' }}>
+            <Typography sx={{ color: '#71717a', fontWeight: 600, fontSize: '0.75rem' }}>
               Net Payable
             </Typography>
             <Box
               sx={{
                 width: 32,
                 height: 32,
-                borderRadius: '10px',
+                borderRadius: '8px',
                 bgcolor: '#000000',
                 color: '#ffffff',
                 display: 'flex',
@@ -295,7 +305,7 @@ const Dashboard = () => {
               <WalletIcon sx={{ fontSize: 18 }} />
             </Box>
           </Box>
-          <Typography sx={{ fontWeight: 800, fontSize: '1.5rem', color: '#151c27', mt: 1, letterSpacing: '-0.02em' }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', mt: 1, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
             {formatCurrency(netPayable)}
           </Typography>
         </Card>
@@ -315,10 +325,10 @@ const Dashboard = () => {
           {/* Today's Activity */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 0.5 }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f' }}>
+              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a' }}>
                 Today's Activity
               </Typography>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 600 }}>
+              <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 {todayIndianDate}
               </Typography>
             </Box>
@@ -328,19 +338,19 @@ const Dashboard = () => {
               <Card
                 elevation={0}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '10px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
-                  p: 1.75
+                  p: 1.5
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                     {metrics?.today_marked_workers ?? 0}
                   </Typography>
-                  <PeopleIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+                  <PeopleIcon sx={{ color: '#71717a', fontSize: 18 }} />
                 </Box>
-                <Typography sx={{ color: '#555f6f', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
+                <Typography sx={{ color: '#71717a', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
                   Marked Workers
                 </Typography>
               </Card>
@@ -349,19 +359,19 @@ const Dashboard = () => {
               <Card
                 elevation={0}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '10px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
-                  p: 1.75
+                  p: 1.5
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                     {parseFloat(metrics?.today_total_work_units || 0).toFixed(1)}
                   </Typography>
-                  <FactCheckIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+                  <FactCheckIcon sx={{ color: '#71717a', fontSize: 18 }} />
                 </Box>
-                <Typography sx={{ color: '#555f6f', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
+                <Typography sx={{ color: '#71717a', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
                   Today Units
                 </Typography>
               </Card>
@@ -370,19 +380,19 @@ const Dashboard = () => {
               <Card
                 elevation={0}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '10px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
-                  p: 1.75
+                  p: 1.5
                 }}
               >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: '1.35rem', color: '#151c27' }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: '1.25rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                     {metrics?.active_sites ?? 0}
                   </Typography>
-                  <LocationOnIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+                  <LocationOnIcon sx={{ color: '#71717a', fontSize: 18 }} />
                 </Box>
-                <Typography sx={{ color: '#555f6f', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
+                <Typography sx={{ color: '#71717a', fontWeight: 600, mt: 0.5, fontSize: '0.6875rem' }}>
                   Active Sites
                 </Typography>
               </Card>
@@ -391,7 +401,7 @@ const Dashboard = () => {
 
           {/* Quick Actions */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f', px: 0.5 }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a', px: 0.5 }}>
               Quick Actions
             </Typography>
 
@@ -401,34 +411,41 @@ const Dashboard = () => {
                 elevation={0}
                 onClick={() => navigate('/attendance')}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '12px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  p: 1.5,
-                  transition: 'all 0.15s ease',
-                  '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
-                  '&:active': { transform: 'scale(0.96)' }
+                  p: { xs: 1.25, sm: 1.5 },
+                  minHeight: 76,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 140ms ease-out, border-color 140ms ease-out, transform 140ms ease-out',
+                  '@media (hover: hover) and (pointer: fine)': {
+                    '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                  },
+                  '&:active': { transform: 'scale(0.96)' },
+                  touchAction: 'manipulation'
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '12px',
-                    bgcolor: '#f0f3ff',
-                    color: '#151c27',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '8px',
+                    bgcolor: '#f4f4f5',
+                    color: '#09090b',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mx: 'auto',
-                    mb: 1
+                    mb: 0.75
                   }}
                 >
                   <FactCheckIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+                <Typography sx={{ fontWeight: 600, color: '#09090b', lineHeight: 1.2, display: 'block', fontSize: '0.75rem' }}>
                   Attendance
                 </Typography>
               </Card>
@@ -438,34 +455,41 @@ const Dashboard = () => {
                 elevation={0}
                 onClick={() => navigate('/workers')}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '12px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  p: 1.5,
-                  transition: 'all 0.15s ease',
-                  '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
-                  '&:active': { transform: 'scale(0.96)' }
+                  p: { xs: 1.25, sm: 1.5 },
+                  minHeight: 76,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 140ms ease-out, border-color 140ms ease-out, transform 140ms ease-out',
+                  '@media (hover: hover) and (pointer: fine)': {
+                    '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                  },
+                  '&:active': { transform: 'scale(0.96)' },
+                  touchAction: 'manipulation'
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '12px',
-                    bgcolor: '#f0f3ff',
-                    color: '#151c27',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '8px',
+                    bgcolor: '#f4f4f5',
+                    color: '#09090b',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mx: 'auto',
-                    mb: 1
+                    mb: 0.75
                   }}
                 >
                   <PersonAddIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+                <Typography sx={{ fontWeight: 600, color: '#09090b', lineHeight: 1.2, display: 'block', fontSize: '0.75rem' }}>
                   Workers
                 </Typography>
               </Card>
@@ -475,34 +499,41 @@ const Dashboard = () => {
                 elevation={0}
                 onClick={() => navigate('/advances')}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '12px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  p: 1.5,
-                  transition: 'all 0.15s ease',
-                  '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
-                  '&:active': { transform: 'scale(0.96)' }
+                  p: { xs: 1.25, sm: 1.5 },
+                  minHeight: 76,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 140ms ease-out, border-color 140ms ease-out, transform 140ms ease-out',
+                  '@media (hover: hover) and (pointer: fine)': {
+                    '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                  },
+                  '&:active': { transform: 'scale(0.96)' },
+                  touchAction: 'manipulation'
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '12px',
-                    bgcolor: '#f0f3ff',
-                    color: '#151c27',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '8px',
+                    bgcolor: '#f4f4f5',
+                    color: '#09090b',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mx: 'auto',
-                    mb: 1
+                    mb: 0.75
                   }}
                 >
                   <WalletIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+                <Typography sx={{ fontWeight: 600, color: '#09090b', lineHeight: 1.2, display: 'block', fontSize: '0.75rem' }}>
                   Advances
                 </Typography>
               </Card>
@@ -512,34 +543,41 @@ const Dashboard = () => {
                 elevation={0}
                 onClick={() => navigate('/sites')}
                 sx={{
-                  borderRadius: 2.5,
-                  border: '1px solid #e2e8f8',
+                  borderRadius: '12px',
+                  border: '1px solid #e4e4e7',
                   bgcolor: '#ffffff',
                   cursor: 'pointer',
                   textAlign: 'center',
-                  p: 1.5,
-                  transition: 'all 0.15s ease',
-                  '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
-                  '&:active': { transform: 'scale(0.96)' }
+                  p: { xs: 1.25, sm: 1.5 },
+                  minHeight: 76,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 140ms ease-out, border-color 140ms ease-out, transform 140ms ease-out',
+                  '@media (hover: hover) and (pointer: fine)': {
+                    '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                  },
+                  '&:active': { transform: 'scale(0.96)' },
+                  touchAction: 'manipulation'
                 }}
               >
                 <Box
                   sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: '12px',
-                    bgcolor: '#f0f3ff',
-                    color: '#151c27',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '8px',
+                    bgcolor: '#f4f4f5',
+                    color: '#09090b',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    mx: 'auto',
-                    mb: 1
+                    mb: 0.75
                   }}
                 >
                   <SitesIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography sx={{ fontWeight: 700, color: '#151c27', lineHeight: 1.2, display: 'block', fontSize: '0.72rem' }}>
+                <Typography sx={{ fontWeight: 600, color: '#09090b', lineHeight: 1.2, display: 'block', fontSize: '0.75rem' }}>
                   Sites
                 </Typography>
               </Card>
@@ -550,12 +588,12 @@ const Dashboard = () => {
         {/* Right Column: Site Overview */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 0.5 }}>
-            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#555f6f' }}>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a' }}>
               Site Overview
             </Typography>
             <Typography
               onClick={() => navigate('/analytics')}
-              sx={{ color: '#000000', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+              sx={{ color: '#09090b', fontWeight: 600, fontSize: '0.75rem', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
             >
               View All
             </Typography>
@@ -564,22 +602,39 @@ const Dashboard = () => {
           <Card
             elevation={0}
             sx={{
-              borderRadius: 3,
-              border: '1px solid #e2e8f8',
+              borderRadius: '12px',
+              border: '1px solid #e4e4e7',
               bgcolor: '#ffffff',
               overflow: 'hidden'
             }}
           >
             {activeSitesList.length === 0 ? (
-              <Box sx={{ p: 3, textAlign: 'center' }}>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>
-                  No active work sites configured.
+              <Box sx={{ p: 4, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '10px',
+                    bgcolor: '#f4f4f5',
+                    color: '#71717a',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <SitesIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Typography sx={{ color: '#09090b', fontSize: '0.875rem', fontWeight: 600 }}>
+                  No active work sites
+                </Typography>
+                <Typography sx={{ color: '#71717a', fontSize: '0.75rem' }}>
+                  Sites with recorded attendance or active status will appear here.
                 </Typography>
               </Box>
             ) : (
               activeSitesList.slice(0, 5).map((site, index) => (
                 <Box key={site.site_id}>
-                  {index > 0 && <Divider sx={{ borderColor: '#f0f3ff' }} />}
+                  {index > 0 && <Divider sx={{ borderColor: '#f4f4f5' }} />}
                   <Box
                     onClick={() => navigate(`/analytics?year=${selectedYear}&month=${selectedMonth}`)}
                     sx={{
@@ -588,41 +643,44 @@ const Dashboard = () => {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       cursor: 'pointer',
-                      transition: 'background-color 0.15s ease',
-                      '&:hover': { bgcolor: '#f0f3ff' }
+                      transition: 'background-color 140ms ease-out',
+                      '@media (hover: hover) and (pointer: fine)': {
+                        '&:hover': { bgcolor: '#f8f9fa' }
+                      },
+                      '&:active': { bgcolor: '#f4f4f5' }
                     }}
                   >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0 }}>
                       <Box
                         sx={{
-                          width: 38,
-                          height: 38,
-                          borderRadius: '10px',
-                          bgcolor: '#f0f3ff',
-                          color: '#151c27',
+                          width: 36,
+                          height: 36,
+                          borderRadius: '8px',
+                          bgcolor: '#f4f4f5',
+                          color: '#09090b',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           flexShrink: 0
                         }}
                       >
-                        <SitesIcon sx={{ fontSize: 20 }} />
+                        <SitesIcon sx={{ fontSize: 18 }} />
                       </Box>
-                      <Box>
-                        <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.9rem', lineHeight: 1.2 }}>
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 600, color: '#09090b', fontSize: '0.875rem', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {site.site_name}
                         </Typography>
-                        <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', mt: 0.25 }}>
+                        <Typography sx={{ color: '#71717a', fontSize: '0.75rem', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
                           {site.unique_worker_count} workers · {parseFloat(site.total_work_units).toFixed(1)} units
                         </Typography>
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                      <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.875rem' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0, ml: 1.5 }}>
+                      <Typography sx={{ fontWeight: 700, color: '#09090b', fontSize: '0.875rem', fontVariantNumeric: 'tabular-nums' }}>
                         {formatCurrency(site.total_labour_expense)}
                       </Typography>
-                      <ChevronRightIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+                      <ChevronRightIcon sx={{ color: '#a1a1aa', fontSize: 18 }} />
                     </Box>
                   </Box>
                 </Box>
@@ -636,3 +694,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
