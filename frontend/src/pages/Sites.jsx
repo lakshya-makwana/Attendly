@@ -151,11 +151,11 @@ const Sites = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Page Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
-        <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Work Sites
           </Typography>
-          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+          <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
             Manage active and archived construction locations
           </Typography>
         </Box>
@@ -165,15 +165,18 @@ const Sites = () => {
           startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleOpenAdd}
           sx={{
-            bgcolor: '#000000',
+            bgcolor: '#09090b',
             color: '#ffffff',
             fontSize: '0.8125rem',
             fontWeight: 700,
             px: 2,
-            py: 0.85,
+            py: 1,
+            minHeight: 42,
             borderRadius: 2.5,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            '&:hover': { bgcolor: '#1f2937' },
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            touchAction: 'manipulation',
+            transition: 'transform 140ms ease-out, background-color 140ms ease-out',
+            '&:hover': { bgcolor: '#27272a' },
             '&:active': { transform: 'scale(0.97)' }
           }}
         >
@@ -184,36 +187,51 @@ const Sites = () => {
       {/* Sites Content */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress size={30} sx={{ color: '#000000' }} />
+          <CircularProgress size={30} sx={{ color: '#ea580c' }} />
         </Box>
       ) : sites.length === 0 ? (
-        <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
+        <Alert
+          severity="info"
+          sx={{
+            borderRadius: 2.5,
+            bgcolor: '#ffffff',
+            color: '#09090b',
+            border: '1px solid #e4e4e7',
+            fontSize: '0.8125rem'
+          }}
+        >
           No work sites configured. Click "Add Site" to create your first site.
         </Alert>
       ) : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.75 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5 }}>
           {sites.map((site) => (
             <Card
               key={site.id}
               elevation={0}
               sx={{
-                borderRadius: 3,
-                border: '1px solid #e2e8f8',
+                borderRadius: '12px',
+                border: '1px solid #e4e4e7',
                 bgcolor: '#ffffff',
-                p: 2,
-                opacity: site.is_active ? 1 : 0.65,
-                transition: 'all 0.15s ease'
+                p: { xs: 1.75, sm: 2 },
+                opacity: site.is_active ? 1 : 0.68,
+                transition: 'border-color 0.14s ease-out, box-shadow 0.14s ease-out',
+                '&:hover': {
+                  borderColor: '#d4d4d8',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                }
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.25 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1.5, mb: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
                   <Box
                     sx={{
                       width: 42,
                       height: 42,
-                      borderRadius: '12px',
-                      bgcolor: '#f0f3ff',
-                      color: '#151c27',
+                      borderRadius: '10px',
+                      bgcolor: site.is_active ? '#fff7ed' : '#f4f4f5',
+                      color: site.is_active ? '#ea580c' : '#71717a',
+                      border: '1px solid',
+                      borderColor: site.is_active ? '#fed7aa' : '#e4e4e7',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -223,35 +241,77 @@ const Sites = () => {
                     <SitesIcon sx={{ fontSize: 22 }} />
                   </Box>
 
-                  <Box>
-                    <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2 }}>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      title={site.name}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.9375rem',
+                        color: '#09090b',
+                        lineHeight: 1.25,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
                       {site.name}
                     </Typography>
-                    <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', mt: 0.25, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <LocationIcon sx={{ fontSize: 13 }} />
-                      {site.address || 'No location specified'}
+                    <Typography
+                      title={site.address || 'No location specified'}
+                      sx={{
+                        color: '#71717a',
+                        fontSize: '0.75rem',
+                        mt: 0.25,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <LocationIcon sx={{ fontSize: 13, flexShrink: 0, color: '#71717a' }} />
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {site.address || 'No location specified'}
+                      </span>
                     </Typography>
                   </Box>
                 </Box>
 
                 <Box
                   sx={{
-                    fontSize: '0.6875rem',
-                    fontWeight: 700,
-                    px: 1.5,
+                    bgcolor: site.is_active ? '#f0fdf4' : '#f4f4f5',
+                    color: site.is_active ? '#15803d' : '#71717a',
+                    border: '1px solid',
+                    borderColor: site.is_active ? '#bbf7d0' : '#e4e4e7',
+                    px: 1.25,
                     py: 0.4,
                     borderRadius: 1.5,
-                    bgcolor: site.is_active ? '#f0f3ff' : '#e2e8f8',
-                    color: site.is_active ? '#151c27' : '#555f6f'
+                    fontSize: '0.6875rem',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    flexShrink: 0,
+                    userSelect: 'none'
                   }}
                 >
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: site.is_active ? '#16a34a' : '#a1a1aa'
+                    }}
+                  />
                   {site.is_active ? 'Active' : 'Inactive'}
                 </Box>
               </Box>
 
-              <Divider sx={{ my: 1.25, borderColor: '#f0f3ff' }} />
+              <Divider sx={{ my: 1.25, borderColor: '#f4f4f5' }} />
 
-              <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                 <Button
                   size="small"
                   variant="outlined"
@@ -260,12 +320,16 @@ const Sites = () => {
                   sx={{
                     fontSize: '0.75rem',
                     px: 1.5,
-                    py: 0.5,
+                    py: 0.6,
+                    minHeight: 36,
                     borderRadius: 2,
-                    borderColor: '#dce2f3',
-                    color: '#151c27',
+                    borderColor: '#e4e4e7',
+                    color: '#09090b',
                     fontWeight: 600,
-                    '&:hover': { bgcolor: '#f0f3ff' }
+                    touchAction: 'manipulation',
+                    transition: 'all 0.12s ease-out',
+                    '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
                   Edit
@@ -278,12 +342,16 @@ const Sites = () => {
                   sx={{
                     fontSize: '0.75rem',
                     px: 1.5,
-                    py: 0.5,
+                    py: 0.6,
+                    minHeight: 36,
                     borderRadius: 2,
-                    borderColor: '#dce2f3',
-                    color: '#555f6f',
+                    borderColor: '#e4e4e7',
+                    color: '#71717a',
                     fontWeight: 600,
-                    '&:hover': { bgcolor: '#f0f3ff', color: '#151c27' }
+                    touchAction: 'manipulation',
+                    transition: 'all 0.12s ease-out',
+                    '&:hover': { bgcolor: '#f4f4f5', color: '#09090b', borderColor: '#d4d4d8' },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
                   {site.is_active ? 'Deactivate' : 'Activate'}
@@ -297,12 +365,16 @@ const Sites = () => {
                   sx={{
                     fontSize: '0.75rem',
                     px: 1.5,
-                    py: 0.5,
+                    py: 0.6,
+                    minHeight: 36,
                     borderRadius: 2,
-                    borderColor: '#ffdad6',
-                    color: '#ba1a1a',
+                    borderColor: '#fecaca',
+                    color: '#dc2626',
                     fontWeight: 600,
-                    '&:hover': { bgcolor: '#ffdad6' }
+                    touchAction: 'manipulation',
+                    transition: 'all 0.12s ease-out',
+                    '&:hover': { bgcolor: '#fef2f2', borderColor: '#fca5a5' },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
                   Delete
@@ -323,12 +395,12 @@ const Sites = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8',
+            border: '1px solid #e4e4e7',
             boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           {editingSite ? `Edit ${editingSite.name}` : 'Add Work Site'}
         </DialogTitle>
         <DialogContent>
@@ -338,23 +410,35 @@ const Sites = () => {
               required
               fullWidth
               autoFocus
-              size="small"
               placeholder="e.g. Bandra Residential Complex"
               value={name}
               onChange={(e) => setName(e.target.value)}
               helperText="Renaming preserves past attendance records."
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem' }
+              }}
             />
 
             <TextField
               label="Address / Landmark"
               fullWidth
-              size="small"
               placeholder="e.g. Near Metro Station"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               helperText="Optional location reference"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem' }
+              }}
             />
           </Box>
         </DialogContent>
@@ -363,7 +447,14 @@ const Sites = () => {
             onClick={() => setDialogOpen(false)}
             variant="outlined"
             size="small"
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -372,7 +463,17 @@ const Sites = () => {
             size="small"
             onClick={handleSave}
             disabled={saving || !name.trim()}
-            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#09090b',
+              color: '#ffffff',
+              fontWeight: 700,
+              minHeight: 40,
+              px: 2.5,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#27272a' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
             {saving ? 'Saving...' : editingSite ? 'Update Site' : 'Add Site'}
           </Button>
@@ -389,20 +490,20 @@ const Sites = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8'
+            border: '1px solid #e4e4e7'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           {deleteError ? 'Cannot Delete Site' : 'Delete Work Site'}
         </DialogTitle>
         <DialogContent>
           {deleteError ? (
-            <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+            <Alert severity="warning" sx={{ mb: 2, borderRadius: 2, bgcolor: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
               {deleteError}
             </Alert>
           ) : (
-            <Typography variant="body2" sx={{ color: '#555f6f' }}>
+            <Typography variant="body2" sx={{ color: '#71717a', lineHeight: 1.5 }}>
               Are you sure you want to delete <strong>{siteToDelete?.name}</strong>?
               If attendance was ever recorded at this site, deletion will be blocked to maintain historical records.
             </Typography>
@@ -413,7 +514,14 @@ const Sites = () => {
             onClick={() => setDeleteDialogOpen(false)}
             variant="outlined"
             size="small"
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -422,7 +530,17 @@ const Sites = () => {
               variant="contained"
               size="small"
               onClick={handleDeactivateInstead}
-              sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+              sx={{
+                borderRadius: 2,
+                bgcolor: '#09090b',
+                color: '#ffffff',
+                fontWeight: 700,
+                minHeight: 40,
+                px: 2,
+                touchAction: 'manipulation',
+                '&:hover': { bgcolor: '#27272a' },
+                '&:active': { transform: 'scale(0.97)' }
+              }}
             >
               Deactivate Site Instead
             </Button>
@@ -431,7 +549,17 @@ const Sites = () => {
               variant="contained"
               size="small"
               onClick={handleDelete}
-              sx={{ borderRadius: 2, bgcolor: '#ba1a1a', color: '#ffffff', fontWeight: 700, '&:hover': { bgcolor: '#93000a' } }}
+              sx={{
+                borderRadius: 2,
+                bgcolor: '#dc2626',
+                color: '#ffffff',
+                fontWeight: 700,
+                minHeight: 40,
+                px: 2,
+                touchAction: 'manipulation',
+                '&:hover': { bgcolor: '#b91c1c' },
+                '&:active': { transform: 'scale(0.97)' }
+              }}
             >
               Delete Site
             </Button>
@@ -446,7 +574,15 @@ const Sites = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            fontWeight: 600,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

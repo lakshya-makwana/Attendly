@@ -200,11 +200,11 @@ const Workers = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Header */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
-        <Box>
-          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#151c27', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
             Workers
           </Typography>
-          <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
+          <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 500, mt: 0.25 }}>
             Manage workforce roster, wages, and contacts
           </Typography>
         </Box>
@@ -214,15 +214,18 @@ const Workers = () => {
           startIcon={<AddIcon sx={{ fontSize: 18 }} />}
           onClick={handleOpenAdd}
           sx={{
-            bgcolor: '#000000',
+            bgcolor: '#09090b',
             color: '#ffffff',
             fontSize: '0.8125rem',
             fontWeight: 700,
             px: 2,
-            py: 0.85,
+            py: 1,
+            minHeight: 42,
             borderRadius: 2.5,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
-            '&:hover': { bgcolor: '#1f2937' },
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            touchAction: 'manipulation',
+            transition: 'transform 140ms ease-out, background-color 140ms ease-out',
+            '&:hover': { bgcolor: '#27272a' },
             '&:active': { transform: 'scale(0.97)' }
           }}
         >
@@ -242,61 +245,95 @@ const Workers = () => {
             minWidth: { xs: '100%', sm: 220 },
             '& .MuiOutlinedInput-root': {
               borderRadius: 2.5,
-              bgcolor: '#ffffff'
+              bgcolor: '#ffffff',
+              fontSize: '0.875rem',
+              '& fieldset': { borderColor: '#e4e4e7' },
+              '&:hover fieldset': { borderColor: '#d4d4d8' },
+              '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+            },
+            '& input': {
+              fontSize: '1rem',
+              py: 1.2
             }
           }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon sx={{ color: '#555f6f', fontSize: 18 }} />
+                <SearchIcon sx={{ color: '#71717a', fontSize: 18 }} />
               </InputAdornment>
             ),
           }}
         />
 
         {/* 3 Status Filters: [ All ] [ Active ] [ Inactive ] */}
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexShrink: 0 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 0.75,
+            alignItems: 'center',
+            flexShrink: 0,
+            width: { xs: '100%', sm: 'auto' },
+            overflowX: 'auto',
+            pb: { xs: 0.5, sm: 0 }
+          }}
+        >
           {[
-            { key: 'all', label: 'All' },
+            { key: 'all', label: 'All Workers' },
             { key: 'active', label: 'Active' },
             { key: 'inactive', label: 'Inactive' }
-          ].map((f) => (
-            <Button
-              key={f.key}
-              size="small"
-              onClick={() => setStatusFilter(f.key)}
-              sx={{
-                bgcolor: statusFilter === f.key ? '#000000' : '#ffffff',
-                color: statusFilter === f.key ? '#ffffff' : '#555f6f',
-                border: '1px solid',
-                borderColor: statusFilter === f.key ? '#000000' : '#e2e8f8',
-                borderRadius: 2.5,
-                px: 2,
-                py: 0.6,
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                textTransform: 'none',
-                minWidth: 'auto',
-                transition: 'all 0.15s ease',
-                '&:hover': {
-                  bgcolor: statusFilter === f.key ? '#1f2937' : '#f0f3ff',
-                  color: statusFilter === f.key ? '#ffffff' : '#151c27'
-                }
-              }}
-            >
-              {f.label}
-            </Button>
-          ))}
+          ].map((f) => {
+            const isSelected = statusFilter === f.key;
+            return (
+              <Button
+                key={f.key}
+                size="small"
+                onClick={() => setStatusFilter(f.key)}
+                sx={{
+                  flex: { xs: 1, sm: 'initial' },
+                  bgcolor: isSelected ? '#09090b' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#71717a',
+                  border: '1px solid',
+                  borderColor: isSelected ? '#09090b' : '#e4e4e7',
+                  borderRadius: 2,
+                  px: 2,
+                  py: 0.8,
+                  minHeight: 38,
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  textTransform: 'none',
+                  minWidth: 'auto',
+                  touchAction: 'manipulation',
+                  transition: 'all 0.14s ease-out',
+                  '&:hover': {
+                    bgcolor: isSelected ? '#27272a' : '#fafafa',
+                    color: isSelected ? '#ffffff' : '#09090b'
+                  },
+                  '&:active': { transform: 'scale(0.97)' }
+                }}
+              >
+                {f.label}
+              </Button>
+            );
+          })}
         </Box>
       </Box>
 
       {/* Workers Roster */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
-          <CircularProgress size={30} sx={{ color: '#000000' }} />
+          <CircularProgress size={30} sx={{ color: '#ea580c' }} />
         </Box>
       ) : filteredWorkers.length === 0 ? (
-        <Alert severity="info" sx={{ borderRadius: 2.5, bgcolor: '#f0f3ff', color: '#151c27', border: '1px solid #e2e8f8' }}>
+        <Alert
+          severity="info"
+          sx={{
+            borderRadius: 2.5,
+            bgcolor: '#ffffff',
+            color: '#09090b',
+            border: '1px solid #e4e4e7',
+            fontSize: '0.8125rem'
+          }}
+        >
           {statusFilter === 'inactive'
             ? 'No inactive workers found.'
             : statusFilter === 'active'
@@ -311,157 +348,208 @@ const Workers = () => {
               elevation={0}
               onClick={() => navigate(`/workers/${worker.id}`)}
               sx={{
-                borderRadius: 3,
-                border: '1px solid #e2e8f8',
+                borderRadius: '12px',
+                border: '1px solid #e4e4e7',
                 bgcolor: '#ffffff',
-                p: 2,
+                p: { xs: 1.75, sm: 2 },
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
+                flexDirection: 'column',
                 gap: 1.5,
                 cursor: 'pointer',
-                opacity: worker.is_active ? 1 : 0.75,
-                transition: 'all 0.15s ease',
-                '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+                opacity: worker.is_active ? 1 : 0.72,
+                transition: 'border-color 0.14s ease-out, box-shadow 0.14s ease-out',
+                '&:hover': {
+                  borderColor: '#d4d4d8',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+                },
                 '&:active': { transform: 'scale(0.99)' }
               }}
             >
-              {/* Left Column: Avatar + Details */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flex: '1 1 200px', minWidth: 0 }}>
-                <Box
-                  sx={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '12px',
-                    bgcolor: worker.is_active ? '#f0f3ff' : '#f4f6f8',
-                    color: '#151c27',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontWeight: 700,
-                    fontSize: '0.95rem',
-                    flexShrink: 0
-                  }}
-                >
-                  {worker.name ? worker.name.charAt(0).toUpperCase() : <PersonIcon />}
-                </Box>
+              {/* Top Row: Avatar + Name + Status Badge */}
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, minWidth: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
+                  <Box
+                    sx={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: '10px',
+                      bgcolor: worker.is_active ? '#fff7ed' : '#f4f4f5',
+                      color: worker.is_active ? '#ea580c' : '#71717a',
+                      border: '1px solid',
+                      borderColor: worker.is_active ? '#fed7aa' : '#e4e4e7',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 700,
+                      fontSize: '0.95rem',
+                      flexShrink: 0
+                    }}
+                  >
+                    {worker.name ? worker.name.charAt(0).toUpperCase() : <PersonIcon sx={{ fontSize: 20 }} />}
+                  </Box>
 
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: '0.9375rem', color: '#151c27', lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {worker.name}
-                  </Typography>
-
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.35 }}>
-                    <Typography sx={{ color: '#151c27', fontSize: '0.75rem', fontWeight: 700 }}>
-                      ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography
+                      title={worker.name}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '0.9375rem',
+                        color: '#09090b',
+                        lineHeight: 1.3,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {worker.name}
                     </Typography>
 
-                    {worker.phone ? (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.35, flexWrap: 'wrap' }}>
                       <Typography
-                        variant="caption"
-                        component="a"
-                        href={`tel:${worker.phone}`}
-                        onClick={(e) => e.stopPropagation()}
                         sx={{
-                          color: '#555f6f',
-                          textDecoration: 'none',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.3,
+                          color: '#09090b',
                           fontSize: '0.75rem',
-                          '&:hover': { color: '#000000', textDecoration: 'underline' }
+                          fontWeight: 700,
+                          fontVariantNumeric: 'tabular-nums'
                         }}
                       >
-                        <PhoneIcon sx={{ fontSize: 13 }} /> {worker.phone}
+                        ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
                       </Typography>
-                    ) : (
-                      <Typography variant="caption" sx={{ color: '#76777c', fontSize: '0.75rem' }}>
-                        No phone
-                      </Typography>
-                    )}
+
+                      {worker.phone ? (
+                        <Typography
+                          variant="caption"
+                          component="a"
+                          href={`tel:${worker.phone}`}
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{
+                            color: '#71717a',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.35,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            fontVariantNumeric: 'tabular-nums',
+                            '&:hover': { color: '#09090b', textDecoration: 'underline' }
+                          }}
+                        >
+                          <PhoneIcon sx={{ fontSize: 13, color: '#71717a' }} /> {worker.phone}
+                        </Typography>
+                      ) : (
+                        <Typography variant="caption" sx={{ color: '#a1a1aa', fontSize: '0.75rem' }}>
+                          No phone
+                        </Typography>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
-              </Box>
 
-              {/* Right Column: Status Badge, Mark Active/Inactive button, Edit & Delete */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 1,
-                  flexShrink: 0,
-                  flexWrap: 'wrap',
-                  ml: { xs: 0, sm: 'auto' }
-                }}
-              >
                 {/* Status Indicator Pill */}
                 <Box
                   sx={{
-                    bgcolor: worker.is_active ? '#f0f3ff' : '#f4f6f8',
-                    color: worker.is_active ? '#151c27' : '#555f6f',
+                    bgcolor: worker.is_active ? '#f0fdf4' : '#f4f4f5',
+                    color: worker.is_active ? '#15803d' : '#71717a',
                     border: '1px solid',
-                    borderColor: worker.is_active ? '#dce2f3' : '#e2e8f8',
+                    borderColor: worker.is_active ? '#bbf7d0' : '#e4e4e7',
                     px: 1.25,
-                    py: 0.35,
+                    py: 0.4,
                     borderRadius: 1.5,
                     fontSize: '0.6875rem',
                     fontWeight: 700,
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 0.5
+                    gap: 0.5,
+                    flexShrink: 0,
+                    userSelect: 'none'
                   }}
                 >
-                  <Box component="span" sx={{ fontSize: '0.625rem', lineHeight: 1 }}>
-                    {worker.is_active ? '●' : '○'}
-                  </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: worker.is_active ? '#16a34a' : '#a1a1aa'
+                    }}
+                  />
                   {worker.is_active ? 'Active' : 'Inactive'}
                 </Box>
+              </Box>
 
-                {/* Mark Active / Mark Inactive Button */}
+              {/* Bottom Action Row: Status button, Edit, Delete, Chevron */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  pt: 1,
+                  borderTop: '1px solid #f4f4f5',
+                  gap: 1
+                }}
+              >
                 <Button
                   size="small"
                   variant="outlined"
                   onClick={(e) => handleOpenStatusConfirm(worker, e)}
                   sx={{
-                    fontSize: '0.6875rem',
+                    fontSize: '0.75rem',
                     fontWeight: 600,
-                    px: 1.25,
-                    py: 0.35,
+                    px: 1.5,
+                    py: 0.6,
+                    minHeight: 36,
                     borderRadius: 2,
                     textTransform: 'none',
-                    borderColor: '#dce2f3',
-                    color: '#555f6f',
+                    borderColor: '#e4e4e7',
+                    color: '#71717a',
                     bgcolor: '#ffffff',
                     whiteSpace: 'nowrap',
-                    minWidth: 'auto',
+                    touchAction: 'manipulation',
+                    transition: 'all 0.12s ease-out',
                     '&:hover': {
-                      bgcolor: '#f0f3ff',
-                      color: '#151c27',
-                      borderColor: '#bdc7d9'
-                    }
+                      bgcolor: '#f4f4f5',
+                      color: '#09090b',
+                      borderColor: '#d4d4d8'
+                    },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
                   {worker.is_active ? 'Mark Inactive' : 'Mark Active'}
                 </Button>
 
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleOpenEdit(worker, e)}
-                  sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' } }}
-                >
-                  <EditIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleOpenEdit(worker, e)}
+                    aria-label={`Edit ${worker.name}`}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      color: '#71717a',
+                      touchAction: 'manipulation',
+                      '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' }
+                    }}
+                  >
+                    <EditIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
 
-                <IconButton
-                  size="small"
-                  onClick={(e) => handleOpenDelete(worker, e)}
-                  sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
-                >
-                  <DeleteIcon sx={{ fontSize: 18 }} />
-                </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleOpenDelete(worker, e)}
+                    aria-label={`Delete ${worker.name}`}
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      color: '#71717a',
+                      touchAction: 'manipulation',
+                      '&:hover': { color: '#dc2626', bgcolor: '#fef2f2' }
+                    }}
+                  >
+                    <DeleteIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
 
-                <ChevronRightIcon sx={{ color: '#bdc7d9', fontSize: 18 }} />
+                  <ChevronRightIcon sx={{ color: '#d4d4d8', fontSize: 18, ml: 0.5 }} />
+                </Box>
               </Box>
             </Card>
           ))}
@@ -478,23 +566,23 @@ const Workers = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8',
+            border: '1px solid #e4e4e7',
             boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           {statusWorker?.is_active
             ? `Mark ${statusWorker?.name} as inactive?`
             : `Mark ${statusWorker?.name} as active?`}
         </DialogTitle>
         <DialogContent>
           {statusWorker?.is_active ? (
-            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+            <Typography variant="body2" sx={{ color: '#71717a', lineHeight: 1.5 }}>
               This worker will no longer appear when recording new attendance. Their historical records will be preserved.
             </Typography>
           ) : (
-            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+            <Typography variant="body2" sx={{ color: '#71717a', lineHeight: 1.5 }}>
               This worker will become available for recording attendance and issuing advances.
             </Typography>
           )}
@@ -505,7 +593,14 @@ const Workers = () => {
             variant="outlined"
             size="small"
             disabled={statusLoading}
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -516,10 +611,14 @@ const Workers = () => {
             disabled={statusLoading}
             sx={{
               borderRadius: 2,
-              bgcolor: '#000000',
+              bgcolor: '#09090b',
               color: '#ffffff',
               fontWeight: 700,
-              '&:hover': { bgcolor: '#1f2937' }
+              minHeight: 40,
+              px: 2,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#27272a' },
+              '&:active': { transform: 'scale(0.97)' }
             }}
           >
             {statusLoading
@@ -541,12 +640,12 @@ const Workers = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8',
+            border: '1px solid #e4e4e7',
             boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#09090b' }}>
           {editingWorker ? 'Edit Worker' : 'Add Worker'}
         </DialogTitle>
         <DialogContent>
@@ -560,17 +659,32 @@ const Workers = () => {
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               error={!!formErrors.name}
               helperText={formErrors.name}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem' }
+              }}
             />
 
             <TextField
               label="Phone Number"
               fullWidth
+              type="tel"
               placeholder="e.g. 9820112233"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               helperText="Contact info only"
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem' }
+              }}
             />
 
             <TextField
@@ -578,15 +692,27 @@ const Workers = () => {
               required
               fullWidth
               type="number"
+              inputProps={{ inputMode: 'decimal', min: 0 }}
               placeholder="e.g. 800"
               value={formData.daily_wage}
               onChange={(e) => setFormData({ ...formData, daily_wage: e.target.value })}
               error={!!formErrors.daily_wage}
               helperText={formErrors.daily_wage || 'Standard rate for 1 work unit'}
               InputProps={{
-                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Typography sx={{ color: '#09090b', fontWeight: 700 }}>₹</Typography>
+                  </InputAdornment>
+                ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem', fontVariantNumeric: 'tabular-nums' }
+              }}
             />
           </Box>
         </DialogContent>
@@ -595,7 +721,14 @@ const Workers = () => {
             onClick={() => setDialogOpen(false)}
             variant="outlined"
             size="small"
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -604,9 +737,19 @@ const Workers = () => {
             size="small"
             onClick={handleSaveWorker}
             disabled={saving}
-            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#09090b',
+              color: '#ffffff',
+              fontWeight: 700,
+              minHeight: 40,
+              px: 2.5,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#27272a' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
-            {saving ? 'Saving...' : editingWorker ? 'Update' : 'Save'}
+            {saving ? 'Saving...' : editingWorker ? 'Update Worker' : 'Save Worker'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -621,16 +764,17 @@ const Workers = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8'
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           Delete Worker?
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ color: '#555f6f' }}>
-            Permanently delete <strong>{workerToDelete?.name}</strong> and all associated attendance and advance records?
+          <Typography variant="body2" sx={{ color: '#71717a', lineHeight: 1.5 }}>
+            Permanently delete <strong>{workerToDelete?.name}</strong> and all associated attendance and advance records? This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
@@ -638,7 +782,14 @@ const Workers = () => {
             onClick={() => setDeleteDialogOpen(false)}
             variant="outlined"
             size="small"
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -646,9 +797,19 @@ const Workers = () => {
             variant="contained"
             size="small"
             onClick={handleDeleteWorker}
-            sx={{ borderRadius: 2, bgcolor: '#ba1a1a', color: '#ffffff', fontWeight: 700, '&:hover': { bgcolor: '#93000a' } }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#dc2626',
+              color: '#ffffff',
+              fontWeight: 700,
+              minHeight: 40,
+              px: 2,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#b91c1c' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
-            Delete
+            Delete Worker
           </Button>
         </DialogActions>
       </Dialog>
@@ -660,7 +821,15 @@ const Workers = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            fontWeight: 600,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

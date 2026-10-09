@@ -47,7 +47,11 @@
   --color-primary-fixed: #f4f4f5;
   --color-on-surface-variant: #52525b;
   --color-inverse-on-surface: #f4f4f5;
-  --color-on-secondary-fixed: #18181b;
+  --color-accent: #ea580c;
+  --color-accent-hover: #c2410c;
+  --color-accent-subtle: #fff7ed;
+  --color-accent-border: #fed7aa;
+  --color-on-accent: #ffffff;
 
   --font-body: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
@@ -62,6 +66,11 @@
   --app-primary: #000000;
   --app-secondary: #71717a;
   --app-border: #e4e4e7;
+  --app-accent: #ea580c;
+  --app-accent-hover: #c2410c;
+  --app-accent-subtle: #fff7ed;
+  --app-accent-border: #fed7aa;
+  --app-on-accent: #ffffff;
 
   /* Emil Kowalski motion tokens */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);

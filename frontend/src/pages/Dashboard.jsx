@@ -295,8 +295,9 @@ const Dashboard = () => {
                 width: 32,
                 height: 32,
                 borderRadius: '8px',
-                bgcolor: '#000000',
-                color: '#ffffff',
+                bgcolor: '#fff7ed',
+                color: '#ea580c',
+                border: '1px solid #fed7aa',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -325,9 +326,12 @@ const Dashboard = () => {
           {/* Today's Activity */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 0.5 }}>
-              <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a' }}>
-                Today's Activity
-              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                <Box sx={{ width: 6, height: 6, borderRadius: '50%', bgcolor: '#ea580c' }} />
+                <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#71717a' }}>
+                  Today's Activity
+                </Typography>
+              </Box>
               <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                 {todayIndianDate}
               </Typography>

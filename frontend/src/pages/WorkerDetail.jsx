@@ -4,13 +4,11 @@ import {
   Box,
   Typography,
   Card,
-  CardContent,
   Button,
   IconButton,
   CircularProgress,
   Alert,
   Snackbar,
-  Grid,
   Tabs,
   Tab,
   Dialog,
@@ -241,67 +239,93 @@ const WorkerDetail = () => {
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
       {/* Top Header Bar */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: { xs: '1 1 100%', sm: 1 } }}>
           <IconButton
             size="small"
             onClick={() => navigate('/workers')}
+            aria-label="Back to workers list"
             sx={{
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               borderRadius: '10px',
-              border: '1px solid #e2e8f8',
+              border: '1px solid #e4e4e7',
               bgcolor: '#ffffff',
-              color: '#151c27',
-              '&:hover': { bgcolor: '#f0f3ff' }
+              color: '#09090b',
+              flexShrink: 0,
+              touchAction: 'manipulation',
+              transition: 'all 0.12s ease-out',
+              '&:hover': { bgcolor: '#f4f4f5' },
+              '&:active': { transform: 'scale(0.96)' }
             }}
           >
             <ArrowBackIcon sx={{ fontSize: 18 }} />
           </IconButton>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, minWidth: 0, flex: 1 }}>
             <Box
               sx={{
                 width: 44,
                 height: 44,
                 borderRadius: '12px',
-                bgcolor: '#f0f3ff',
-                color: '#151c27',
+                bgcolor: worker.is_active ? '#fff7ed' : '#f4f4f5',
+                color: worker.is_active ? '#ea580c' : '#71717a',
+                border: '1px solid',
+                borderColor: worker.is_active ? '#fed7aa' : '#e4e4e7',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 700,
-                fontSize: '1rem',
+                fontSize: '1.05rem',
                 flexShrink: 0
               }}
             >
               {worker.name ? worker.name.charAt(0).toUpperCase() : <PersonIcon />}
             </Box>
 
-            <Box>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.1rem', sm: '1.25rem' }, color: '#151c27', lineHeight: 1.2 }}>
+                <Typography
+                  title={worker.name}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: { xs: '1.15rem', sm: '1.3rem' },
+                    color: '#09090b',
+                    lineHeight: 1.25,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
                   {worker.name}
                 </Typography>
+
                 <Box
                   component="span"
                   sx={{
-                    bgcolor: worker.is_active ? '#f0f3ff' : '#f4f6f8',
-                    color: worker.is_active ? '#151c27' : '#555f6f',
+                    bgcolor: worker.is_active ? '#f0fdf4' : '#f4f4f5',
+                    color: worker.is_active ? '#15803d' : '#71717a',
                     border: '1px solid',
-                    borderColor: worker.is_active ? '#dce2f3' : '#e2e8f8',
+                    borderColor: worker.is_active ? '#bbf7d0' : '#e4e4e7',
                     px: 1.25,
-                    py: 0.25,
+                    py: 0.35,
                     borderRadius: 1.5,
                     fontSize: '0.6875rem',
                     fontWeight: 700,
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 0.5
+                    gap: 0.5,
+                    flexShrink: 0
                   }}
                 >
-                  <Box component="span" sx={{ fontSize: '0.625rem', lineHeight: 1 }}>
-                    {worker.is_active ? '●' : '○'}
-                  </Box>
+                  <Box
+                    component="span"
+                    sx={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      bgcolor: worker.is_active ? '#16a34a' : '#a1a1aa'
+                    }}
+                  />
                   {worker.is_active ? 'Active' : 'Inactive'}
                 </Box>
 
@@ -310,31 +334,35 @@ const WorkerDetail = () => {
                   variant="outlined"
                   onClick={() => setStatusDialogOpen(true)}
                   sx={{
-                    fontSize: '0.6875rem',
+                    fontSize: '0.7rem',
                     fontWeight: 600,
                     px: 1.25,
-                    py: 0.25,
+                    py: 0.35,
+                    minHeight: 32,
                     borderRadius: 2,
                     textTransform: 'none',
-                    borderColor: '#dce2f3',
-                    color: '#555f6f',
+                    borderColor: '#e4e4e7',
+                    color: '#71717a',
                     bgcolor: '#ffffff',
                     whiteSpace: 'nowrap',
                     minWidth: 'auto',
+                    touchAction: 'manipulation',
+                    transition: 'all 0.12s ease-out',
                     '&:hover': {
-                      bgcolor: '#f0f3ff',
-                      color: '#151c27',
-                      borderColor: '#bdc7d9'
-                    }
+                      bgcolor: '#f4f4f5',
+                      color: '#09090b',
+                      borderColor: '#d4d4d8'
+                    },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
                   {worker.is_active ? 'Mark Inactive' : 'Mark Active'}
                 </Button>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.25 }}>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.75rem', fontWeight: 600 }}>
-                  Rate: <strong>₹{parseFloat(worker.daily_wage).toFixed(0)}/day</strong>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.35, flexWrap: 'wrap' }}>
+                <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                  Wage: <strong style={{ color: '#09090b' }}>₹{parseFloat(worker.daily_wage).toFixed(0)}/day</strong>
                 </Typography>
                 {worker.phone && (
                   <Typography
@@ -342,16 +370,18 @@ const WorkerDetail = () => {
                     component="a"
                     href={`tel:${worker.phone}`}
                     sx={{
-                      color: '#555f6f',
+                      color: '#71717a',
                       textDecoration: 'none',
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: 0.3,
+                      gap: 0.35,
                       fontSize: '0.75rem',
-                      '&:hover': { color: '#000000', textDecoration: 'underline' }
+                      fontWeight: 500,
+                      fontVariantNumeric: 'tabular-nums',
+                      '&:hover': { color: '#09090b', textDecoration: 'underline' }
                     }}
                   >
-                    <PhoneIcon sx={{ fontSize: 13 }} /> {worker.phone}
+                    <PhoneIcon sx={{ fontSize: 13, color: '#71717a' }} /> {worker.phone}
                   </Typography>
                 )}
               </Box>
@@ -364,15 +394,19 @@ const WorkerDetail = () => {
           startIcon={<AddIcon sx={{ fontSize: 16 }} />}
           onClick={() => setAdvanceDialogOpen(true)}
           sx={{
-            bgcolor: '#000000',
+            bgcolor: '#09090b',
             color: '#ffffff',
-            fontSize: '0.775rem',
+            fontSize: '0.8125rem',
             fontWeight: 700,
             px: 2,
-            py: 0.75,
-            borderRadius: 2,
-            boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-            '&:hover': { bgcolor: '#1f2937' }
+            py: 0.85,
+            minHeight: 40,
+            borderRadius: 2.5,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            touchAction: 'manipulation',
+            transition: 'transform 140ms ease-out, background-color 140ms ease-out',
+            '&:hover': { bgcolor: '#27272a' },
+            '&:active': { transform: 'scale(0.97)' }
           }}
         >
           Give Advance
@@ -385,9 +419,9 @@ const WorkerDetail = () => {
           severity="info"
           sx={{
             borderRadius: 2.5,
-            bgcolor: '#f4f6f8',
-            color: '#555f6f',
-            border: '1px solid #e2e8f8',
+            bgcolor: '#f4f4f5',
+            color: '#71717a',
+            border: '1px solid #e4e4e7',
             fontSize: '0.8125rem'
           }}
         >
@@ -395,17 +429,18 @@ const WorkerDetail = () => {
         </Alert>
       )}
 
-      {/* Month Selector */}
+      {/* Month Selector Capsule */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          px: { xs: 1.25, sm: 2 },
+          px: { xs: 1.5, sm: 2 },
           py: 0.85,
-          bgcolor: '#f0f3ff',
+          bgcolor: '#ffffff',
           borderRadius: 3,
-          border: '1px solid #e2e8f8'
+          border: '1px solid #e4e4e7',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
         }}
       >
         <IconButton
@@ -413,17 +448,24 @@ const WorkerDetail = () => {
           disabled={monthlyLoading}
           size="small"
           aria-label="Previous Month"
-          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' }, '&.Mui-disabled': { color: '#bdc7d9' } }}
+          sx={{
+            color: '#71717a',
+            width: 36,
+            height: 36,
+            touchAction: 'manipulation',
+            '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' },
+            '&.Mui-disabled': { color: '#d4d4d8' }
+          }}
         >
           <PrevIcon sx={{ fontSize: 20 }} />
         </IconButton>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ fontSize: { xs: '0.875rem', sm: '0.95rem' }, fontWeight: 800, color: '#151c27', letterSpacing: '-0.01em' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Typography sx={{ fontSize: { xs: '0.875rem', sm: '0.95rem' }, fontWeight: 700, color: '#09090b', letterSpacing: '-0.01em' }}>
             {selectedMonthLabel}
           </Typography>
           {monthlyLoading && (
-            <CircularProgress size={14} sx={{ color: '#151c27' }} />
+            <CircularProgress size={14} sx={{ color: '#ea580c' }} />
           )}
           {!isCurrentMonth && (
             <Button
@@ -432,15 +474,17 @@ const WorkerDetail = () => {
               sx={{
                 fontSize: '0.6875rem',
                 fontWeight: 700,
-                py: 0.2,
-                px: 1,
+                py: 0.3,
+                px: 1.25,
                 minWidth: 'auto',
                 borderRadius: 1.5,
-                bgcolor: '#ffffff',
-                color: '#151c27',
-                border: '1px solid #dce2f3',
+                bgcolor: '#fff7ed',
+                color: '#c2410c',
+                border: '1px solid #fed7aa',
                 textTransform: 'none',
-                '&:hover': { bgcolor: '#f0f3ff' }
+                touchAction: 'manipulation',
+                '&:hover': { bgcolor: '#ffedd5' },
+                '&:active': { transform: 'scale(0.97)' }
               }}
             >
               Current
@@ -453,83 +497,159 @@ const WorkerDetail = () => {
           disabled={monthlyLoading}
           size="small"
           aria-label="Next Month"
-          sx={{ color: '#555f6f', '&:hover': { color: '#151c27', bgcolor: '#e7eefe' }, '&.Mui-disabled': { color: '#bdc7d9' } }}
+          sx={{
+            color: '#71717a',
+            width: 36,
+            height: 36,
+            touchAction: 'manipulation',
+            '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' },
+            '&.Mui-disabled': { color: '#d4d4d8' }
+          }}
         >
           <NextIcon sx={{ fontSize: 20 }} />
         </IconButton>
       </Box>
 
       {/* Financial Summary Ledger Panel */}
-      <Card
-        elevation={0}
+      <Box
         sx={{
-          borderRadius: 3,
-          border: '1px solid #e2e8f8',
-          bgcolor: '#ffffff',
-          overflow: 'hidden',
+          display: 'grid',
+          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+          gap: { xs: 1.25, sm: 1.5 },
           opacity: monthlyLoading ? 0.6 : 1,
           transition: 'opacity 0.2s ease'
         }}
       >
-        <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-          <Grid container>
-            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: '1px solid #e2e8f8', borderBottom: { xs: '1px solid #e2e8f8', sm: 'none' } }}>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Total Units
-              </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#151c27', mt: 0.5 }}>
-                {parseFloat(summary.total_units || 0).toFixed(1)}
-              </Typography>
-              <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
-                {selectedMonthLabel}
-              </Typography>
-            </Grid>
+        {/* Cell 1: Total Units */}
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
+            bgcolor: '#ffffff',
+            p: { xs: 1.5, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}
+        >
+          <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Total Units
+          </Typography>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.4rem' }, color: '#09090b', mt: 0.5, fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
+            {parseFloat(summary.total_units || 0).toFixed(1)}
+          </Typography>
+          <Typography sx={{ color: '#a1a1aa', fontSize: '0.6875rem', mt: 0.25 }}>
+            {selectedMonthLabel}
+          </Typography>
+        </Card>
 
-            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: { sm: '1px solid #e2e8f8' }, borderBottom: { xs: '1px solid #e2e8f8', sm: 'none' } }}>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Gross Earnings
-              </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: '#151c27', mt: 0.5 }}>
-                {formatCurrency(summary.gross_earnings)}
-              </Typography>
-              <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
-                Units × Daily rate
-              </Typography>
-            </Grid>
+        {/* Cell 2: Gross Earnings */}
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
+            bgcolor: '#ffffff',
+            p: { xs: 1.5, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}
+        >
+          <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Gross Earnings
+          </Typography>
+          <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.4rem' }, color: '#09090b', mt: 0.5, fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
+            {formatCurrency(summary.gross_earnings)}
+          </Typography>
+          <Typography sx={{ color: '#a1a1aa', fontSize: '0.6875rem', mt: 0.25 }}>
+            Units × Daily Rate
+          </Typography>
+        </Card>
 
-            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, borderRight: '1px solid #e2e8f8' }}>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Advances
-              </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: parseFloat(summary.total_advances || 0) > 0 ? '#ba1a1a' : '#151c27', mt: 0.5 }}>
-                {formatCurrency(summary.total_advances)}
-              </Typography>
-              <Typography sx={{ color: '#76777c', fontSize: '0.6875rem', mt: 0.25 }}>
-                Monthly deductions
-              </Typography>
-            </Grid>
+        {/* Cell 3: Advances */}
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: '12px',
+            border: '1px solid #e4e4e7',
+            bgcolor: '#ffffff',
+            p: { xs: 1.5, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}
+        >
+          <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
+            Advances
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '1.25rem', sm: '1.4rem' },
+              color: parseFloat(summary.total_advances || 0) > 0 ? '#dc2626' : '#09090b',
+              mt: 0.5,
+              fontVariantNumeric: 'tabular-nums',
+              lineHeight: 1.2
+            }}
+          >
+            {formatCurrency(summary.total_advances)}
+          </Typography>
+          <Typography sx={{ color: '#a1a1aa', fontSize: '0.6875rem', mt: 0.25 }}>
+            Monthly Deductions
+          </Typography>
+        </Card>
 
-            <Grid item xs={6} sm={3} sx={{ p: { xs: 1.5, sm: 2 }, bgcolor: isPositiveNet ? '#f0f3ff' : '#ffdad6' }}>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-                Net Payable
-              </Typography>
-              <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.15rem', sm: '1.25rem' }, color: isPositiveNet ? '#151c27' : '#93000a', mt: 0.5 }}>
-                {formatCurrency(summary.net_payable)}
-              </Typography>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', mt: 0.25, fontWeight: 600 }}>
-                {isPositiveNet ? 'Disbursable' : 'Advance Due'}
-              </Typography>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+        {/* Cell 4: Net Payable (Highlighted with warm orange accent when positive) */}
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: '12px',
+            border: '1px solid',
+            borderColor: isPositiveNet ? '#fed7aa' : '#fecaca',
+            bgcolor: isPositiveNet ? '#fff7ed' : '#fef2f2',
+            p: { xs: 1.5, sm: 2 },
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between'
+          }}
+        >
+          <Typography
+            sx={{
+              color: isPositiveNet ? '#c2410c' : '#b91c1c',
+              fontSize: '0.6875rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.03em'
+            }}
+          >
+            Net Payable
+          </Typography>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: { xs: '1.25rem', sm: '1.4rem' },
+              color: isPositiveNet ? '#ea580c' : '#dc2626',
+              mt: 0.5,
+              fontVariantNumeric: 'tabular-nums',
+              lineHeight: 1.2
+            }}
+          >
+            {formatCurrency(summary.net_payable)}
+          </Typography>
+          <Typography sx={{ color: isPositiveNet ? '#9a3412' : '#991b1b', fontSize: '0.6875rem', mt: 0.25, fontWeight: 600 }}>
+            {isPositiveNet ? 'Disbursable' : 'Advance Due'}
+          </Typography>
+        </Card>
+      </Box>
 
       {/* Tabs: Attendance vs Advances */}
       <Card
         elevation={0}
         sx={{
           borderRadius: 3,
-          border: '1px solid #e2e8f8',
+          border: '1px solid #e4e4e7',
           bgcolor: '#ffffff',
           overflow: 'hidden'
         }}
@@ -538,19 +658,20 @@ const WorkerDetail = () => {
           value={tabIndex}
           onChange={(e, val) => setTabIndex(val)}
           sx={{
-            borderBottom: '1px solid #e2e8f8',
+            borderBottom: '1px solid #e4e4e7',
             minHeight: 48,
             px: 1,
             '& .MuiTab-root': {
               fontWeight: 700,
               fontSize: '0.8125rem',
-              color: '#555f6f',
+              color: '#71717a',
               textTransform: 'none',
               minHeight: 48,
-              '&.Mui-selected': { color: '#000000' }
+              touchAction: 'manipulation',
+              '&.Mui-selected': { color: '#09090b' }
             },
             '& .MuiTabs-indicator': {
-              bgcolor: '#000000',
+              bgcolor: '#ea580c',
               height: 2.5
             }
           }}
@@ -561,20 +682,20 @@ const WorkerDetail = () => {
 
         {monthlyError ? (
           <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
-            <Typography sx={{ color: '#ba1a1a', fontSize: '0.875rem', fontWeight: 600 }}>
+            <Typography sx={{ color: '#dc2626', fontSize: '0.875rem', fontWeight: 600 }}>
               {monthlyError}
             </Typography>
             <Button
               size="small"
               onClick={() => fetchMonthlyRecord(selectedYear, selectedMonth)}
-              sx={{ mt: 1.5, color: '#151c27', fontWeight: 700, textTransform: 'none' }}
+              sx={{ mt: 1.5, color: '#09090b', fontWeight: 700, textTransform: 'none' }}
             >
               Retry
             </Button>
           </Box>
         ) : isEmptyMonth ? (
           <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
-            <Typography sx={{ color: '#555f6f', fontSize: '0.875rem', fontWeight: 600 }}>
+            <Typography sx={{ color: '#71717a', fontSize: '0.875rem', fontWeight: 500 }}>
               No records for {selectedMonthLabel}
             </Typography>
           </Box>
@@ -585,7 +706,7 @@ const WorkerDetail = () => {
               <Box sx={{ p: 0 }}>
                 {attendanceList.length === 0 ? (
                   <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
-                    <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>
+                    <Typography sx={{ color: '#71717a', fontSize: '0.875rem' }}>
                       No attendance records for {selectedMonthLabel}
                     </Typography>
                   </Box>
@@ -600,9 +721,9 @@ const WorkerDetail = () => {
                             key={`${att.date}-${att.site_id || 'site'}-${idx}`}
                             sx={{
                               p: 1.5,
-                              bgcolor: '#f9f9ff',
+                              bgcolor: '#fafafa',
                               borderRadius: 2,
-                              border: '1px solid #f0f3ff',
+                              border: '1px solid #f4f4f5',
                               display: 'flex',
                               justifyContent: 'space-between',
                               alignItems: 'center',
@@ -610,18 +731,25 @@ const WorkerDetail = () => {
                             }}
                           >
                             <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                                 {formatDateIndian(att.date)}
                               </Typography>
-                              <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25, wordBreak: 'break-word' }}>
+                              <Typography sx={{ fontSize: '0.72rem', color: '#71717a', mt: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                 {att.site_name || (units === 0 ? 'Absent' : '—')}
                               </Typography>
                             </Box>
                             <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
-                              <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#151c27' }}>
+                              <Typography
+                                sx={{
+                                  fontWeight: 700,
+                                  fontSize: '0.85rem',
+                                  color: units > 0 ? '#15803d' : '#a1a1aa',
+                                  fontVariantNumeric: 'tabular-nums'
+                                }}
+                              >
                                 {units.toFixed(1)} Units
                               </Typography>
-                              <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25 }}>
+                              <Typography sx={{ fontSize: '0.72rem', color: '#71717a', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
                                 {formatCurrency(att.earnings)}
                               </Typography>
                             </Box>
@@ -635,27 +763,34 @@ const WorkerDetail = () => {
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
-                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Site</TableCell>
-                            <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Work Units</TableCell>
-                            <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Earnings</TableCell>
+                            <TableCell sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Date</TableCell>
+                            <TableCell sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Site</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Work Units</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Earnings</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {attendanceList.map((att, idx) => {
                             const units = parseFloat(att.work_units || 0);
                             return (
-                              <TableRow key={`${att.date}-${att.site_id || 'site'}-${idx}`} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
-                                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                              <TableRow
+                                key={`${att.date}-${att.site_id || 'site'}-${idx}`}
+                                hover
+                                sx={{
+                                  '&:hover': { bgcolor: '#fafafa' },
+                                  '& td': { borderBottom: '1px solid #f4f4f5' }
+                                }}
+                              >
+                                <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}>
                                   {formatDateIndian(att.date)}
                                 </TableCell>
-                                <TableCell sx={{ fontSize: '0.8125rem', color: '#555f6f' }}>
+                                <TableCell sx={{ fontSize: '0.8125rem', color: '#71717a' }}>
                                   {att.site_name || (units === 0 ? 'Absent' : '—')}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: units > 0 ? '#15803d' : '#a1a1aa', fontVariantNumeric: 'tabular-nums' }}>
                                   {units.toFixed(1)}
                                 </TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                                <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                                   {formatCurrency(att.earnings)}
                                 </TableCell>
                               </TableRow>
@@ -674,8 +809,8 @@ const WorkerDetail = () => {
               <Box sx={{ p: 0 }}>
                 {advancesList.length === 0 ? (
                   <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
-                    <Typography sx={{ color: '#555f6f', fontSize: '0.875rem' }}>
-                      No advances this month
+                    <Typography sx={{ color: '#71717a', fontSize: '0.875rem' }}>
+                      No advances recorded this month
                     </Typography>
                   </Box>
                 ) : (
@@ -687,9 +822,9 @@ const WorkerDetail = () => {
                           key={adv.id}
                           sx={{
                             p: 1.5,
-                            bgcolor: '#f9f9ff',
+                            bgcolor: '#fafafa',
                             borderRadius: 2,
-                            border: '1px solid #f0f3ff',
+                            border: '1px solid #f4f4f5',
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -697,21 +832,28 @@ const WorkerDetail = () => {
                           }}
                         >
                           <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#151c27' }}>
+                            <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
                               {formatDateIndian(adv.date)}
                             </Typography>
-                            <Typography sx={{ fontSize: '0.72rem', color: '#555f6f', mt: 0.25, wordBreak: 'break-word' }}>
+                            <Typography sx={{ fontSize: '0.72rem', color: '#71717a', mt: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {adv.note || 'No note'}
                             </Typography>
                           </Box>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                            <Typography sx={{ fontWeight: 800, fontSize: '0.925rem', color: '#ba1a1a' }}>
+                            <Typography sx={{ fontWeight: 800, fontSize: '0.925rem', color: '#dc2626', fontVariantNumeric: 'tabular-nums' }}>
                               {formatCurrency(adv.amount)}
                             </Typography>
                             <IconButton
                               size="small"
                               onClick={() => handleDeleteAdvance(adv.id)}
-                              sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
+                              aria-label="Delete advance"
+                              sx={{
+                                color: '#71717a',
+                                width: 34,
+                                height: 34,
+                                touchAction: 'manipulation',
+                                '&:hover': { color: '#dc2626', bgcolor: '#fef2f2' }
+                              }}
                             >
                               <DeleteIcon sx={{ fontSize: 16 }} />
                             </IconButton>
@@ -725,27 +867,39 @@ const WorkerDetail = () => {
                       <Table size="small">
                         <TableHead>
                           <TableRow>
-                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Date</TableCell>
-                            <TableCell align="right" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Amount</TableCell>
-                            <TableCell sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Note</TableCell>
-                            <TableCell align="center" sx={{ bgcolor: '#f0f3ff', color: '#555f6f', fontWeight: 700, fontSize: '0.72rem' }}>Action</TableCell>
+                            <TableCell sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Date</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Amount</TableCell>
+                            <TableCell sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Note</TableCell>
+                            <TableCell align="center" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Action</TableCell>
                           </TableRow>
                         </TableHead>
                         <TableBody>
                           {advancesList.map((adv) => (
-                            <TableRow key={adv.id} hover sx={{ '&:hover': { bgcolor: '#f0f3ff' } }}>
-                              <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                            <TableRow
+                              key={adv.id}
+                              hover
+                              sx={{
+                                '&:hover': { bgcolor: '#fafafa' },
+                                '& td': { borderBottom: '1px solid #f4f4f5' }
+                              }}
+                            >
+                              <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}>
                                 {formatDateIndian(adv.date)}
                               </TableCell>
-                              <TableCell align="right" sx={{ fontWeight: 700, color: '#ba1a1a', fontSize: '0.8125rem' }}>
+                              <TableCell align="right" sx={{ fontWeight: 700, color: '#dc2626', fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}>
                                 {formatCurrency(adv.amount)}
                               </TableCell>
-                              <TableCell sx={{ color: '#555f6f', fontSize: '0.8125rem' }}>{adv.note || '—'}</TableCell>
+                              <TableCell sx={{ color: '#71717a', fontSize: '0.8125rem' }}>{adv.note || '—'}</TableCell>
                               <TableCell align="center">
                                 <IconButton
                                   size="small"
                                   onClick={() => handleDeleteAdvance(adv.id)}
-                                  sx={{ color: '#555f6f', '&:hover': { color: '#ba1a1a', bgcolor: '#ffdad6' } }}
+                                  aria-label="Delete advance"
+                                  sx={{
+                                    color: '#71717a',
+                                    touchAction: 'manipulation',
+                                    '&:hover': { color: '#dc2626', bgcolor: '#fef2f2' }
+                                  }}
                                 >
                                   <DeleteIcon sx={{ fontSize: 17 }} />
                                 </IconButton>
@@ -773,11 +927,12 @@ const WorkerDetail = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8'
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           Record Advance · {worker.name}
         </DialogTitle>
         <DialogContent>
@@ -785,6 +940,7 @@ const WorkerDetail = () => {
             <TextField
               label="Amount (₹)"
               type="number"
+              inputProps={{ inputMode: 'decimal', min: 0 }}
               required
               fullWidth
               autoFocus
@@ -792,9 +948,20 @@ const WorkerDetail = () => {
               value={advanceAmount}
               onChange={(e) => setAdvanceAmount(e.target.value)}
               InputProps={{
-                startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Typography sx={{ color: '#09090b', fontWeight: 700 }}>₹</Typography>
+                  </InputAdornment>
+                ),
               }}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem', fontVariantNumeric: 'tabular-nums' }
+              }}
             />
 
             <TextField
@@ -803,7 +970,14 @@ const WorkerDetail = () => {
               fullWidth
               value={advanceDate}
               onChange={(e) => setAdvanceDate(e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem' }
+              }}
             />
 
             <TextField
@@ -812,7 +986,14 @@ const WorkerDetail = () => {
               placeholder="e.g. Festival advance"
               value={advanceNote}
               onChange={(e) => setAdvanceNote(e.target.value)}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  '& fieldset': { borderColor: '#e4e4e7' },
+                  '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                },
+                '& input': { fontSize: '1rem' }
+              }}
             />
           </Box>
         </DialogContent>
@@ -821,7 +1002,14 @@ const WorkerDetail = () => {
             onClick={() => setAdvanceDialogOpen(false)}
             variant="outlined"
             size="small"
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27' }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -830,9 +1018,19 @@ const WorkerDetail = () => {
             size="small"
             onClick={handleCreateAdvance}
             disabled={advanceSaving || !advanceAmount}
-            sx={{ borderRadius: 2, bgcolor: '#000000', color: '#ffffff', fontWeight: 700 }}
+            sx={{
+              borderRadius: 2,
+              bgcolor: '#09090b',
+              color: '#ffffff',
+              fontWeight: 700,
+              minHeight: 40,
+              px: 2.5,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#27272a' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
           >
-            {advanceSaving ? 'Recording...' : 'Save'}
+            {advanceSaving ? 'Recording...' : 'Save Advance'}
           </Button>
         </DialogActions>
       </Dialog>
@@ -847,23 +1045,23 @@ const WorkerDetail = () => {
           sx: {
             borderRadius: 3,
             p: 1,
-            border: '1px solid #e2e8f8',
+            border: '1px solid #e4e4e7',
             boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           {worker?.is_active
             ? `Mark ${worker?.name} as inactive?`
             : `Mark ${worker?.name} as active?`}
         </DialogTitle>
         <DialogContent>
           {worker?.is_active ? (
-            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+            <Typography variant="body2" sx={{ color: '#71717a', lineHeight: 1.5 }}>
               This worker will no longer appear when recording new attendance. Their historical records will be preserved.
             </Typography>
           ) : (
-            <Typography variant="body2" sx={{ color: '#555f6f', lineHeight: 1.5 }}>
+            <Typography variant="body2" sx={{ color: '#71717a', lineHeight: 1.5 }}>
               This worker will become available for recording attendance and issuing advances.
             </Typography>
           )}
@@ -874,7 +1072,14 @@ const WorkerDetail = () => {
             variant="outlined"
             size="small"
             disabled={statusLoading}
-            sx={{ borderRadius: 2, borderColor: '#dce2f3', color: '#151c27', fontWeight: 600 }}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2
+            }}
           >
             Cancel
           </Button>
@@ -885,10 +1090,14 @@ const WorkerDetail = () => {
             disabled={statusLoading}
             sx={{
               borderRadius: 2,
-              bgcolor: '#000000',
+              bgcolor: '#09090b',
               color: '#ffffff',
               fontWeight: 700,
-              '&:hover': { bgcolor: '#1f2937' }
+              minHeight: 40,
+              px: 2,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#27272a' },
+              '&:active': { transform: 'scale(0.97)' }
             }}
           >
             {statusLoading
@@ -907,7 +1116,15 @@ const WorkerDetail = () => {
         onClose={() => setSnackbar({ ...snackbar, open: false })}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
+        <Alert
+          severity={snackbar.severity}
+          sx={{
+            width: '100%',
+            borderRadius: 2,
+            fontWeight: 600,
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

@@ -236,9 +236,9 @@ const Attendance = () => {
               <Box
                 component="span"
                 sx={{
-                  bgcolor: '#f4f4f5',
-                  color: '#09090b',
-                  border: '1px solid #e4e4e7',
+                  bgcolor: '#fff7ed',
+                  color: '#c2410c',
+                  border: '1px solid #fed7aa',
                   px: 1,
                   py: 0.2,
                   borderRadius: 9999,
@@ -278,8 +278,8 @@ const Attendance = () => {
               width: 8,
               height: 8,
               borderRadius: '50%',
-              bgcolor: '#09090b',
-              boxShadow: '0 0 0 3px rgba(0,0,0,0.06)'
+              bgcolor: '#ea580c',
+              boxShadow: '0 0 0 3px rgba(234, 88, 12, 0.15)'
             }}
           />
           <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#71717a' }}>
@@ -824,14 +824,15 @@ const Attendance = () => {
 
             <Box
               sx={{
-                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                bgcolor: markedRecords.length > 0 ? '#ea580c' : 'rgba(255, 255, 255, 0.2)',
                 color: '#ffffff',
                 px: 1.25,
                 py: 0.3,
                 borderRadius: 9999,
                 fontSize: '0.75rem',
                 fontWeight: 700,
-                fontVariantNumeric: 'tabular-nums'
+                fontVariantNumeric: 'tabular-nums',
+                transition: 'background-color 140ms ease-out'
               }}
             >
               {markedRecords.length} Marked

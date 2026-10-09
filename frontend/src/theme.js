@@ -33,6 +33,14 @@ const theme = createTheme({
       dark: '#991b1b',
       contrastText: '#ffffff',
     },
+    accent: {
+      main: '#ea580c',       // Industrial international orange accent
+      light: '#f97316',
+      dark: '#c2410c',
+      subtle: '#fff7ed',     // Warm subtle background tint
+      border: '#fed7aa',     // Subtle border accent
+      contrastText: '#ffffff',
+    },
     background: {
       default: '#f8f9fa',    // Neutral light-grey canvas
       paper: '#ffffff',      // Crisp white surface

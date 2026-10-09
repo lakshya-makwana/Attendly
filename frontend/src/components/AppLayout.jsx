@@ -82,18 +82,18 @@ const AppLayout = () => {
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f9f9ff' }}>
-      {/* Top Application Bar - Stitch Glassmorphism Header */}
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#f8f9fa' }}>
+      {/* Top Application Bar - Glassmorphism Header */}
       <AppBar
         position="sticky"
         elevation={0}
         sx={{
-          bgcolor: 'rgba(249, 249, 255, 0.88)',
+          bgcolor: 'rgba(248, 249, 250, 0.88)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderBottom: '1px solid #e2e8f8',
+          borderBottom: '1px solid #e4e4e7',
           zIndex: 1100,
-          color: '#151c27',
+          color: '#09090b',
           top: 0,
           pt: 'env(safe-area-inset-top, 0px)'
         }}
@@ -106,23 +106,32 @@ const AppLayout = () => {
           }}
         >
           {/* Brand Identity with Mobile Drawer Toggle */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, minWidth: 0 }}>
             <IconButton
               size="small"
               onClick={() => setDrawerOpen(true)}
-              sx={{ color: '#555f6f', display: { xs: 'inline-flex', md: 'none' }, p: 0.75, borderRadius: 1.5, '&:hover': { bgcolor: '#f0f3ff' } }}
+              sx={{
+                color: '#71717a',
+                display: { xs: 'inline-flex', md: 'none' },
+                p: 0.75,
+                borderRadius: '8px',
+                touchAction: 'manipulation',
+                '&:hover': { bgcolor: '#f4f4f5', color: '#09090b' },
+                '&:active': { transform: 'scale(0.95)' }
+              }}
               aria-label="open navigation drawer"
             >
               <MenuIcon fontSize="small" />
             </IconButton>
 
             <Box
-              sx={{ display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer' }}
+              sx={{ display: 'flex', alignItems: 'center', gap: 1.25, cursor: 'pointer', minWidth: 0 }}
               onClick={() => navigate('/')}
             >
-              {/* Dark Squircle Logo Mark */}
+              {/* Dark Squircle Logo Mark with Orange Accent Touch */}
               <Box
                 sx={{
+                  position: 'relative',
                   width: 34,
                   height: 34,
                   borderRadius: '10px',
@@ -133,16 +142,28 @@ const AppLayout = () => {
                   justifyContent: 'center',
                   fontWeight: 800,
                   fontSize: '0.95rem',
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.12)'
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.12)',
+                  flexShrink: 0
                 }}
               >
                 A
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: 4,
+                    right: 4,
+                    width: 5,
+                    height: 5,
+                    borderRadius: '50%',
+                    bgcolor: '#ea580c'
+                  }}
+                />
               </Box>
-              <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                <Typography sx={{ color: '#151c27', fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.15, letterSpacing: '-0.01em' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                <Typography sx={{ color: '#09090b', fontWeight: 700, fontSize: '0.9375rem', lineHeight: 1.15, letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {appTitle || 'Attendly'}
                 </Typography>
-                <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem', fontWeight: 500, lineHeight: 1, mt: 0.5 }}>
+                <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', fontWeight: 500, lineHeight: 1, mt: 0.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {getSubHeaderTitle()}
                 </Typography>
               </Box>
@@ -161,19 +182,22 @@ const AppLayout = () => {
                   key={item.path}
                   onClick={() => navigate(item.path)}
                   sx={{
-                    color: isActive ? '#ffffff' : '#555f6f',
+                    color: isActive ? '#ffffff' : '#71717a',
                     bgcolor: isActive ? '#000000' : 'transparent',
                     fontSize: '0.8125rem',
-                    fontWeight: isActive ? 700 : 500,
+                    fontWeight: isActive ? 600 : 500,
                     px: 1.75,
                     py: 0.75,
                     borderRadius: 9999,
                     textTransform: 'none',
-                    transition: 'all 0.15s ease',
-                    '&:hover': {
-                      color: isActive ? '#ffffff' : '#151c27',
-                      bgcolor: isActive ? '#1f2937' : '#f0f3ff',
+                    transition: 'all 140ms ease-out',
+                    '@media (hover: hover) and (pointer: fine)': {
+                      '&:hover': {
+                        color: isActive ? '#ffffff' : '#09090b',
+                        bgcolor: isActive ? '#27272a' : '#f4f4f5',
+                      },
                     },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
                   {item.label}
@@ -183,7 +207,7 @@ const AppLayout = () => {
           </Box>
 
           {/* Right Controls: Lock & Profile */}
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, flexShrink: 0 }}>
             {isDemo && (
               <Tooltip title="Recruiter Demo Mode: All data is fictional and completely isolated from production." arrow>
                 <Chip
@@ -213,11 +237,14 @@ const AppLayout = () => {
                 width: 36,
                 height: 36,
                 borderRadius: '10px',
-                color: '#151c27',
-                border: '1px solid #e2e8f8',
+                color: '#09090b',
+                border: '1px solid #e4e4e7',
                 bgcolor: '#ffffff',
-                transition: 'all 0.15s ease',
-                '&:hover': { bgcolor: '#f0f3ff', borderColor: '#dce2f3' },
+                touchAction: 'manipulation',
+                transition: 'all 140ms ease-out',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                },
                 '&:active': { transform: 'scale(0.95)' }
               }}
             >
@@ -236,7 +263,8 @@ const AppLayout = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'all 0.15s ease',
+                touchAction: 'manipulation',
+                transition: 'all 140ms ease-out',
                 '&:hover': { opacity: 0.85 },
                 '&:active': { transform: 'scale(0.95)' }
               }}
@@ -257,16 +285,17 @@ const AppLayout = () => {
           sx: {
             width: 280,
             bgcolor: '#ffffff',
-            color: '#151c27',
-            borderRight: '1px solid #e2e8f8',
+            color: '#09090b',
+            borderRight: '1px solid #e4e4e7',
             p: 1.5
           }
         }}
       >
-        <Box sx={{ p: 1.5, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f8' }}>
+        <Box sx={{ p: 1.5, pb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e4e4e7' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
             <Box
               sx={{
+                position: 'relative',
                 width: 32,
                 height: 32,
                 borderRadius: '10px',
@@ -280,12 +309,23 @@ const AppLayout = () => {
               }}
             >
               A
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 3,
+                  right: 3,
+                  width: 5,
+                  height: 5,
+                  borderRadius: '50%',
+                  bgcolor: '#ea580c'
+                }}
+              />
             </Box>
             <Box>
-              <Typography sx={{ fontWeight: 700, color: '#151c27', fontSize: '0.9375rem', lineHeight: 1.2 }}>
+              <Typography sx={{ fontWeight: 700, color: '#09090b', fontSize: '0.9375rem', lineHeight: 1.2 }}>
                 {appTitle || 'Attendly'}
               </Typography>
-              <Typography sx={{ color: '#555f6f', fontSize: '0.6875rem' }}>
+              <Typography sx={{ color: '#71717a', fontSize: '0.6875rem' }}>
                 Workforce Management
               </Typography>
               {isDemo && (
@@ -305,7 +345,7 @@ const AppLayout = () => {
               )}
             </Box>
           </Box>
-          <IconButton size="small" onClick={() => setDrawerOpen(false)} sx={{ color: '#555f6f' }}>
+          <IconButton size="small" onClick={() => setDrawerOpen(false)} sx={{ color: '#71717a', touchAction: 'manipulation' }}>
             <CloseIcon fontSize="small" />
           </IconButton>
         </Box>
@@ -323,31 +363,35 @@ const AppLayout = () => {
                     navigate(item.path);
                   }}
                   sx={{
-                    borderRadius: 2,
+                    borderRadius: '8px',
                     bgcolor: isActive ? '#000000' : 'transparent',
-                    color: isActive ? '#ffffff' : '#555f6f',
+                    color: isActive ? '#ffffff' : '#71717a',
                     py: 1,
                     px: 1.5,
-                    transition: 'all 0.15s ease',
-                    '&:hover': {
-                      bgcolor: isActive ? '#000000' : '#f0f3ff',
-                      color: isActive ? '#ffffff' : '#151c27'
-                    }
+                    transition: 'all 140ms ease-out',
+                    touchAction: 'manipulation',
+                    '@media (hover: hover) and (pointer: fine)': {
+                      '&:hover': {
+                        bgcolor: isActive ? '#000000' : '#f4f4f5',
+                        color: isActive ? '#ffffff' : '#09090b'
+                      }
+                    },
+                    '&:active': { transform: 'scale(0.97)' }
                   }}
                 >
-                  <ListItemIcon sx={{ color: isActive ? '#ffffff' : '#555f6f', minWidth: 36 }}>
+                  <ListItemIcon sx={{ color: isActive ? '#ffffff' : '#71717a', minWidth: 36 }}>
                     {item.icon}
                   </ListItemIcon>
                   <ListItemText
                     primary={item.label}
-                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 700 : 500 }}
+                    primaryTypographyProps={{ fontSize: '0.875rem', fontWeight: isActive ? 600 : 500 }}
                   />
                 </ListItemButton>
               </ListItem>
             );
           })}
 
-          <Divider sx={{ my: 1.5, borderColor: '#e2e8f8' }} />
+          <Divider sx={{ my: 1.5, borderColor: '#e4e4e7' }} />
 
           <ListItem disablePadding>
             <ListItemButton
@@ -356,14 +400,15 @@ const AppLayout = () => {
                 setLogoutDialogOpen(true);
               }}
               sx={{
-                borderRadius: 2,
-                color: '#ba1a1a',
+                borderRadius: '8px',
+                color: '#dc2626',
                 py: 1,
                 px: 1.5,
-                '&:hover': { bgcolor: '#ffdad6' }
+                touchAction: 'manipulation',
+                '&:hover': { bgcolor: '#fef2f2' }
               }}
             >
-              <ListItemIcon sx={{ color: '#ba1a1a', minWidth: 36 }}>
+              <ListItemIcon sx={{ color: '#dc2626', minWidth: 36 }}>
                 <LockIcon fontSize="small" />
               </ListItemIcon>
               <ListItemText
@@ -388,7 +433,7 @@ const AppLayout = () => {
         <Outlet />
       </Container>
 
-      {/* Mobile Bottom Navigation Bar - Exact Stitch Alignment */}
+      {/* Mobile Bottom Navigation Bar */}
       <Box
         component="nav"
         sx={{
@@ -405,7 +450,7 @@ const AppLayout = () => {
           bgcolor: 'rgba(255, 255, 255, 0.94)',
           backdropFilter: 'blur(16px)',
           WebkitBackdropFilter: 'blur(16px)',
-          borderTop: '1px solid #e2e8f8',
+          borderTop: '1px solid #e4e4e7',
           boxShadow: '0 -2px 12px rgba(0,0,0,0.03)',
           px: 0.5,
           alignItems: 'center',
@@ -430,36 +475,51 @@ const AppLayout = () => {
                 justifyContent: 'center',
                 py: 0.5,
                 cursor: 'pointer',
-                color: isActive ? '#000000' : '#555f6f',
-                transition: 'all 0.15s ease',
+                color: isActive ? '#09090b' : '#71717a',
+                transition: 'all 140ms ease-out',
                 userSelect: 'none',
                 minWidth: 0,
+                minHeight: 48,
+                touchAction: 'manipulation',
                 '&:active': { transform: 'scale(0.93)' }
               }}
             >
               <Box
                 sx={{
+                  position: 'relative',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: isActive ? '#000000' : '#555f6f',
-                  bgcolor: isActive ? '#f0f3ff' : 'transparent',
+                  color: isActive ? '#09090b' : '#71717a',
+                  bgcolor: isActive ? '#f4f4f5' : 'transparent',
                   px: 1.5,
                   py: 0.35,
                   borderRadius: 9999,
-                  transition: 'all 0.15s ease',
+                  transition: 'all 140ms ease-out',
                   '& .MuiSvgIcon-root': {
                     fontSize: 21,
                   }
                 }}
               >
                 {tab.icon}
+                {isActive && (
+                  <Box
+                    sx={{
+                      position: 'absolute',
+                      bottom: 2,
+                      width: 4,
+                      height: 4,
+                      borderRadius: '50%',
+                      bgcolor: '#ea580c'
+                    }}
+                  />
+                )}
               </Box>
               <Typography
                 sx={{
                   fontSize: '0.6875rem',
                   fontWeight: isActive ? 700 : 500,
-                  color: isActive ? '#000000' : '#555f6f',
+                  color: isActive ? '#09090b' : '#71717a',
                   mt: 0.25,
                   letterSpacing: '0.01em',
                   lineHeight: 1,
@@ -484,18 +544,18 @@ const AppLayout = () => {
         fullWidth
         PaperProps={{
           sx: {
-            borderRadius: 3,
+            borderRadius: '16px',
             p: 1,
-            border: '1px solid #e2e8f8',
+            border: '1px solid #e4e4e7',
             boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#151c27' }}>
+        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', pb: 1, color: '#09090b' }}>
           Lock Application?
         </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" sx={{ color: '#555f6f' }}>
+          <Typography variant="body2" sx={{ color: '#71717a' }}>
             Your session will be closed. You will need to enter your MPIN to access Attendly again.
           </Typography>
         </DialogContent>
@@ -505,11 +565,11 @@ const AppLayout = () => {
             variant="outlined"
             size="small"
             sx={{
-              borderRadius: 2,
-              borderColor: '#dce2f3',
-              color: '#151c27',
+              borderRadius: '8px',
+              borderColor: '#e4e4e7',
+              color: '#09090b',
               fontWeight: 600,
-              '&:hover': { borderColor: '#bdc7d9', bgcolor: '#f0f3ff' }
+              '&:hover': { borderColor: '#d4d4d8', bgcolor: '#f4f4f5' }
             }}
           >
             Cancel
@@ -519,11 +579,11 @@ const AppLayout = () => {
             variant="contained"
             size="small"
             sx={{
-              borderRadius: 2,
+              borderRadius: '8px',
               bgcolor: '#000000',
               color: '#ffffff',
               fontWeight: 600,
-              '&:hover': { bgcolor: '#1f2937' }
+              '&:hover': { bgcolor: '#27272a' }
             }}
           >
             Lock Now
