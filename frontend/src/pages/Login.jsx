@@ -88,6 +88,82 @@ const Login = () => {
 
   const numpadDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
+  const keyButtonSx = {
+    width: '100%',
+    height: { xs: 52, sm: 56 },
+    borderRadius: '12px',
+    fontSize: { xs: '1.45rem', sm: '1.55rem' },
+    fontWeight: 600,
+    fontVariantNumeric: 'tabular-nums',
+    color: '#1c1917',
+    bgcolor: '#ffffff',
+    border: '1px solid #e7e5e4',
+    boxShadow: '0 1px 2px rgba(28, 25, 23, 0.04)',
+    minWidth: 0,
+    p: 0,
+    touchAction: 'manipulation',
+    userSelect: 'none',
+    transition: 'transform 90ms ease, background-color 90ms ease, border-color 90ms ease, color 90ms ease',
+    '@media (hover: hover) and (pointer: fine)': {
+      '&:hover': {
+        bgcolor: '#faf9f6',
+        borderColor: '#d6d3d1'
+      }
+    },
+    '&:active': {
+      transform: 'scale(0.95)',
+      bgcolor: '#fff7ed',
+      borderColor: '#fed7aa',
+      color: '#ea580c'
+    },
+    '&.Mui-disabled': {
+      color: '#d6d3d1',
+      bgcolor: '#faf9f6',
+      borderColor: '#f5f5f4'
+    }
+  };
+
+  const utilityButtonSx = {
+    ...keyButtonSx,
+    bgcolor: '#faf9f6',
+    color: '#78716c',
+    fontSize: '0.85rem',
+    textTransform: 'none',
+    letterSpacing: '0.01em',
+    '@media (hover: hover) and (pointer: fine)': {
+      '&:hover': {
+        bgcolor: '#f5f5f4',
+        borderColor: '#d6d3d1',
+        color: '#1c1917'
+      }
+    },
+    '&:active': {
+      transform: 'scale(0.95)',
+      bgcolor: '#f5f5f4',
+      borderColor: '#d6d3d1',
+      color: '#1c1917'
+    }
+  };
+
+  const backspaceButtonSx = {
+    ...keyButtonSx,
+    bgcolor: '#faf9f6',
+    color: '#78716c',
+    '@media (hover: hover) and (pointer: fine)': {
+      '&:hover': {
+        bgcolor: '#f5f5f4',
+        borderColor: '#d6d3d1',
+        color: '#1c1917'
+      }
+    },
+    '&:active': {
+      transform: 'scale(0.95)',
+      bgcolor: '#fff7ed',
+      borderColor: '#fed7aa',
+      color: '#ea580c'
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -97,46 +173,49 @@ const Login = () => {
         alignItems: 'center',
         justifyContent: 'center',
         px: { xs: 2, sm: 3 },
-        py: { xs: 3, sm: 4 },
+        py: { xs: 2.5, sm: 4 },
+        pt: 'max(20px, env(safe-area-inset-top, 20px))',
+        pb: 'max(20px, env(safe-area-inset-bottom, 20px))'
       }}
     >
-      <Box sx={{ width: '100%', maxWidth: 360, textAlign: 'center' }}>
+      <Box sx={{ width: '100%', maxWidth: 340, textAlign: 'center', my: 'auto' }}>
         {/* Attendly Branding & Lock Icon */}
         <Box
           sx={{
             position: 'relative',
-            width: 48,
-            height: 48,
-            borderRadius: '14px',
-            bgcolor: '#09090b',
+            width: 46,
+            height: 46,
+            borderRadius: '12px',
+            bgcolor: '#1c1917',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             mx: 'auto',
-            mb: 1.5,
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12)'
+            mb: 1.25,
+            boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)'
           }}
         >
-          <LockIcon sx={{ fontSize: 24 }} />
+          <LockIcon sx={{ fontSize: 22 }} />
           <Box
             sx={{
               position: 'absolute',
               top: 6,
               right: 6,
-              width: 6,
-              height: 6,
+              width: 7,
+              height: 7,
               borderRadius: '50%',
-              bgcolor: '#ea580c'
+              bgcolor: '#ea580c',
+              boxShadow: '0 0 0 2px #1c1917'
             }}
           />
         </Box>
         <Typography
           sx={{
             fontWeight: 800,
-            fontSize: '1.5rem',
-            color: '#09090b',
-            letterSpacing: '-0.02em',
+            fontSize: '1.45rem',
+            color: '#1c1917',
+            letterSpacing: '-0.025em',
             lineHeight: 1.2
           }}
         >
@@ -144,11 +223,11 @@ const Login = () => {
         </Typography>
         <Typography
           sx={{
-            color: '#71717a',
-            fontSize: '0.875rem',
+            color: '#78716c',
+            fontSize: '0.8125rem',
             fontWeight: 500,
             mt: 0.5,
-            mb: 3
+            mb: { xs: 2.25, sm: 2.75 }
           }}
         >
           Enter your MPIN to continue
@@ -157,11 +236,11 @@ const Login = () => {
         <Card
           elevation={0}
           sx={{
-            borderRadius: '14px',
-            border: '1px solid #e4e4e7',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+            borderRadius: '16px',
+            border: '1px solid #e7e5e4',
+            boxShadow: '0 4px 24px -2px rgba(28, 25, 23, 0.05)',
             bgcolor: '#ffffff',
-            p: { xs: 2.5, sm: 3 },
+            p: { xs: 2, sm: 2.5 }
           }}
         >
           {/* MPIN Dots Display */}
@@ -171,7 +250,7 @@ const Login = () => {
               justifyContent: 'center',
               alignItems: 'center',
               gap: 2,
-              mb: 2.75,
+              mb: 2.25,
               py: 0.5
             }}
           >
@@ -181,14 +260,14 @@ const Login = () => {
                 <Box
                   key={index}
                   sx={{
-                    width: 14,
-                    height: 14,
+                    width: 13,
+                    height: 13,
                     borderRadius: '50%',
-                    border: isFilled ? 'none' : '2px solid #d4d4d8',
+                    border: isFilled ? '2px solid #ea580c' : '2px solid #d6d3d1',
                     bgcolor: isFilled ? '#ea580c' : 'transparent',
-                    transform: isFilled ? 'scale(1.12)' : 'scale(1)',
-                    boxShadow: isFilled ? '0 2px 6px rgba(234, 88, 12, 0.35)' : 'none',
-                    transition: 'all 0.12s cubic-bezier(0.4, 0, 0.2, 1)',
+                    transform: isFilled ? 'scale(1.15)' : 'scale(1)',
+                    boxShadow: isFilled ? '0 2px 8px rgba(234, 88, 12, 0.35)' : 'none',
+                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
               );
@@ -199,29 +278,30 @@ const Login = () => {
             <Alert
               severity="error"
               sx={{
-                mb: 2.5,
+                mb: 2,
                 py: 0.5,
+                px: 1.5,
                 fontSize: '0.8125rem',
-                borderRadius: 2,
+                borderRadius: '10px',
                 textAlign: 'left',
                 bgcolor: '#fef2f2',
                 color: '#991b1b',
-                border: '1px solid #fecaca'
+                border: '1px solid #fecaca',
+                alignItems: 'center'
               }}
             >
               {error}
             </Alert>
           )}
 
-          {/* Standard 3-Column x 4-Row Mobile Banking Keypad */}
+          {/* 3-Column Keypad with Square-like Rounded Rectangles */}
           <Box
             sx={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: { xs: 1.25, sm: 1.5 },
-              maxWidth: 260,
-              mx: 'auto',
-              mb: 2.5
+              gap: { xs: 1, sm: 1.25 },
+              width: '100%',
+              mb: 2.25
             }}
           >
             {numpadDigits.map((digit) => (
@@ -229,67 +309,19 @@ const Login = () => {
                 key={digit}
                 onClick={() => handleDigitPress(digit)}
                 disabled={submitting}
-                sx={{
-                  width: '100%',
-                  aspectRatio: '1',
-                  maxHeight: 62,
-                  fontSize: '1.45rem',
-                  fontWeight: 600,
-                  color: '#09090b',
-                  bgcolor: '#ffffff',
-                  border: '1px solid #e4e4e7',
-                  borderRadius: '50%',
-                  minWidth: 0,
-                  p: 0,
-                  touchAction: 'manipulation',
-                  transition: 'all 0.12s ease',
-                  '@media (hover: hover) and (pointer: fine)': {
-                    '&:hover': {
-                      bgcolor: '#f4f4f5',
-                      borderColor: '#d4d4d8'
-                    }
-                  },
-                  '&:active': {
-                    transform: 'scale(0.92)',
-                    bgcolor: '#fff7ed',
-                    borderColor: '#fed7aa',
-                    color: '#ea580c'
-                  }
-                }}
+                sx={keyButtonSx}
+                aria-label={`Digit ${digit}`}
               >
                 {digit}
               </Button>
             ))}
 
-            {/* Bottom Row: Clear, 0, Backspace */}
+            {/* Bottom Row: Clear (Col 1), 0 (Col 2), Backspace (Col 3) */}
             <Button
               onClick={handleClear}
               disabled={submitting || mpin.length === 0}
-              sx={{
-                width: '100%',
-                aspectRatio: '1',
-                maxHeight: 62,
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                color: '#71717a',
-                borderRadius: '50%',
-                minWidth: 0,
-                p: 0,
-                textTransform: 'none',
-                touchAction: 'manipulation',
-                '@media (hover: hover) and (pointer: fine)': {
-                  '&:hover': {
-                    color: '#09090b',
-                    bgcolor: '#f4f4f5'
-                  }
-                },
-                '&:active': {
-                  transform: 'scale(0.92)'
-                },
-                '&.Mui-disabled': {
-                  color: '#d4d4d8'
-                }
-              }}
+              sx={utilityButtonSx}
+              aria-label="Clear MPIN"
             >
               Clear
             </Button>
@@ -297,33 +329,8 @@ const Login = () => {
             <Button
               onClick={() => handleDigitPress('0')}
               disabled={submitting}
-              sx={{
-                width: '100%',
-                aspectRatio: '1',
-                maxHeight: 62,
-                fontSize: '1.45rem',
-                fontWeight: 600,
-                color: '#09090b',
-                bgcolor: '#ffffff',
-                border: '1px solid #e4e4e7',
-                borderRadius: '50%',
-                minWidth: 0,
-                p: 0,
-                touchAction: 'manipulation',
-                transition: 'all 0.12s ease',
-                '@media (hover: hover) and (pointer: fine)': {
-                  '&:hover': {
-                    bgcolor: '#f4f4f5',
-                    borderColor: '#d4d4d8'
-                  }
-                },
-                '&:active': {
-                  transform: 'scale(0.92)',
-                  bgcolor: '#fff7ed',
-                  borderColor: '#fed7aa',
-                  color: '#ea580c'
-                }
-              }}
+              sx={keyButtonSx}
+              aria-label="Digit 0"
             >
               0
             </Button>
@@ -331,66 +338,45 @@ const Login = () => {
             <Button
               onClick={handleBackspace}
               disabled={submitting || mpin.length === 0}
-              sx={{
-                width: '100%',
-                aspectRatio: '1',
-                maxHeight: 62,
-                color: '#71717a',
-                borderRadius: '50%',
-                minWidth: 0,
-                p: 0,
-                touchAction: 'manipulation',
-                transition: 'all 0.12s ease',
-                '@media (hover: hover) and (pointer: fine)': {
-                  '&:hover': {
-                    color: '#09090b',
-                    bgcolor: '#f4f4f5'
-                  }
-                },
-                '&:active': {
-                  transform: 'scale(0.92)'
-                },
-                '&.Mui-disabled': {
-                  color: '#d4d4d8'
-                }
-              }}
+              sx={backspaceButtonSx}
+              aria-label="Backspace"
             >
-              <BackspaceIcon sx={{ fontSize: 20 }} />
+              <BackspaceIcon sx={{ fontSize: 21 }} />
             </Button>
           </Box>
 
           {/* Action Buttons: Unlock & Try Demo */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, maxWidth: 260, mx: 'auto' }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
             <Button
               fullWidth
-              size="large"
               variant="contained"
               onClick={() => handleSubmit()}
               disabled={submitting || mpin.length < 4}
               startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
               sx={{
-                py: 1.25,
+                height: 46,
                 fontWeight: 700,
-                borderRadius: 2.5,
-                minHeight: 46,
+                borderRadius: '10px',
                 fontSize: '0.9375rem',
-                bgcolor: '#09090b',
+                bgcolor: '#1c1917',
                 color: '#ffffff',
                 boxShadow: 'none',
                 textTransform: 'none',
                 touchAction: 'manipulation',
+                transition: 'all 0.12s ease',
                 '@media (hover: hover) and (pointer: fine)': {
                   '&:hover': {
-                    bgcolor: '#27272a',
-                    boxShadow: 'none'
+                    bgcolor: '#292524',
+                    boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)'
                   }
                 },
                 '&:active': {
-                  transform: 'scale(0.97)'
+                  transform: 'scale(0.98)'
                 },
                 '&.Mui-disabled': {
-                  bgcolor: '#f4f4f5',
-                  color: '#a1a1aa'
+                  bgcolor: '#f5f5f4',
+                  color: '#a8a29e',
+                  border: '1px solid #e7e5e4'
                 }
               }}
             >
@@ -400,29 +386,34 @@ const Login = () => {
             <Button
               fullWidth
               variant="outlined"
-              size="large"
               onClick={handleDemoLogin}
               disabled={submitting || demoSubmitting}
               startIcon={demoSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
               sx={{
-                py: 1.25,
+                height: 42,
                 fontWeight: 600,
-                borderRadius: 2.5,
-                minHeight: 46,
-                fontSize: '0.9375rem',
-                color: '#09090b',
-                borderColor: '#e4e4e7',
+                borderRadius: '10px',
+                fontSize: '0.875rem',
+                color: '#44403c',
+                borderColor: '#e7e5e4',
                 bgcolor: '#ffffff',
+                boxShadow: 'none',
                 textTransform: 'none',
                 touchAction: 'manipulation',
+                transition: 'all 0.12s ease',
                 '@media (hover: hover) and (pointer: fine)': {
                   '&:hover': {
-                    bgcolor: '#f4f4f5',
-                    borderColor: '#d4d4d8'
+                    bgcolor: '#faf9f6',
+                    borderColor: '#d6d3d1',
+                    color: '#1c1917'
                   }
                 },
                 '&:active': {
-                  transform: 'scale(0.97)'
+                  transform: 'scale(0.98)'
+                },
+                '&.Mui-disabled': {
+                  borderColor: '#f5f5f4',
+                  color: '#d6d3d1'
                 }
               }}
             >
