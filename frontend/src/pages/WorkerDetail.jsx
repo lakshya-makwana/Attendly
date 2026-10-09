@@ -31,7 +31,8 @@ import {
   DeleteOutlined as DeleteIcon,
   Person as PersonIcon,
   ChevronLeft as PrevIcon,
-  ChevronRight as NextIcon
+  ChevronRight as NextIcon,
+  LocationOn as LocationIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { formatDateIndian, formatMonthYear } from '../utils/dateUtils';
@@ -716,40 +717,80 @@ const WorkerDetail = () => {
                     <Box sx={{ display: { xs: 'flex', sm: 'none' }, flexDirection: 'column', gap: 1, p: 1.5 }}>
                       {attendanceList.map((att, idx) => {
                         const units = parseFloat(att.work_units || 0);
+                        const hasSite = Boolean(att.site_name);
                         return (
                           <Box
                             key={`${att.date}-${att.site_id || 'site'}-${idx}`}
                             sx={{
-                              p: 1.5,
-                              bgcolor: '#fafafa',
+                              p: { xs: 1.25, sm: 1.5 },
+                              bgcolor: '#ffffff',
                               borderRadius: 2,
-                              border: '1px solid #f4f4f5',
+                              border: '1px solid #e7e5e4',
                               display: 'flex',
                               justifyContent: 'space-between',
                               alignItems: 'center',
-                              gap: 1
+                              gap: 1.5
                             }}
                           >
-                            <Box sx={{ minWidth: 0, flex: 1 }}>
-                              <Typography sx={{ fontWeight: 700, fontSize: '0.8125rem', color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
+                            <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                              <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: '#1c1917', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
                                 {formatDateIndian(att.date)}
                               </Typography>
-                              <Typography sx={{ fontSize: '0.72rem', color: '#71717a', mt: 0.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {att.site_name || (units === 0 ? 'Absent' : '—')}
-                              </Typography>
+                              <Box sx={{ display: 'flex', minWidth: 0 }}>
+                                <Box
+                                  sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 0.5,
+                                    bgcolor: hasSite ? '#fff7ed' : '#f5f5f4',
+                                    border: '1px solid',
+                                    borderColor: hasSite ? '#fed7aa' : '#e7e5e4',
+                                    borderRadius: '6px',
+                                    px: 0.75,
+                                    py: 0.2,
+                                    maxWidth: '100%',
+                                    minWidth: 0
+                                  }}
+                                >
+                                  {hasSite && (
+                                    <LocationIcon sx={{ fontSize: 13, color: '#ea580c', flexShrink: 0 }} />
+                                  )}
+                                  <Typography
+                                    sx={{
+                                      fontSize: '0.75rem',
+                                      fontWeight: hasSite ? 600 : 500,
+                                      color: hasSite ? '#c2410c' : '#78716c',
+                                      overflow: 'hidden',
+                                      textOverflow: 'ellipsis',
+                                      whiteSpace: 'nowrap'
+                                    }}
+                                  >
+                                    {att.site_name || (units === 0 ? 'Absent' : 'No site assigned')}
+                                  </Typography>
+                                </Box>
+                              </Box>
                             </Box>
-                            <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                            <Box sx={{ textAlign: 'right', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 0.25 }}>
                               <Typography
                                 sx={{
                                   fontWeight: 700,
                                   fontSize: '0.85rem',
                                   color: units > 0 ? '#15803d' : '#a1a1aa',
-                                  fontVariantNumeric: 'tabular-nums'
+                                  fontVariantNumeric: 'tabular-nums',
+                                  lineHeight: 1.2
                                 }}
                               >
                                 {units.toFixed(1)} Units
                               </Typography>
-                              <Typography sx={{ fontSize: '0.72rem', color: '#71717a', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
+                              <Typography
+                                sx={{
+                                  fontSize: '0.8125rem',
+                                  fontWeight: 600,
+                                  color: '#292524',
+                                  fontVariantNumeric: 'tabular-nums',
+                                  lineHeight: 1.2
+                                }}
+                              >
                                 {formatCurrency(att.earnings)}
                               </Typography>
                             </Box>
@@ -772,6 +813,7 @@ const WorkerDetail = () => {
                         <TableBody>
                           {attendanceList.map((att, idx) => {
                             const units = parseFloat(att.work_units || 0);
+                            const hasSite = Boolean(att.site_name);
                             return (
                               <TableRow
                                 key={`${att.date}-${att.site_id || 'site'}-${idx}`}
@@ -784,8 +826,40 @@ const WorkerDetail = () => {
                                 <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}>
                                   {formatDateIndian(att.date)}
                                 </TableCell>
-                                <TableCell sx={{ fontSize: '0.8125rem', color: '#71717a' }}>
-                                  {att.site_name || (units === 0 ? 'Absent' : '—')}
+                                <TableCell sx={{ fontSize: '0.8125rem' }}>
+                                  {hasSite ? (
+                                    <Box
+                                      sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.5,
+                                        bgcolor: '#fff7ed',
+                                        border: '1px solid #fed7aa',
+                                        borderRadius: '6px',
+                                        px: 0.75,
+                                        py: 0.25,
+                                        maxWidth: 260
+                                      }}
+                                    >
+                                      <LocationIcon sx={{ fontSize: 13, color: '#ea580c', flexShrink: 0 }} />
+                                      <Typography
+                                        sx={{
+                                          fontSize: '0.75rem',
+                                          fontWeight: 600,
+                                          color: '#c2410c',
+                                          overflow: 'hidden',
+                                          textOverflow: 'ellipsis',
+                                          whiteSpace: 'nowrap'
+                                        }}
+                                      >
+                                        {att.site_name}
+                                      </Typography>
+                                    </Box>
+                                  ) : (
+                                    <Typography sx={{ fontSize: '0.8125rem', color: '#a1a1aa' }}>
+                                      {units === 0 ? 'Absent' : 'No site assigned'}
+                                    </Typography>
+                                  )}
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: units > 0 ? '#15803d' : '#a1a1aa', fontVariantNumeric: 'tabular-nums' }}>
                                   {units.toFixed(1)}

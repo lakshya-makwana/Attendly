@@ -49,14 +49,15 @@ const Attendance = () => {
       setLoading(true);
       const [sitesRes, attRes] = await Promise.all([
         api.get('/sites?active_only=true'),
-        api.get(`/attendance/by-date?date=${dateStr}`)
+        api.get(`/attendance/by-date?date=${dateStr}&active_only=true`)
       ]);
 
       setSites(sitesRes.data);
-      setWorkers(attRes.data.workers);
+      const activeWorkers = (attRes.data.workers || []).filter((w) => w.is_active !== false);
+      setWorkers(activeWorkers);
 
       const initialMap = {};
-      attRes.data.workers.forEach((w) => {
+      activeWorkers.forEach((w) => {
         initialMap[w.worker_id] = {
           work_units: w.work_units !== null && w.work_units !== undefined ? String(w.work_units) : null,
           site_id: w.site_id || (sitesRes.data.length > 0 ? sitesRes.data[0].id : null),
@@ -137,8 +138,10 @@ const Attendance = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const activeWorkerIds = new Set(workers.map((w) => String(w.worker_id)));
       const payloadRecords = [];
       Object.entries(records).forEach(([workerIdStr, data]) => {
+        if (!activeWorkerIds.has(workerIdStr)) return;
         if (data.work_units !== null && data.work_units !== undefined) {
           const unitsFloat = parseFloat(data.work_units);
           payloadRecords.push({
@@ -182,8 +185,9 @@ const Attendance = () => {
   const absentCount = markedRecords.filter((r) => parseFloat(r.work_units) === 0).length;
   const percentDone = workers.length > 0 ? Math.round((markedRecords.length / workers.length) * 100) : 0;
 
-  // Filter workers by selected site chip
+  // Filter workers by active status and selected site chip
   const filteredWorkers = workers.filter((w) => {
+    if (w.is_active === false) return false;
     if (selectedSiteFilter === 'all') return true;
     const rec = records[w.worker_id];
     return rec?.site_id === selectedSiteFilter;
@@ -547,7 +551,7 @@ const Attendance = () => {
         </Box>
       ) : filteredWorkers.length === 0 ? (
         <Alert severity="info" sx={{ borderRadius: 2, bgcolor: '#f4f4f5', color: '#09090b', border: '1px solid #e4e4e7' }}>
-          No workers found for the selected filter.
+          {workers.length === 0 ? 'No active workers found.' : 'No workers found for the selected filter.'}
         </Alert>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.75 }}>

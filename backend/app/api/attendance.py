@@ -19,6 +19,7 @@ router = APIRouter(prefix="/attendance", tags=["Attendance"])
 @router.get("/by-date", response_model=DailyAttendanceResponse)
 def get_daily_attendance(
     target_date: Optional[date] = Query(default=None, alias="date"),
+    active_only: bool = Query(default=False),
     db: Session = Depends(get_db),
     current_admin: dict = Depends(get_current_admin)
 ):
@@ -32,9 +33,14 @@ def get_daily_attendance(
     ).all()
     record_map = {r.worker_id: r for r in records}
 
-    # Active workers, plus any inactive workers who already have attendance on this date
+    # Active workers, plus any inactive workers who already have attendance on this date (unless active_only is True)
     # Inactive workers without attendance on selected_date are excluded from new attendance selection
-    if record_map:
+    if active_only:
+        workers = db.query(Worker).filter(
+            Worker.account_id == account_id,
+            Worker.is_active == True
+        ).order_by(Worker.name.asc()).all()
+    elif record_map:
         workers = db.query(Worker).filter(
             Worker.account_id == account_id,
             or_(Worker.is_active == True, Worker.id.in_(list(record_map.keys())))
