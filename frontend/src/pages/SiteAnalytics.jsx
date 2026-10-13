@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Box,
@@ -30,6 +30,7 @@ import {
   PrintOutlined as PrintIcon
 } from '@mui/icons-material';
 import api from '../api/client';
+import { usePrint } from '../utils/usePrint';
 
 const SiteAnalytics = () => {
   const navigate = useNavigate();
@@ -49,6 +50,33 @@ const SiteAnalytics = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const { isPrinting, triggerPrint, cleanup: cleanupPrint } = usePrint({
+    onNotification: useCallback((notice) => setSnackbar({ open: true, ...notice }), [])
+  });
+
+  // Manage body classes for clean printing of the site report modal
+  useEffect(() => {
+    if (detailModalOpen) {
+      document.body.classList.add('site-report-open', 'printing-site-report', 'print-modal-open');
+    } else {
+      document.body.classList.remove('site-report-open', 'printing-site-report', 'print-modal-open');
+    }
+    return () => {
+      document.body.classList.remove('site-report-open', 'printing-site-report', 'print-modal-open');
+    };
+  }, [detailModalOpen]);
+
+  const handleCloseDetailModal = useCallback(() => {
+    cleanupPrint();
+    setDetailModalOpen(false);
+  }, [cleanupPrint]);
+
+  const handlePrintSiteReport = useCallback(() => {
+    if (!selectedSite) return;
+    triggerPrint({
+      printClasses: ['site-report-open', 'printing-site-report', 'print-modal-open']
+    });
+  }, [selectedSite, triggerPrint]);
 
   const fetchAnalytics = async (year, month) => {
     try {
@@ -458,10 +486,12 @@ const SiteAnalytics = () => {
       {/* Detailed Site Labour Report Modal */}
       <Dialog
         open={detailModalOpen}
-        onClose={() => setDetailModalOpen(false)}
+        onClose={handleCloseDetailModal}
         maxWidth="sm"
         fullWidth
+        className="site-report-dialog printable-dialog"
         PaperProps={{
+          className: 'site-report-paper printable-paper',
           sx: {
             borderRadius: 3,
             p: 1,
@@ -470,13 +500,13 @@ const SiteAnalytics = () => {
           }
         }}
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
+        <DialogTitle className="printable-title" sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
           {selectedSite?.site_name} — Site Report
         </DialogTitle>
-        <DialogContent>
+        <DialogContent className="site-report-content printable-content">
           {selectedSite && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-              <Box sx={{ p: 1.5, bgcolor: '#fff7ed', borderRadius: 2, border: '1px solid #fed7aa' }}>
+              <Box className="site-report-section printable-section" sx={{ p: 1.5, bgcolor: '#fff7ed', borderRadius: 2, border: '1px solid #fed7aa' }}>
                 <Typography sx={{ color: '#c2410c', fontSize: '0.75rem', fontWeight: 700 }}>
                   Billing Month: {analyticsData?.month_name}
                 </Typography>
@@ -502,7 +532,7 @@ const SiteAnalytics = () => {
                   No workers logged attendance at this site in {analyticsData?.month_name}.
                 </Typography>
               ) : (
-                <TableContainer sx={{ border: '1px solid #e4e4e7', borderRadius: 2 }}>
+                <TableContainer className="site-report-section printable-section" sx={{ border: '1px solid #e4e4e7', borderRadius: 2 }}>
                   <Table size="small">
                     <TableHead sx={{ bgcolor: '#fafafa' }}>
                       <TableRow>
@@ -516,13 +546,14 @@ const SiteAnalytics = () => {
                       {selectedSite.workers.map((w) => (
                         <TableRow
                           key={w.worker_id}
+                          className="printable-row"
                           hover
                           sx={{
                             '&:hover': { bgcolor: '#fafafa' },
                             '& td': { borderBottom: '1px solid #f4f4f5' }
                           }}
                         >
-                          <TableCell sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
+                          <TableCell className="printable-wrap" sx={{ fontWeight: 600, fontSize: '0.8125rem' }}>
                             {w.worker_name}
                           </TableCell>
                           <TableCell align="center" sx={{ fontWeight: 700, fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}>
@@ -545,7 +576,7 @@ const SiteAnalytics = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
           <Button
-            onClick={() => setDetailModalOpen(false)}
+            onClick={handleCloseDetailModal}
             variant="outlined"
             size="small"
             sx={{
@@ -562,8 +593,9 @@ const SiteAnalytics = () => {
           <Button
             variant="contained"
             size="small"
-            startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
-            onClick={() => window.print()}
+            startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : <PrintIcon sx={{ fontSize: 16 }} />}
+            onClick={handlePrintSiteReport}
+            disabled={isPrinting}
             sx={{
               borderRadius: 2,
               bgcolor: '#09090b',
@@ -576,7 +608,7 @@ const SiteAnalytics = () => {
               '&:active': { transform: 'scale(0.97)' }
             }}
           >
-            Print
+            {isPrinting ? 'Printing...' : 'Print'}
           </Button>
         </DialogActions>
       </Dialog>

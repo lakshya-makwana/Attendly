@@ -213,7 +213,8 @@ button, a, [role="button"] {
   .no-print,
   nav,
   button:not(.print-allow),
-  .MuiCircularProgress-root {
+  .MuiCircularProgress-root,
+  .MuiSnackbar-root {
     display: none !important;
   }
 
@@ -221,14 +222,35 @@ button, a, [role="button"] {
     display: block !important;
   }
 
+  /* Full-Page Print Enhancements (when printing entire screens like Payroll, Attendance, etc.) */
+  .MuiTableContainer-root {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  .MuiTable-root {
+    width: 100% !important;
+  }
+  .MuiTableRow-root {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  .MuiCard-root {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    box-shadow: none !important;
+  }
+
   /* =========================================================
-     Salary Slip Print Isolation
-     Applies when body has .salary-slip-open or .printing-salary-slip
+     Modal Print Isolation (Salary Slip, Site Report, etc.)
+     Applies when body has .print-modal-open, .salary-slip-open, or .site-report-open
      ========================================================= */
 
   /* Ensure body expands naturally without screen limits */
+  body.print-modal-open,
   body.salary-slip-open,
-  body.printing-salary-slip {
+  body.printing-salary-slip,
+  body.site-report-open,
+  body.printing-site-report {
     overflow: visible !important;
     height: auto !important;
     min-height: auto !important;
@@ -236,37 +258,49 @@ button, a, [role="button"] {
   }
 
   /* Hide the rest of the application tree */
+  body.print-modal-open #root,
   body.salary-slip-open #root,
-  body.printing-salary-slip #root {
+  body.printing-salary-slip #root,
+  body.site-report-open #root,
+  body.printing-site-report #root {
     display: none !important;
   }
 
-  /* If the modal is ever inside #root in specific environments */
+  /* Fallback if the modal is ever mounted inside #root */
+  body.print-modal-open #root:has(.printable-dialog),
   body.salary-slip-open #root:has(.salary-slip-dialog),
-  body.printing-salary-slip #root:has(.salary-slip-dialog) {
+  body.site-report-open #root:has(.site-report-dialog) {
     display: block !important;
     overflow: visible !important;
     height: auto !important;
     min-height: auto !important;
   }
+  body.print-modal-open #root:has(.printable-dialog) > *:not(:has(.printable-dialog)),
   body.salary-slip-open #root:has(.salary-slip-dialog) > *:not(:has(.salary-slip-dialog)),
-  body.printing-salary-slip #root:has(.salary-slip-dialog) > *:not(:has(.salary-slip-dialog)) {
+  body.site-report-open #root:has(.site-report-dialog) > *:not(:has(.site-report-dialog)) {
     display: none !important;
   }
 
-  /* Hide modal backdrop, dialog actions (buttons), and bottom nav */
+  /* Hide modal backdrop and interactive dialog actions (buttons) */
+  body.print-modal-open .MuiBackdrop-root,
   body.salary-slip-open .MuiBackdrop-root,
+  body.site-report-open .MuiBackdrop-root,
   body.printing-salary-slip .MuiBackdrop-root,
+  body.printing-site-report .MuiBackdrop-root,
+  body.print-modal-open .MuiDialogActions-root,
   body.salary-slip-open .MuiDialogActions-root,
-  body.printing-salary-slip .MuiDialogActions-root {
+  body.site-report-open .MuiDialogActions-root,
+  body.printing-salary-slip .MuiDialogActions-root,
+  body.printing-site-report .MuiDialogActions-root {
     display: none !important;
   }
 
   /* Place modal in normal document flow instead of fixed viewport */
-  body.salary-slip-open .MuiDialog-root.salary-slip-dialog,
-  body.printing-salary-slip .MuiDialog-root.salary-slip-dialog,
+  body.print-modal-open .MuiDialog-root,
   body.salary-slip-open .MuiDialog-root,
-  body.printing-salary-slip .MuiDialog-root {
+  body.site-report-open .MuiDialog-root,
+  body.printing-salary-slip .MuiDialog-root,
+  body.printing-site-report .MuiDialog-root {
     position: static !important;
     inset: auto !important;
     width: 100% !important;
@@ -278,8 +312,11 @@ button, a, [role="button"] {
     padding: 0 !important;
   }
 
+  body.print-modal-open .MuiDialog-container,
   body.salary-slip-open .MuiDialog-container,
-  body.printing-salary-slip .MuiDialog-container {
+  body.site-report-open .MuiDialog-container,
+  body.printing-salary-slip .MuiDialog-container,
+  body.printing-site-report .MuiDialog-container {
     position: static !important;
     display: block !important;
     width: 100% !important;
@@ -290,9 +327,13 @@ button, a, [role="button"] {
     padding: 0 !important;
   }
 
-  /* Format payslip container as a clean document */
+  /* Format printable modal container as a clean document */
+  body.print-modal-open .MuiDialog-paper,
   body.salary-slip-open .salary-slip-paper,
-  body.printing-salary-slip .salary-slip-paper {
+  body.site-report-open .site-report-paper,
+  body.printing-salary-slip .salary-slip-paper,
+  body.printing-site-report .site-report-paper,
+  .printable-paper {
     position: static !important;
     display: block !important;
     width: 100% !important;
@@ -311,17 +352,22 @@ button, a, [role="button"] {
   }
 
   /* Dialog title & content formatting */
+  body.print-modal-open .MuiDialogTitle-root,
   body.salary-slip-open .MuiDialogTitle-root,
-  body.printing-salary-slip .MuiDialogTitle-root {
+  body.site-report-open .MuiDialogTitle-root,
+  body.printing-salary-slip .MuiDialogTitle-root,
+  body.printing-site-report .MuiDialogTitle-root {
     padding: 18px 20px 12px 20px !important;
     border-bottom: 2px solid #09090b !important;
     color: #09090b !important;
   }
 
+  body.print-modal-open .MuiDialogContent-root,
   body.salary-slip-open .salary-slip-content,
+  body.site-report-open .site-report-content,
   body.printing-salary-slip .salary-slip-content,
-  body.salary-slip-open .MuiDialogContent-root,
-  body.printing-salary-slip .MuiDialogContent-root {
+  body.printing-site-report .site-report-content,
+  .printable-content {
     overflow: visible !important;
     max-height: none !important;
     height: auto !important;
@@ -331,14 +377,20 @@ button, a, [role="button"] {
 
   /* Avoid row and section breaks across pages */
   .salary-slip-row,
-  .salary-slip-section {
+  .salary-slip-section,
+  .site-report-section,
+  .printable-section,
+  .printable-row,
+  .printable-break-avoid {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* Prevent site name clipping or truncation in print */
+  /* Prevent site/worker name clipping or truncation in print */
   .salary-slip-site-name,
-  .salary-slip-row [title] {
+  .printable-wrap,
+  .salary-slip-row [title],
+  .printable-row [title] {
     white-space: normal !important;
     word-break: break-word !important;
     text-overflow: clip !important;

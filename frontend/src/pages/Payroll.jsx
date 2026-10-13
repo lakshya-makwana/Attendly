@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -37,6 +37,7 @@ import {
   KeyboardArrowDown as ArrowDownIcon
 } from '@mui/icons-material';
 import api from '../api/client';
+import { usePrint } from '../utils/usePrint';
 
 const Payroll = () => {
   const navigate = useNavigate();
@@ -54,71 +55,19 @@ const Payroll = () => {
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const [isPrinting, setIsPrinting] = useState(false);
-  const printLockRef = useRef(false);
-  // Clean up print mode cleanly when print session ends
-  const cleanupPrintMode = useCallback(() => {
-    document.body.classList.remove('printing-salary-slip');
-    setIsPrinting(false);
-    printLockRef.current = false;
-  }, []);
+  const { isPrinting, triggerPrint, cleanup: cleanupPrintMode } = usePrint({
+    onNotification: useCallback((notice) => setSnackbar({ open: true, ...notice }), [])
+  });
 
-  // Listen for browser print lifecycle events: afterprint, matchMedia('print'), and window focus
-  useEffect(() => {
-    const handlePrintEnd = () => {
-      cleanupPrintMode();
-    };
-
-    // 1. Standard afterprint event (Chrome, Firefox, Safari 13+)
-    window.addEventListener('afterprint', handlePrintEnd);
-
-    // 2. matchMedia('print') transition listener (standard W3C for iOS WebKit & modern browsers)
-    const printMql = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('print') : null;
-    const handleMqlChange = (e) => {
-      if (!e.matches) {
-        cleanupPrintMode();
-      }
-    };
-    if (printMql) {
-      if (printMql.addEventListener) {
-        printMql.addEventListener('change', handleMqlChange);
-      } else if (printMql.addListener) {
-        printMql.addListener(handleMqlChange);
-      }
-    }
-
-    // 3. Window focus fallback: when native print modal or iOS AirPrint sheet closes, window regains focus
-    const handleWindowFocus = () => {
-      if (printLockRef.current) {
-        setTimeout(cleanupPrintMode, 300);
-      }
-    };
-    window.addEventListener('focus', handleWindowFocus);
-
-    return () => {
-      window.removeEventListener('afterprint', handlePrintEnd);
-      if (printMql) {
-        if (printMql.removeEventListener) {
-          printMql.removeEventListener('change', handleMqlChange);
-        } else if (printMql.removeListener) {
-          printMql.removeListener(handleMqlChange);
-        }
-      }
-      window.removeEventListener('focus', handleWindowFocus);
-      document.body.classList.remove('salary-slip-open', 'printing-salary-slip');
-    };
-  }, [cleanupPrintMode]);
-
-  // Manage body class for clean printing of the salary slip
+  // Manage body classes for clean printing of the salary slip
   useEffect(() => {
     if (slipModalOpen) {
-      document.body.classList.add('salary-slip-open');
+      document.body.classList.add('salary-slip-open', 'printing-salary-slip', 'print-modal-open');
     } else {
-      document.body.classList.remove('salary-slip-open', 'printing-salary-slip');
-      printLockRef.current = false;
+      document.body.classList.remove('salary-slip-open', 'printing-salary-slip', 'print-modal-open');
     }
     return () => {
-      document.body.classList.remove('salary-slip-open', 'printing-salary-slip');
+      document.body.classList.remove('salary-slip-open', 'printing-salary-slip', 'print-modal-open');
     };
   }, [slipModalOpen]);
 
@@ -128,26 +77,11 @@ const Payroll = () => {
   }, [cleanupPrintMode]);
 
   const handlePrintSlip = useCallback(() => {
-    if (printLockRef.current || slipLoading || !selectedSlipWorker) return;
-
-    printLockRef.current = true;
-    setIsPrinting(true);
-
-    // 1. Activate print mode classes on body
-    document.body.classList.add('salary-slip-open', 'printing-salary-slip');
-
-    // 2. Trigger printing on next frame so DOM and classes are fully applied
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        try {
-          window.print();
-        } catch (e) {
-          console.error('Print error:', e);
-          cleanupPrintMode();
-        }
-      }, 60);
+    if (slipLoading || !selectedSlipWorker) return;
+    triggerPrint({
+      printClasses: ['salary-slip-open', 'printing-salary-slip', 'print-modal-open']
     });
-  }, [cleanupPrintMode, selectedSlipWorker, slipLoading]);
+  }, [selectedSlipWorker, slipLoading, triggerPrint]);
 
   const computeSitesWorked = (attendanceList, dailyWage) => {
     const wage = parseFloat(dailyWage || 0);
@@ -289,8 +223,9 @@ const Payroll = () => {
           <Button
             variant="outlined"
             size="small"
-            startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
-            onClick={() => window.print()}
+            startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : <PrintIcon sx={{ fontSize: 16 }} />}
+            onClick={() => triggerPrint()}
+            disabled={isPrinting}
             sx={{
               fontSize: '0.775rem',
               fontWeight: 600,
@@ -305,7 +240,7 @@ const Payroll = () => {
               '&:active': { transform: 'scale(0.97)' }
             }}
           >
-            Print
+            {isPrinting ? 'Printing...' : 'Print'}
           </Button>
         </Box>
       </Box>
@@ -835,9 +770,9 @@ const Payroll = () => {
         onClose={handleCloseSlip}
         maxWidth="xs"
         fullWidth
-        className="salary-slip-dialog"
+        className="salary-slip-dialog printable-dialog"
         PaperProps={{
-          className: 'salary-slip-paper',
+          className: 'salary-slip-paper printable-paper',
           sx: {
             borderRadius: '14px',
             p: 1,
@@ -847,6 +782,7 @@ const Payroll = () => {
         }}
       >
         <DialogTitle
+          className="printable-title"
           sx={{
             fontWeight: 700,
             fontSize: '1.05rem',
@@ -862,7 +798,7 @@ const Payroll = () => {
             Attendly
           </Typography>
         </DialogTitle>
-        <DialogContent className="salary-slip-content">
+        <DialogContent className="salary-slip-content printable-content">
           {selectedSlipWorker && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5 }}>
               <Box className="salary-slip-section" sx={{ bgcolor: '#f4f4f5', p: 1.5, borderRadius: 2, border: '1px solid #e4e4e7' }}>
