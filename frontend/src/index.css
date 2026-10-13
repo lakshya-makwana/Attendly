@@ -192,8 +192,8 @@ button, a, [role="button"] {
 
 @media print {
   @page {
-    size: auto;
-    margin: 10mm;
+    size: A4 portrait;
+    margin: 12mm 15mm;
   }
 
   * {
@@ -201,14 +201,19 @@ button, a, [role="button"] {
     print-color-adjust: exact !important;
   }
 
-  body {
+  html, body {
     background-color: #ffffff !important;
+    color: #09090b !important;
+    min-height: auto !important;
   }
 
+  /* General elements hidden during printing */
   .MuiAppBar-root,
   .MuiPaper-root.MuiPaper-elevation3,
   .no-print,
-  button:not(.print-allow) {
+  nav,
+  button:not(.print-allow),
+  .MuiCircularProgress-root {
     display: none !important;
   }
 
@@ -216,58 +221,126 @@ button, a, [role="button"] {
     display: block !important;
   }
 
-  /* Specific handling when printing from the Salary Slip modal */
-  body.salary-slip-open {
+  /* =========================================================
+     Salary Slip Print Isolation
+     Applies when body has .salary-slip-open or .printing-salary-slip
+     ========================================================= */
+
+  /* Ensure body expands naturally without screen limits */
+  body.salary-slip-open,
+  body.printing-salary-slip {
     overflow: visible !important;
     height: auto !important;
+    min-height: auto !important;
     background-color: #ffffff !important;
   }
 
-  body.salary-slip-open #root {
+  /* Hide the rest of the application tree */
+  body.salary-slip-open #root,
+  body.printing-salary-slip #root {
     display: none !important;
   }
 
-  body.salary-slip-open .MuiBackdrop-root {
-    display: none !important;
-  }
-
-  body.salary-slip-open .MuiDialogActions-root {
-    display: none !important;
-  }
-
-  body.salary-slip-open .MuiDialog-root {
-    position: static !important;
-    inset: auto !important;
-    overflow: visible !important;
-  }
-
-  body.salary-slip-open .MuiDialog-container {
-    height: auto !important;
+  /* If the modal is ever inside #root in specific environments */
+  body.salary-slip-open #root:has(.salary-slip-dialog),
+  body.printing-salary-slip #root:has(.salary-slip-dialog) {
     display: block !important;
     overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+  body.salary-slip-open #root:has(.salary-slip-dialog) > *:not(:has(.salary-slip-dialog)),
+  body.printing-salary-slip #root:has(.salary-slip-dialog) > *:not(:has(.salary-slip-dialog)) {
+    display: none !important;
   }
 
-  body.salary-slip-open .salary-slip-paper {
+  /* Hide modal backdrop, dialog actions (buttons), and bottom nav */
+  body.salary-slip-open .MuiBackdrop-root,
+  body.printing-salary-slip .MuiBackdrop-root,
+  body.salary-slip-open .MuiDialogActions-root,
+  body.printing-salary-slip .MuiDialogActions-root {
+    display: none !important;
+  }
+
+  /* Place modal in normal document flow instead of fixed viewport */
+  body.salary-slip-open .MuiDialog-root.salary-slip-dialog,
+  body.printing-salary-slip .MuiDialog-root.salary-slip-dialog,
+  body.salary-slip-open .MuiDialog-root,
+  body.printing-salary-slip .MuiDialog-root {
     position: static !important;
-    max-height: none !important;
-    max-width: 100% !important;
+    inset: auto !important;
     width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    z-index: auto !important;
     margin: 0 !important;
-    padding: 16px !important;
-    box-shadow: none !important;
-    border: none !important;
-    overflow: visible !important;
-    background-color: #ffffff !important;
-  }
-
-  body.salary-slip-open .MuiDialogContent-root {
-    overflow: visible !important;
-    max-height: none !important;
     padding: 0 !important;
   }
 
-  .salary-slip-row {
+  body.salary-slip-open .MuiDialog-container,
+  body.printing-salary-slip .MuiDialog-container {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Format payslip container as a clean document */
+  body.salary-slip-open .salary-slip-paper,
+  body.printing-salary-slip .salary-slip-paper {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: 1px solid #e4e4e7 !important;
+    border-radius: 8px !important;
+    overflow: visible !important;
+    background-color: #ffffff !important;
+    color: #09090b !important;
+    transform: none !important;
+  }
+
+  /* Dialog title & content formatting */
+  body.salary-slip-open .MuiDialogTitle-root,
+  body.printing-salary-slip .MuiDialogTitle-root {
+    padding: 18px 20px 12px 20px !important;
+    border-bottom: 2px solid #09090b !important;
+    color: #09090b !important;
+  }
+
+  body.salary-slip-open .salary-slip-content,
+  body.printing-salary-slip .salary-slip-content,
+  body.salary-slip-open .MuiDialogContent-root,
+  body.printing-salary-slip .MuiDialogContent-root {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 16px 20px 24px 20px !important;
+    color: #09090b !important;
+  }
+
+  /* Avoid row and section breaks across pages */
+  .salary-slip-row,
+  .salary-slip-section {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* Prevent site name clipping or truncation in print */
+  .salary-slip-site-name,
+  .salary-slip-row [title] {
+    white-space: normal !important;
+    word-break: break-word !important;
+    text-overflow: clip !important;
   }
 }

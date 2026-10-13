@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -54,18 +54,100 @@ const Payroll = () => {
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [isPrinting, setIsPrinting] = useState(false);
+  const printLockRef = useRef(false);
+  // Clean up print mode cleanly when print session ends
+  const cleanupPrintMode = useCallback(() => {
+    document.body.classList.remove('printing-salary-slip');
+    setIsPrinting(false);
+    printLockRef.current = false;
+  }, []);
+
+  // Listen for browser print lifecycle events: afterprint, matchMedia('print'), and window focus
+  useEffect(() => {
+    const handlePrintEnd = () => {
+      cleanupPrintMode();
+    };
+
+    // 1. Standard afterprint event (Chrome, Firefox, Safari 13+)
+    window.addEventListener('afterprint', handlePrintEnd);
+
+    // 2. matchMedia('print') transition listener (standard W3C for iOS WebKit & modern browsers)
+    const printMql = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('print') : null;
+    const handleMqlChange = (e) => {
+      if (!e.matches) {
+        cleanupPrintMode();
+      }
+    };
+    if (printMql) {
+      if (printMql.addEventListener) {
+        printMql.addEventListener('change', handleMqlChange);
+      } else if (printMql.addListener) {
+        printMql.addListener(handleMqlChange);
+      }
+    }
+
+    // 3. Window focus fallback: when native print modal or iOS AirPrint sheet closes, window regains focus
+    const handleWindowFocus = () => {
+      if (printLockRef.current) {
+        setTimeout(cleanupPrintMode, 300);
+      }
+    };
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      window.removeEventListener('afterprint', handlePrintEnd);
+      if (printMql) {
+        if (printMql.removeEventListener) {
+          printMql.removeEventListener('change', handleMqlChange);
+        } else if (printMql.removeListener) {
+          printMql.removeListener(handleMqlChange);
+        }
+      }
+      window.removeEventListener('focus', handleWindowFocus);
+      document.body.classList.remove('salary-slip-open', 'printing-salary-slip');
+    };
+  }, [cleanupPrintMode]);
 
   // Manage body class for clean printing of the salary slip
   useEffect(() => {
     if (slipModalOpen) {
       document.body.classList.add('salary-slip-open');
     } else {
-      document.body.classList.remove('salary-slip-open');
+      document.body.classList.remove('salary-slip-open', 'printing-salary-slip');
+      printLockRef.current = false;
     }
     return () => {
-      document.body.classList.remove('salary-slip-open');
+      document.body.classList.remove('salary-slip-open', 'printing-salary-slip');
     };
   }, [slipModalOpen]);
+
+  const handleCloseSlip = useCallback(() => {
+    cleanupPrintMode();
+    setSlipModalOpen(false);
+  }, [cleanupPrintMode]);
+
+  const handlePrintSlip = useCallback(() => {
+    if (printLockRef.current || slipLoading || !selectedSlipWorker) return;
+
+    printLockRef.current = true;
+    setIsPrinting(true);
+
+    // 1. Activate print mode classes on body
+    document.body.classList.add('salary-slip-open', 'printing-salary-slip');
+
+    // 2. Trigger printing on next frame so DOM and classes are fully applied
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        try {
+          window.print();
+        } catch (e) {
+          console.error('Print error:', e);
+          cleanupPrintMode();
+        }
+      }, 60);
+    });
+  }, [cleanupPrintMode, selectedSlipWorker, slipLoading]);
 
   const computeSitesWorked = (attendanceList, dailyWage) => {
     const wage = parseFloat(dailyWage || 0);
@@ -750,7 +832,7 @@ const Payroll = () => {
       {/* Salary Slip Modal */}
       <Dialog
         open={slipModalOpen}
-        onClose={() => setSlipModalOpen(false)}
+        onClose={handleCloseSlip}
         maxWidth="xs"
         fullWidth
         className="salary-slip-dialog"
@@ -783,7 +865,7 @@ const Payroll = () => {
         <DialogContent className="salary-slip-content">
           {selectedSlipWorker && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, pt: 0.5 }}>
-              <Box sx={{ bgcolor: '#f4f4f5', p: 1.5, borderRadius: 2, border: '1px solid #e4e4e7' }}>
+              <Box className="salary-slip-section" sx={{ bgcolor: '#f4f4f5', p: 1.5, borderRadius: 2, border: '1px solid #e4e4e7' }}>
                 <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#09090b' }}>
                   {selectedSlipWorker.worker_name}
                 </Typography>
@@ -796,7 +878,7 @@ const Payroll = () => {
               </Box>
 
               {/* Sites Worked Section */}
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              <Box className="salary-slip-section" sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Typography sx={{ fontWeight: 700, fontSize: '0.85rem', color: '#09090b', letterSpacing: '-0.01em' }}>
                     Sites Worked
@@ -867,6 +949,7 @@ const Payroll = () => {
                       >
                         <Box sx={{ minWidth: 0 }}>
                           <Typography
+                            className="salary-slip-site-name"
                             sx={{
                               fontSize: '0.8125rem',
                               fontWeight: 600,
@@ -910,7 +993,7 @@ const Payroll = () => {
                 )}
               </Box>
 
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: '0.8125rem' }}>
+              <Box className="salary-slip-section" sx={{ display: 'flex', flexDirection: 'column', gap: 1, fontSize: '0.8125rem' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                   <Typography sx={{ color: '#71717a' }}>Work Units:</Typography>
                   <Typography sx={{ fontWeight: 700, color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
@@ -960,7 +1043,7 @@ const Payroll = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
           <Button
-            onClick={() => setSlipModalOpen(false)}
+            onClick={handleCloseSlip}
             variant="outlined"
             size="small"
             sx={{
@@ -980,9 +1063,9 @@ const Payroll = () => {
           <Button
             variant="contained"
             size="small"
-            startIcon={<PrintIcon sx={{ fontSize: 16 }} />}
-            onClick={() => window.print()}
-            disabled={slipLoading}
+            startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : <PrintIcon sx={{ fontSize: 16 }} />}
+            onClick={handlePrintSlip}
+            disabled={slipLoading || isPrinting}
             sx={{
               borderRadius: 2,
               bgcolor: '#09090b',
@@ -995,7 +1078,7 @@ const Payroll = () => {
               '&:active': { transform: 'scale(0.97)' }
             }}
           >
-            Print Slip
+            {isPrinting ? 'Printing...' : 'Print Slip'}
           </Button>
         </DialogActions>
       </Dialog>

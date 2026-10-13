@@ -57,8 +57,22 @@ export const AuthProvider = ({ children }) => {
       if (app_title) setAppTitle(app_title);
       return { success: true };
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || 'Invalid MPIN. Please try again.';
-      return { success: false, message: errorMsg };
+      const isNetwork = !err.response;
+      const status = err.response?.status;
+      let errorMsg;
+      if (isNetwork) {
+        errorMsg = 'Network error. Please check your connection and try again.';
+      } else if (status >= 500) {
+        errorMsg = 'Server error. Please try again later.';
+      } else {
+        errorMsg = err.response?.data?.detail || 'Incorrect MPIN. Please try again.';
+      }
+      return {
+        success: false,
+        message: errorMsg,
+        status,
+        isNetworkError: isNetwork
+      };
     }
   };
 

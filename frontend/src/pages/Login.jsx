@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -14,77 +14,198 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 
+const MPIN_LENGTH = 4;
+
 const Login = () => {
   const [mpin, setMpin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [demoSubmitting, setDemoSubmitting] = useState(false);
+  const [shake, setShake] = useState(false);
+
+  const mpinRef = useRef('');
+  const submittingRef = useRef(false);
+  const shakeTimerRef = useRef(null);
+  const keypadRef = useRef(null);
+
   const { loginWithMpin, loginDemo } = useAuth();
   const navigate = useNavigate();
 
-  // Keyboard support for desktop / hardware input
+  const triggerShake = useCallback(() => {
+    if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+    setShake(true);
+    shakeTimerRef.current = setTimeout(() => {
+      setShake(false);
+    }, 350);
+  }, []);
+
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key >= '0' && e.key <= '9') {
-        handleDigitPress(e.key);
-      } else if (e.key === 'Backspace') {
-        handleBackspace();
-      } else if (e.key === 'Enter') {
-        handleSubmit();
-      }
+    return () => {
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [mpin, submitting]);
+  }, []);
 
-  const handleDigitPress = (digit) => {
-    if (mpin.length < 6) {
-      setError('');
-      setMpin((prev) => prev + digit);
-    }
-  };
+  const executeLogin = useCallback(async (pinOverride) => {
+    if (submittingRef.current || demoSubmitting) return;
 
-  const handleBackspace = () => {
-    setError('');
-    setMpin((prev) => prev.slice(0, -1));
-  };
-
-  const handleClear = () => {
-    setError('');
-    setMpin('');
-  };
-
-  const handleSubmit = async (pinOverride) => {
-    const pinToSubmit = pinOverride || mpin;
-    if (pinToSubmit.length < 4) {
-      setError('Enter at least 4 digits');
+    const pinToSubmit = pinOverride !== undefined ? pinOverride : mpinRef.current;
+    if (pinToSubmit.length < MPIN_LENGTH) {
+      setError(`Enter ${MPIN_LENGTH} digits`);
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setError('');
 
-    const res = await loginWithMpin(pinToSubmit);
-    if (res.success) {
-      navigate('/', { replace: true });
-    } else {
-      setError(res.message || 'Incorrect MPIN');
-      setMpin('');
-    }
-    setSubmitting(false);
-  };
+    try {
+      const res = await loginWithMpin(pinToSubmit);
+      if (res.success) {
+        navigate('/', { replace: true });
+        return;
+      }
 
-  const handleDemoLogin = async () => {
+      // Distinguish network/server errors from incorrect MPIN
+      const isNetwork = Boolean(res.isNetworkError || res.message?.toLowerCase().includes('network'));
+      const isServerError = Boolean((res.status && res.status >= 500) || res.message?.toLowerCase().includes('server'));
+
+      if (isNetwork) {
+        setError(res.message || 'Network error. Please check your connection and try again.');
+      } else if (isServerError) {
+        setError(res.message || 'Server error. Please try again later.');
+      } else {
+        // Authentication failed due to incorrect MPIN
+        setError('Incorrect MPIN. Please try again.');
+        mpinRef.current = '';
+        setMpin('');
+        triggerShake();
+      }
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+      keypadRef.current?.focus();
+    }
+  }, [demoSubmitting, loginWithMpin, navigate, triggerShake]);
+
+  const handleDigitPress = useCallback((digit) => {
+    if (submittingRef.current || demoSubmitting) return;
+
+    if (shake) {
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      setShake(false);
+    }
+
+    const current = mpinRef.current;
+    if (current.length < MPIN_LENGTH) {
+      const nextPin = current + digit;
+      mpinRef.current = nextPin;
+      setMpin(nextPin);
+      setError('');
+
+      if (nextPin.length === MPIN_LENGTH) {
+        executeLogin(nextPin);
+      }
+    } else if (error) {
+      // If a non-clearing error occurred (e.g. network error), pressing a digit starts fresh
+      mpinRef.current = digit;
+      setMpin(digit);
+      setError('');
+    }
+  }, [demoSubmitting, error, executeLogin, shake]);
+
+  const handleBackspace = useCallback(() => {
+    if (submittingRef.current || demoSubmitting) return;
+
+    if (shake) {
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      setShake(false);
+    }
+
+    setError('');
+    const nextPin = mpinRef.current.slice(0, -1);
+    mpinRef.current = nextPin;
+    setMpin(nextPin);
+  }, [demoSubmitting, shake]);
+
+  const handleClear = useCallback(() => {
+    if (submittingRef.current || demoSubmitting) return;
+
+    if (shake) {
+      if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
+      setShake(false);
+    }
+
+    setError('');
+    mpinRef.current = '';
+    setMpin('');
+  }, [demoSubmitting, shake]);
+
+  const handleDemoLogin = useCallback(async () => {
+    if (submittingRef.current || demoSubmitting) return;
+
     setDemoSubmitting(true);
     setError('');
-    const res = await loginDemo();
-    if (res.success) {
-      navigate('/', { replace: true });
-    } else {
-      setError(res.message || 'Failed to start demo session');
+    try {
+      const res = await loginDemo();
+      if (res.success) {
+        navigate('/', { replace: true });
+        return;
+      } else {
+        setError(res.message || 'Failed to start demo session');
+      }
+    } catch {
+      setError('Failed to start demo session. Please try again.');
+    } finally {
+      setDemoSubmitting(false);
     }
-    setDemoSubmitting(false);
-  };
+  }, [demoSubmitting, loginDemo, navigate]);
+
+  // Hardware keyboard and paste handling
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // Ignore modified keys (Ctrl, Alt, Meta)
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (submittingRef.current || demoSubmitting) return;
+
+      if (e.key >= '0' && e.key <= '9') {
+        e.preventDefault();
+        handleDigitPress(e.key);
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        handleBackspace();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        executeLogin();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleClear();
+      }
+    };
+
+    const handlePaste = (e) => {
+      if (submittingRef.current || demoSubmitting) return;
+      const pasted = e.clipboardData?.getData('text') || '';
+      const cleanDigits = pasted.replace(/\D/g, '').slice(0, MPIN_LENGTH);
+      if (cleanDigits.length > 0) {
+        e.preventDefault();
+        setError('');
+        mpinRef.current = cleanDigits;
+        setMpin(cleanDigits);
+        if (cleanDigits.length === MPIN_LENGTH) {
+          executeLogin(cleanDigits);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, [demoSubmitting, executeLogin, handleBackspace, handleClear, handleDigitPress]);
 
   const numpadDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
@@ -234,13 +355,16 @@ const Login = () => {
         </Typography>
 
         <Card
+          ref={keypadRef}
+          tabIndex={-1}
           elevation={0}
           sx={{
             borderRadius: '16px',
             border: '1px solid #e7e5e4',
             boxShadow: '0 4px 24px -2px rgba(28, 25, 23, 0.05)',
             bgcolor: '#ffffff',
-            p: { xs: 2, sm: 2.5 }
+            p: { xs: 2, sm: 2.5 },
+            outline: 'none'
           }}
         >
           {/* MPIN Dots Display */}
@@ -251,7 +375,18 @@ const Login = () => {
               alignItems: 'center',
               gap: 2,
               mb: 2.25,
-              py: 0.5
+              py: 0.5,
+              animation: shake ? 'mpinShake 320ms cubic-bezier(0.36, 0.07, 0.19, 0.97)' : 'none',
+              '@keyframes mpinShake': {
+                '0%, 100%': { transform: 'translateX(0)' },
+                '20%': { transform: 'translateX(-6px)' },
+                '40%': { transform: 'translateX(6px)' },
+                '60%': { transform: 'translateX(-3px)' },
+                '80%': { transform: 'translateX(3px)' }
+              },
+              '@media (prefers-reduced-motion: reduce)': {
+                animation: 'none'
+              }
             }}
           >
             {[0, 1, 2, 3].map((index) => {
@@ -263,10 +398,22 @@ const Login = () => {
                     width: 13,
                     height: 13,
                     borderRadius: '50%',
-                    border: isFilled ? '2px solid #ea580c' : '2px solid #d6d3d1',
-                    bgcolor: isFilled ? '#ea580c' : 'transparent',
+                    border: shake
+                      ? '2px solid #ea580c'
+                      : isFilled
+                      ? '2px solid #ea580c'
+                      : '2px solid #d6d3d1',
+                    bgcolor: shake
+                      ? '#fff7ed'
+                      : isFilled
+                      ? '#ea580c'
+                      : 'transparent',
                     transform: isFilled ? 'scale(1.15)' : 'scale(1)',
-                    boxShadow: isFilled ? '0 2px 8px rgba(234, 88, 12, 0.35)' : 'none',
+                    boxShadow: shake
+                      ? '0 0 8px rgba(234, 88, 12, 0.35)'
+                      : isFilled
+                      ? '0 2px 8px rgba(234, 88, 12, 0.35)'
+                      : 'none',
                     transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}
                 />
@@ -284,9 +431,12 @@ const Login = () => {
                 fontSize: '0.8125rem',
                 borderRadius: '10px',
                 textAlign: 'left',
-                bgcolor: '#fef2f2',
-                color: '#991b1b',
-                border: '1px solid #fecaca',
+                bgcolor: '#fff7ed',
+                color: '#9a3412',
+                border: '1px solid #fed7aa',
+                '& .MuiAlert-icon': {
+                  color: '#ea580c'
+                },
                 alignItems: 'center'
               }}
             >
@@ -307,8 +457,11 @@ const Login = () => {
             {numpadDigits.map((digit) => (
               <Button
                 key={digit}
-                onClick={() => handleDigitPress(digit)}
-                disabled={submitting}
+                onClick={(e) => {
+                  e.currentTarget.blur();
+                  handleDigitPress(digit);
+                }}
+                disabled={submitting || demoSubmitting}
                 sx={keyButtonSx}
                 aria-label={`Digit ${digit}`}
               >
@@ -318,8 +471,11 @@ const Login = () => {
 
             {/* Bottom Row: Clear (Col 1), 0 (Col 2), Backspace (Col 3) */}
             <Button
-              onClick={handleClear}
-              disabled={submitting || mpin.length === 0}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleClear();
+              }}
+              disabled={submitting || demoSubmitting || mpin.length === 0}
               sx={utilityButtonSx}
               aria-label="Clear MPIN"
             >
@@ -327,8 +483,11 @@ const Login = () => {
             </Button>
 
             <Button
-              onClick={() => handleDigitPress('0')}
-              disabled={submitting}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleDigitPress('0');
+              }}
+              disabled={submitting || demoSubmitting}
               sx={keyButtonSx}
               aria-label="Digit 0"
             >
@@ -336,8 +495,11 @@ const Login = () => {
             </Button>
 
             <Button
-              onClick={handleBackspace}
-              disabled={submitting || mpin.length === 0}
+              onClick={(e) => {
+                e.currentTarget.blur();
+                handleBackspace();
+              }}
+              disabled={submitting || demoSubmitting || mpin.length === 0}
               sx={backspaceButtonSx}
               aria-label="Backspace"
             >
@@ -350,8 +512,8 @@ const Login = () => {
             <Button
               fullWidth
               variant="contained"
-              onClick={() => handleSubmit()}
-              disabled={submitting || mpin.length < 4}
+              onClick={() => executeLogin()}
+              disabled={submitting || demoSubmitting || mpin.length < MPIN_LENGTH}
               startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
               sx={{
                 height: 46,
