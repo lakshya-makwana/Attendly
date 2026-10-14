@@ -27,12 +27,14 @@ import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
   LocationCityOutlined as SitesIcon,
-  PrintOutlined as PrintIcon,
-  Share as ShareIcon
+  FileDownloadOutlined as ExportIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { usePrint } from '../utils/usePrint';
 import { generateSiteReportHtml } from '../utils/printableDocument';
+import { exportSiteReportPdf } from '../utils/pdfExport';
+import { exportSiteReportExcel } from '../utils/excelExport';
+import ExportFormatModal from '../components/ExportFormatModal';
 
 const SiteAnalytics = () => {
   const navigate = useNavigate();
@@ -51,8 +53,13 @@ const SiteAnalytics = () => {
   const [selectedSite, setSelectedSite] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
+  // Export format selection modal state
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
+
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const { isPrinting, triggerPrint, openDocument, cleanup: cleanupPrint } = usePrint({
+  const { triggerPrint, cleanup: cleanupPrint } = usePrint({
     onNotification: useCallback((notice) => setSnackbar({ open: true, ...notice }), [])
   });
 
@@ -95,17 +102,51 @@ const SiteAnalytics = () => {
     });
   }, [selectedSite, analyticsData, selectedYear, triggerPrint, getSiteReportHtml]);
 
-  const handleShareSiteReport = useCallback(() => {
-    if (!selectedSite) return;
-    const mName = analyticsData?.month_name || 'Selected Month';
-    const sName = selectedSite.site_name || 'Site';
-    openDocument({
-      getDocumentHtml: getSiteReportHtml,
-      documentTitle: `Site Labour Report — ${sName} (${mName} ${selectedYear})`,
-      documentFilename: `Site_Report_${sName.replace(/\s+/g, '_')}_${mName.replace(/\s+/g, '_')}_${selectedYear}.html`,
-      preferShare: true
-    });
-  }, [selectedSite, analyticsData, selectedYear, openDocument, getSiteReportHtml]);
+
+  // Handle format choice from ExportFormatModal
+  const handleSelectExportFormat = useCallback(async (format) => {
+    if (isExporting || !selectedSite) return;
+    setIsExporting(true);
+    setExportingFormat(format);
+    const mName = analyticsData?.month_name || monthNames[selectedMonth - 1];
+
+    try {
+      if (format === 'pdf') {
+        await exportSiteReportPdf({
+          site: selectedSite,
+          monthName: mName,
+          year: selectedYear
+        });
+      } else if (format === 'excel') {
+        await exportSiteReportExcel({
+          site: selectedSite,
+          monthName: mName,
+          year: selectedYear
+        });
+      }
+      setSnackbar({
+        open: true,
+        message: `${format.toUpperCase()} ready for ${selectedSite.site_name}.`,
+        severity: 'success'
+      });
+      setExportModalOpen(false);
+    } catch (err) {
+      console.error('Export error:', err);
+      setSnackbar({
+        open: true,
+        message: 'Could not generate document. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setIsExporting(false);
+      setExportingFormat(null);
+    }
+  }, [isExporting, selectedSite, analyticsData, selectedMonth, selectedYear]);
+
+  const handleDirectPrintFromModal = useCallback(() => {
+    setExportModalOpen(false);
+    handlePrintSiteReport();
+  }, [handlePrintSiteReport]);
 
   const fetchAnalytics = async (year, month) => {
     try {
@@ -635,31 +676,11 @@ const SiteAnalytics = () => {
             Close
           </Button>
           <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ShareIcon sx={{ fontSize: 16 }} />}
-            onClick={handleShareSiteReport}
-            disabled={isPrinting}
-            sx={{
-              borderRadius: 2,
-              borderColor: '#e4e4e7',
-              color: '#09090b',
-              fontWeight: 600,
-              minHeight: 40,
-              px: 2,
-              touchAction: 'manipulation',
-              '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' },
-              '&:active': { transform: 'scale(0.97)' }
-            }}
-          >
-            Share / Save
-          </Button>
-          <Button
             variant="contained"
             size="small"
-            startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : <PrintIcon sx={{ fontSize: 16 }} />}
-            onClick={handlePrintSiteReport}
-            disabled={isPrinting}
+            startIcon={isExporting ? <CircularProgress size={16} color="inherit" /> : <ExportIcon sx={{ fontSize: 16 }} />}
+            onClick={() => setExportModalOpen(true)}
+            disabled={isExporting}
             sx={{
               borderRadius: 2,
               bgcolor: '#09090b',
@@ -672,10 +693,22 @@ const SiteAnalytics = () => {
               '&:active': { transform: 'scale(0.97)' }
             }}
           >
-            {isPrinting ? 'Printing...' : 'Print'}
+            Export / Print
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Export Format Selection Modal */}
+      <ExportFormatModal
+        open={exportModalOpen}
+        onClose={() => setExportModalOpen(false)}
+        onSelectFormat={handleSelectExportFormat}
+        onDirectPrint={handleDirectPrintFromModal}
+        title="Export Site Labour Report"
+        subtitle={selectedSite ? `${selectedSite.site_name} • ${analyticsData?.month_name || 'Billing Month'} ${selectedYear}` : ''}
+        isGenerating={isExporting}
+        generatingFormat={exportingFormat}
+      />
 
       {/* Toast Feedback */}
       <Snackbar

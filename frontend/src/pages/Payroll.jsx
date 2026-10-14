@@ -27,7 +27,6 @@ import {
 import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
-  Print as PrintIcon,
   QueryStats as AnalyticsIcon,
   People as PeopleIcon,
   Payments as MoneyIcon,
@@ -35,11 +34,16 @@ import {
   Description as DocumentIcon,
   InfoOutlined as InfoIcon,
   KeyboardArrowDown as ArrowDownIcon,
-  Share as ShareIcon
+  Print as PrintIcon,
+  Share as ShareIcon,
+  FileDownloadOutlined as ExportIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { usePrint } from '../utils/usePrint';
 import { generateSalarySlipHtml, generateMonthlyPayrollHtml } from '../utils/printableDocument';
+import { exportSalarySlipPdf, exportMonthlyPayrollPdf } from '../utils/pdfExport';
+import { exportSalarySlipExcel, exportMonthlyPayrollExcel } from '../utils/excelExport';
+import ExportFormatModal from '../components/ExportFormatModal';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -61,8 +65,18 @@ const Payroll = () => {
   const [workerMonthlyCache, setWorkerMonthlyCache] = useState({});
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
+  // Export format selection modal state
+  const [exportModal, setExportModal] = useState({
+    open: false,
+    type: null, // 'slip' | 'monthly'
+    title: '',
+    subtitle: ''
+  });
+  const [isExporting, setIsExporting] = useState(false);
+  const [exportingFormat, setExportingFormat] = useState(null);
+
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const { isPrinting, triggerPrint, openDocument, cleanup: cleanupPrintMode } = usePrint({
+  const { isPrinting, triggerPrint, cleanup: cleanupPrintMode } = usePrint({
     onNotification: useCallback((notice) => setSnackbar({ open: true, ...notice }), [])
   });
 
@@ -105,17 +119,6 @@ const Payroll = () => {
     });
   }, [selectedSlipWorker, slipLoading, triggerPrint, getSlipHtml, selectedMonth, selectedYear]);
 
-  const handleShareSlip = useCallback(() => {
-    if (slipLoading || !selectedSlipWorker) return;
-    const workerName = selectedSlipWorker.worker_name || 'Worker';
-    const monthStr = MONTH_NAMES[selectedMonth - 1];
-    openDocument({
-      getDocumentHtml: getSlipHtml,
-      documentTitle: `Salary Slip — ${workerName} (${monthStr} ${selectedYear})`,
-      documentFilename: `Salary_Slip_${workerName.replace(/\s+/g, '_')}_${monthStr}_${selectedYear}.html`,
-      preferShare: true
-    });
-  }, [selectedSlipWorker, slipLoading, openDocument, getSlipHtml, selectedMonth, selectedYear]);
 
   const getMonthlyPayrollHtml = useCallback(() => {
     if (!payrollData) return '';
@@ -134,6 +137,100 @@ const Payroll = () => {
       documentFilename: `Payroll_${monthStr}_${selectedYear}.html`
     });
   }, [triggerPrint, getMonthlyPayrollHtml, selectedMonth, selectedYear]);
+
+  // Handle format choice from ExportFormatModal
+  const handleSelectExportFormat = useCallback(async (format) => {
+    if (isExporting) return;
+    setIsExporting(true);
+    setExportingFormat(format);
+    const mName = MONTH_NAMES[selectedMonth - 1];
+
+    try {
+      if (exportModal.type === 'slip') {
+        if (!selectedSlipWorker) return;
+        if (format === 'pdf') {
+          await exportSalarySlipPdf({
+            worker: selectedSlipWorker,
+            sitesWorked: slipSites,
+            monthName: mName,
+            year: selectedYear
+          });
+        } else if (format === 'excel') {
+          await exportSalarySlipExcel({
+            worker: selectedSlipWorker,
+            sitesWorked: slipSites,
+            monthName: mName,
+            year: selectedYear
+          });
+        }
+        setSnackbar({
+          open: true,
+          message: `${format.toUpperCase()} ready for ${selectedSlipWorker.worker_name}.`,
+          severity: 'success'
+        });
+      } else if (exportModal.type === 'monthly') {
+        if (!payrollData) return;
+        if (format === 'pdf') {
+          await exportMonthlyPayrollPdf({
+            payrollData,
+            monthName: mName,
+            year: selectedYear
+          });
+        } else if (format === 'excel') {
+          await exportMonthlyPayrollExcel({
+            payrollData,
+            monthName: mName,
+            year: selectedYear
+          });
+        }
+        setSnackbar({
+          open: true,
+          message: `Monthly Payroll ${format.toUpperCase()} ready for ${mName} ${selectedYear}.`,
+          severity: 'success'
+        });
+      }
+      setExportModal((prev) => ({ ...prev, open: false }));
+    } catch (err) {
+      console.error('Export error:', err);
+      setSnackbar({
+        open: true,
+        message: 'Could not generate document. Please try again.',
+        severity: 'error'
+      });
+    } finally {
+      setIsExporting(false);
+      setExportingFormat(null);
+    }
+  }, [isExporting, exportModal.type, selectedSlipWorker, slipSites, selectedMonth, selectedYear, payrollData]);
+
+  const handleOpenSlipExport = useCallback(() => {
+    if (!selectedSlipWorker) return;
+    setExportModal({
+      open: true,
+      type: 'slip',
+      title: 'Export Salary Slip',
+      subtitle: `${selectedSlipWorker.worker_name} • ${MONTH_NAMES[selectedMonth - 1]} ${selectedYear}`
+    });
+  }, [selectedSlipWorker, selectedMonth, selectedYear]);
+
+  const handleOpenMonthlyExport = useCallback(() => {
+    if (!payrollData) return;
+    setExportModal({
+      open: true,
+      type: 'monthly',
+      title: 'Export Monthly Payroll',
+      subtitle: `${MONTH_NAMES[selectedMonth - 1]} ${selectedYear} • ${payrollData?.totals?.total_workers || 0} Workers`
+    });
+  }, [payrollData, selectedMonth, selectedYear]);
+
+  const handleDirectPrintFromModal = useCallback(() => {
+    setExportModal((prev) => ({ ...prev, open: false }));
+    if (exportModal.type === 'slip') {
+      handlePrintSlip();
+    } else if (exportModal.type === 'monthly') {
+      handlePrintMonthlyPayroll();
+    }
+  }, [exportModal.type, handlePrintSlip, handlePrintMonthlyPayroll]);
 
   const computeSitesWorked = (attendanceList, dailyWage) => {
     const wage = parseFloat(dailyWage || 0);
@@ -275,9 +372,9 @@ const Payroll = () => {
           <Button
             variant="outlined"
             size="small"
-            startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : <PrintIcon sx={{ fontSize: 16 }} />}
-            onClick={handlePrintMonthlyPayroll}
-            disabled={isPrinting}
+            startIcon={isExporting && exportModal.type === 'monthly' ? <CircularProgress size={16} color="inherit" /> : <ExportIcon sx={{ fontSize: 16 }} />}
+            onClick={handleOpenMonthlyExport}
+            disabled={loading || isExporting}
             sx={{
               fontSize: '0.775rem',
               fontWeight: 600,
@@ -292,7 +389,7 @@ const Payroll = () => {
               '&:active': { transform: 'scale(0.97)' }
             }}
           >
-            {isPrinting ? 'Printing...' : 'Print'}
+            Export / Print
           </Button>
         </Box>
       </Box>
@@ -1031,47 +1128,81 @@ const Payroll = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1, flexWrap: 'wrap' }}>
-          <Button
-            onClick={handleCloseSlip}
-            variant="outlined"
-            size="small"
+        <DialogActions
+          sx={{
+            px: { xs: 1.5, sm: 3 },
+            pb: 2.5,
+            pt: 1,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            justifyContent: { sm: 'flex-end' },
+            gap: 1.25,
+            width: '100%',
+            boxSizing: 'border-box'
+          }}
+        >
+          <Box
             sx={{
-              borderRadius: 2,
-              borderColor: '#e4e4e7',
-              color: '#09090b',
-              fontWeight: 600,
-              minHeight: 38,
-              touchAction: 'manipulation',
-              '@media (hover: hover) and (pointer: fine)': {
-                '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
-              },
-              '&:active': { transform: 'scale(0.97)' }
+              display: 'flex',
+              gap: 1.25,
+              width: { xs: '100%', sm: 'auto' },
+              order: { xs: 1, sm: 1 }
             }}
           >
-            Close
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ShareIcon sx={{ fontSize: 16 }} />}
-            onClick={handleShareSlip}
-            disabled={slipLoading || isPrinting}
-            sx={{
-              borderRadius: 2,
-              borderColor: '#e4e4e7',
-              color: '#09090b',
-              fontWeight: 600,
-              minHeight: 38,
-              touchAction: 'manipulation',
-              '@media (hover: hover) and (pointer: fine)': {
-                '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
-              },
-              '&:active': { transform: 'scale(0.97)' }
-            }}
-          >
-            Share / Save
-          </Button>
+            <Button
+              onClick={handleCloseSlip}
+              variant="outlined"
+              size="small"
+              sx={{
+                flex: { xs: 1, sm: 'none' },
+                borderRadius: 2,
+                borderColor: '#e4e4e7',
+                color: '#09090b',
+                fontWeight: 600,
+                minHeight: 40,
+                px: { xs: 1.5, sm: 2 },
+                fontSize: '0.8125rem',
+                textTransform: 'none',
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                },
+                '&:active': { transform: 'scale(0.97)' }
+              }}
+            >
+              Close
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ShareIcon sx={{ fontSize: 16 }} />}
+              onClick={handleOpenSlipExport}
+              disabled={slipLoading || isExporting}
+              sx={{
+                flex: { xs: 1, sm: 'none' },
+                borderRadius: 2,
+                borderColor: '#e4e4e7',
+                color: '#09090b',
+                fontWeight: 600,
+                minHeight: 40,
+                px: { xs: 1.5, sm: 2 },
+                fontSize: '0.8125rem',
+                textTransform: 'none',
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                '@media (hover: hover) and (pointer: fine)': {
+                  '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+                },
+                '&:active': { transform: 'scale(0.97)' }
+              }}
+            >
+              Share / Save
+            </Button>
+          </Box>
+
           <Button
             variant="contained"
             size="small"
@@ -1079,12 +1210,19 @@ const Payroll = () => {
             onClick={handlePrintSlip}
             disabled={slipLoading || isPrinting}
             sx={{
+              width: { xs: '100%', sm: 'auto' },
+              order: { xs: 2, sm: 2 },
               borderRadius: 2,
               bgcolor: '#09090b',
               color: '#ffffff',
               fontWeight: 700,
-              minHeight: 38,
+              minHeight: 40,
+              px: 2.5,
+              fontSize: '0.8125rem',
+              textTransform: 'none',
               touchAction: 'manipulation',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
               '@media (hover: hover) and (pointer: fine)': {
                 '&:hover': { bgcolor: '#27272a' }
               },
@@ -1156,6 +1294,18 @@ const Payroll = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Export Format Selection Modal */}
+      <ExportFormatModal
+        open={exportModal.open}
+        onClose={() => setExportModal((prev) => ({ ...prev, open: false }))}
+        onSelectFormat={handleSelectExportFormat}
+        onDirectPrint={handleDirectPrintFromModal}
+        title={exportModal.title}
+        subtitle={exportModal.subtitle}
+        isGenerating={isExporting}
+        generatingFormat={exportingFormat}
+      />
 
       {/* Toast Feedback */}
       <Snackbar
