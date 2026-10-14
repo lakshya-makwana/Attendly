@@ -27,10 +27,12 @@ import {
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
   LocationCityOutlined as SitesIcon,
-  PrintOutlined as PrintIcon
+  PrintOutlined as PrintIcon,
+  Share as ShareIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { usePrint } from '../utils/usePrint';
+import { generateSiteReportHtml } from '../utils/printableDocument';
 
 const SiteAnalytics = () => {
   const navigate = useNavigate();
@@ -50,7 +52,7 @@ const SiteAnalytics = () => {
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const { isPrinting, triggerPrint, cleanup: cleanupPrint } = usePrint({
+  const { isPrinting, triggerPrint, openDocument, cleanup: cleanupPrint } = usePrint({
     onNotification: useCallback((notice) => setSnackbar({ open: true, ...notice }), [])
   });
 
@@ -71,12 +73,39 @@ const SiteAnalytics = () => {
     setDetailModalOpen(false);
   }, [cleanupPrint]);
 
+  const getSiteReportHtml = useCallback(() => {
+    if (!selectedSite) return '';
+    const mName = analyticsData?.month_name || 'Selected Month';
+    return generateSiteReportHtml({
+      site: selectedSite,
+      monthName: mName,
+      year: selectedYear
+    });
+  }, [selectedSite, analyticsData, selectedYear]);
+
   const handlePrintSiteReport = useCallback(() => {
     if (!selectedSite) return;
+    const mName = analyticsData?.month_name || 'Selected Month';
+    const sName = selectedSite.site_name || 'Site';
     triggerPrint({
-      printClasses: ['site-report-open', 'printing-site-report', 'print-modal-open']
+      printClasses: ['site-report-open', 'printing-site-report', 'print-modal-open'],
+      getDocumentHtml: getSiteReportHtml,
+      documentTitle: `Site Labour Report — ${sName} (${mName} ${selectedYear})`,
+      documentFilename: `Site_Report_${sName.replace(/\s+/g, '_')}_${mName.replace(/\s+/g, '_')}_${selectedYear}.html`
     });
-  }, [selectedSite, triggerPrint]);
+  }, [selectedSite, analyticsData, selectedYear, triggerPrint, getSiteReportHtml]);
+
+  const handleShareSiteReport = useCallback(() => {
+    if (!selectedSite) return;
+    const mName = analyticsData?.month_name || 'Selected Month';
+    const sName = selectedSite.site_name || 'Site';
+    openDocument({
+      getDocumentHtml: getSiteReportHtml,
+      documentTitle: `Site Labour Report — ${sName} (${mName} ${selectedYear})`,
+      documentFilename: `Site_Report_${sName.replace(/\s+/g, '_')}_${mName.replace(/\s+/g, '_')}_${selectedYear}.html`,
+      preferShare: true
+    });
+  }, [selectedSite, analyticsData, selectedYear, openDocument, getSiteReportHtml]);
 
   const fetchAnalytics = async (year, month) => {
     try {
@@ -490,13 +519,15 @@ const SiteAnalytics = () => {
         maxWidth="sm"
         fullWidth
         className="site-report-dialog printable-dialog"
-        PaperProps={{
-          className: 'site-report-paper printable-paper',
-          sx: {
-            borderRadius: 3,
-            p: 1,
-            border: '1px solid #e4e4e7',
-            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+        slotProps={{
+          paper: {
+            className: 'site-report-paper printable-paper',
+            sx: {
+              borderRadius: 3,
+              p: 1,
+              border: '1px solid #e4e4e7',
+              boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+            }
           }
         }}
       >
@@ -587,7 +618,7 @@ const SiteAnalytics = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1, flexWrap: 'wrap' }}>
           <Button
             onClick={handleCloseDetailModal}
             variant="outlined"
@@ -602,6 +633,26 @@ const SiteAnalytics = () => {
             }}
           >
             Close
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ShareIcon sx={{ fontSize: 16 }} />}
+            onClick={handleShareSiteReport}
+            disabled={isPrinting}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 40,
+              px: 2,
+              touchAction: 'manipulation',
+              '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
+          >
+            Share / Save
           </Button>
           <Button
             variant="contained"
@@ -629,12 +680,27 @@ const SiteAnalytics = () => {
       {/* Toast Feedback */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        autoHideDuration={snackbar.actionLabel ? 7000 : 3000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert
-          severity={snackbar.severity}
+          severity={snackbar.severity || 'info'}
+          action={
+            snackbar.actionLabel ? (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  if (snackbar.onAction) snackbar.onAction();
+                  setSnackbar((prev) => ({ ...prev, open: false }));
+                }}
+                sx={{ fontWeight: 700, textTransform: 'none', ml: 1 }}
+              >
+                {snackbar.actionLabel}
+              </Button>
+            ) : null
+          }
           sx={{
             width: '100%',
             borderRadius: 2,

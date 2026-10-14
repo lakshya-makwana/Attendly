@@ -34,10 +34,17 @@ import {
   RemoveCircle as MinusIcon,
   Description as DocumentIcon,
   InfoOutlined as InfoIcon,
-  KeyboardArrowDown as ArrowDownIcon
+  KeyboardArrowDown as ArrowDownIcon,
+  Share as ShareIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { usePrint } from '../utils/usePrint';
+import { generateSalarySlipHtml, generateMonthlyPayrollHtml } from '../utils/printableDocument';
+
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 const Payroll = () => {
   const navigate = useNavigate();
@@ -55,7 +62,7 @@ const Payroll = () => {
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
-  const { isPrinting, triggerPrint, cleanup: cleanupPrintMode } = usePrint({
+  const { isPrinting, triggerPrint, openDocument, cleanup: cleanupPrintMode } = usePrint({
     onNotification: useCallback((notice) => setSnackbar({ open: true, ...notice }), [])
   });
 
@@ -76,12 +83,57 @@ const Payroll = () => {
     setSlipModalOpen(false);
   }, [cleanupPrintMode]);
 
+  const getSlipHtml = useCallback(() => {
+    if (!selectedSlipWorker) return '';
+    return generateSalarySlipHtml({
+      worker: selectedSlipWorker,
+      sitesWorked: slipSites,
+      monthName: MONTH_NAMES[selectedMonth - 1],
+      year: selectedYear
+    });
+  }, [selectedSlipWorker, slipSites, selectedMonth, selectedYear]);
+
   const handlePrintSlip = useCallback(() => {
     if (slipLoading || !selectedSlipWorker) return;
+    const workerName = selectedSlipWorker.worker_name || 'Worker';
+    const monthStr = MONTH_NAMES[selectedMonth - 1];
     triggerPrint({
-      printClasses: ['salary-slip-open', 'printing-salary-slip', 'print-modal-open']
+      printClasses: ['salary-slip-open', 'printing-salary-slip', 'print-modal-open'],
+      getDocumentHtml: getSlipHtml,
+      documentTitle: `Salary Slip — ${workerName} (${monthStr} ${selectedYear})`,
+      documentFilename: `Salary_Slip_${workerName.replace(/\s+/g, '_')}_${monthStr}_${selectedYear}.html`
     });
-  }, [selectedSlipWorker, slipLoading, triggerPrint]);
+  }, [selectedSlipWorker, slipLoading, triggerPrint, getSlipHtml, selectedMonth, selectedYear]);
+
+  const handleShareSlip = useCallback(() => {
+    if (slipLoading || !selectedSlipWorker) return;
+    const workerName = selectedSlipWorker.worker_name || 'Worker';
+    const monthStr = MONTH_NAMES[selectedMonth - 1];
+    openDocument({
+      getDocumentHtml: getSlipHtml,
+      documentTitle: `Salary Slip — ${workerName} (${monthStr} ${selectedYear})`,
+      documentFilename: `Salary_Slip_${workerName.replace(/\s+/g, '_')}_${monthStr}_${selectedYear}.html`,
+      preferShare: true
+    });
+  }, [selectedSlipWorker, slipLoading, openDocument, getSlipHtml, selectedMonth, selectedYear]);
+
+  const getMonthlyPayrollHtml = useCallback(() => {
+    if (!payrollData) return '';
+    return generateMonthlyPayrollHtml({
+      payrollData,
+      monthName: MONTH_NAMES[selectedMonth - 1],
+      year: selectedYear
+    });
+  }, [payrollData, selectedMonth, selectedYear]);
+
+  const handlePrintMonthlyPayroll = useCallback(() => {
+    const monthStr = MONTH_NAMES[selectedMonth - 1];
+    triggerPrint({
+      getDocumentHtml: getMonthlyPayrollHtml,
+      documentTitle: `Monthly Payroll — ${monthStr} ${selectedYear}`,
+      documentFilename: `Payroll_${monthStr}_${selectedYear}.html`
+    });
+  }, [triggerPrint, getMonthlyPayrollHtml, selectedMonth, selectedYear]);
 
   const computeSitesWorked = (attendanceList, dailyWage) => {
     const wage = parseFloat(dailyWage || 0);
@@ -224,7 +276,7 @@ const Payroll = () => {
             variant="outlined"
             size="small"
             startIcon={isPrinting ? <CircularProgress size={16} color="inherit" /> : <PrintIcon sx={{ fontSize: 16 }} />}
-            onClick={() => triggerPrint()}
+            onClick={handlePrintMonthlyPayroll}
             disabled={isPrinting}
             sx={{
               fontSize: '0.775rem',
@@ -771,13 +823,15 @@ const Payroll = () => {
         maxWidth="xs"
         fullWidth
         className="salary-slip-dialog printable-dialog"
-        PaperProps={{
-          className: 'salary-slip-paper printable-paper',
-          sx: {
-            borderRadius: '14px',
-            p: 1,
-            border: '1px solid #e4e4e7',
-            boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+        slotProps={{
+          paper: {
+            className: 'salary-slip-paper printable-paper',
+            sx: {
+              borderRadius: '14px',
+              p: 1,
+              border: '1px solid #e4e4e7',
+              boxShadow: '0 16px 32px rgba(0,0,0,0.08)'
+            }
           }
         }}
       >
@@ -977,7 +1031,7 @@ const Payroll = () => {
             </Box>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1, flexWrap: 'wrap' }}>
           <Button
             onClick={handleCloseSlip}
             variant="outlined"
@@ -987,6 +1041,7 @@ const Payroll = () => {
               borderColor: '#e4e4e7',
               color: '#09090b',
               fontWeight: 600,
+              minHeight: 38,
               touchAction: 'manipulation',
               '@media (hover: hover) and (pointer: fine)': {
                 '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
@@ -995,6 +1050,27 @@ const Payroll = () => {
             }}
           >
             Close
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<ShareIcon sx={{ fontSize: 16 }} />}
+            onClick={handleShareSlip}
+            disabled={slipLoading || isPrinting}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              fontWeight: 600,
+              minHeight: 38,
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
+          >
+            Share / Save
           </Button>
           <Button
             variant="contained"
@@ -1007,6 +1083,7 @@ const Payroll = () => {
               bgcolor: '#09090b',
               color: '#ffffff',
               fontWeight: 700,
+              minHeight: 38,
               touchAction: 'manipulation',
               '@media (hover: hover) and (pointer: fine)': {
                 '&:hover': { bgcolor: '#27272a' }
@@ -1083,11 +1160,29 @@ const Payroll = () => {
       {/* Toast Feedback */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        autoHideDuration={snackbar.actionLabel ? 7000 : 3000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}>
+        <Alert
+          severity={snackbar.severity || 'info'}
+          action={
+            snackbar.actionLabel ? (
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => {
+                  if (snackbar.onAction) snackbar.onAction();
+                  setSnackbar((prev) => ({ ...prev, open: false }));
+                }}
+                sx={{ fontWeight: 700, textTransform: 'none', ml: 1 }}
+              >
+                {snackbar.actionLabel}
+              </Button>
+            ) : null
+          }
+          sx={{ width: '100%', borderRadius: 2, fontWeight: 600 }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
