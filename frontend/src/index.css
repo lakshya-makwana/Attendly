@@ -253,35 +253,29 @@ button, a, [role="button"] {
   body.printing-site-report {
     overflow: visible !important;
     height: auto !important;
-    min-height: auto !important;
+    min-height: 0 !important;
     background-color: #ffffff !important;
   }
 
-  /* Hide the rest of the application tree */
+  /* Hide the rest of the application tree completely when any modal is printed */
   body.print-modal-open #root,
   body.salary-slip-open #root,
   body.printing-salary-slip #root,
   body.site-report-open #root,
-  body.printing-site-report #root {
+  body.printing-site-report #root,
+  body:has(.printable-dialog) #root,
+  body:has(.site-report-dialog) #root,
+  body:has(.salary-slip-dialog) #root,
+  body:has(.printable-paper) #root {
     display: none !important;
-  }
-
-  /* Fallback if the modal is ever mounted inside #root */
-  body.print-modal-open #root:has(.printable-dialog),
-  body.salary-slip-open #root:has(.salary-slip-dialog),
-  body.site-report-open #root:has(.site-report-dialog) {
-    display: block !important;
-    overflow: visible !important;
-    height: auto !important;
-    min-height: auto !important;
-  }
-  body.print-modal-open #root:has(.printable-dialog) > *:not(:has(.printable-dialog)),
-  body.salary-slip-open #root:has(.salary-slip-dialog) > *:not(:has(.salary-slip-dialog)),
-  body.site-report-open #root:has(.site-report-dialog) > *:not(:has(.site-report-dialog)) {
-    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* Hide modal backdrop and interactive dialog actions (buttons) */
+  .MuiBackdrop-root,
+  .MuiDialogActions-root,
   body.print-modal-open .MuiBackdrop-root,
   body.salary-slip-open .MuiBackdrop-root,
   body.site-report-open .MuiBackdrop-root,
@@ -296,6 +290,9 @@ button, a, [role="button"] {
   }
 
   /* Place modal in normal document flow instead of fixed viewport */
+  .printable-dialog,
+  .site-report-dialog,
+  .salary-slip-dialog,
   body.print-modal-open .MuiDialog-root,
   body.salary-slip-open .MuiDialog-root,
   body.site-report-open .MuiDialog-root,
@@ -305,6 +302,8 @@ button, a, [role="button"] {
     inset: auto !important;
     width: 100% !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     overflow: visible !important;
     display: block !important;
     z-index: auto !important;
@@ -312,6 +311,9 @@ button, a, [role="button"] {
     padding: 0 !important;
   }
 
+  .printable-dialog .MuiDialog-container,
+  .site-report-dialog .MuiDialog-container,
+  .salary-slip-dialog .MuiDialog-container,
   body.print-modal-open .MuiDialog-container,
   body.salary-slip-open .MuiDialog-container,
   body.site-report-open .MuiDialog-container,
@@ -321,24 +323,44 @@ button, a, [role="button"] {
     display: block !important;
     width: 100% !important;
     height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
     overflow: visible !important;
     transform: none !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
+  /* CRITICAL: MUI Dialog container uses ::after with height: 100% to vertically center.
+     In print, this forces an unnecessary second blank page. Suppress it completely. */
+  .MuiDialog-container::after,
+  .printable-dialog .MuiDialog-container::after,
+  .site-report-dialog .MuiDialog-container::after,
+  .salary-slip-dialog .MuiDialog-container::after,
+  body.print-modal-open .MuiDialog-container::after,
+  body.salary-slip-open .MuiDialog-container::after,
+  body.site-report-open .MuiDialog-container::after {
+    content: none !important;
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+  }
+
   /* Format printable modal container as a clean document */
+  .printable-paper,
+  .site-report-paper,
+  .salary-slip-paper,
   body.print-modal-open .MuiDialog-paper,
   body.salary-slip-open .salary-slip-paper,
   body.site-report-open .site-report-paper,
   body.printing-salary-slip .salary-slip-paper,
-  body.printing-site-report .site-report-paper,
-  .printable-paper {
+  body.printing-site-report .site-report-paper {
     position: static !important;
     display: block !important;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
+    min-height: 0 !important;
     max-height: none !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -349,29 +371,34 @@ button, a, [role="button"] {
     background-color: #ffffff !important;
     color: #09090b !important;
     transform: none !important;
+    break-after: avoid-page !important;
   }
 
   /* Dialog title & content formatting */
+  .printable-title,
   body.print-modal-open .MuiDialogTitle-root,
   body.salary-slip-open .MuiDialogTitle-root,
   body.site-report-open .MuiDialogTitle-root,
   body.printing-salary-slip .MuiDialogTitle-root,
   body.printing-site-report .MuiDialogTitle-root {
-    padding: 18px 20px 12px 20px !important;
+    padding: 16px 20px 12px 20px !important;
     border-bottom: 2px solid #09090b !important;
     color: #09090b !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
   }
 
+  .printable-content,
   body.print-modal-open .MuiDialogContent-root,
   body.salary-slip-open .salary-slip-content,
   body.site-report-open .site-report-content,
   body.printing-salary-slip .salary-slip-content,
-  body.printing-site-report .site-report-content,
-  .printable-content {
+  body.printing-site-report .site-report-content {
     overflow: visible !important;
     max-height: none !important;
     height: auto !important;
-    padding: 16px 20px 24px 20px !important;
+    padding: 16px 20px 20px 20px !important;
     color: #09090b !important;
   }
 
@@ -381,7 +408,8 @@ button, a, [role="button"] {
   .site-report-section,
   .printable-section,
   .printable-row,
-  .printable-break-avoid {
+  .printable-break-avoid,
+  .MuiTableRow-root {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }

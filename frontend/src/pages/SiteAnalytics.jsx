@@ -500,8 +500,21 @@ const SiteAnalytics = () => {
           }
         }}
       >
-        <DialogTitle className="printable-title" sx={{ fontWeight: 700, fontSize: '1.05rem', color: '#09090b' }}>
-          {selectedSite?.site_name} — Site Report
+        <DialogTitle
+          className="printable-title"
+          sx={{
+            fontWeight: 700,
+            fontSize: '1.05rem',
+            color: '#09090b',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}
+        >
+          <span>{selectedSite?.site_name} — Site Report</span>
+          <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: '#71717a' }}>
+            Attendly
+          </Typography>
         </DialogTitle>
         <DialogContent className="site-report-content printable-content">
           {selectedSite && (
