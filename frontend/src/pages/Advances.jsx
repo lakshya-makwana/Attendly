@@ -29,7 +29,13 @@ import {
 import api from '../api/client';
 import { formatDateIndian } from '../utils/dateUtils';
 
+import MonthSelector, { MONTH_NAMES } from '../components/MonthSelector';
+
 const Advances = () => {
+  const currentDate = new Date();
+  const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
+
   const [advances, setAdvances] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +77,24 @@ const Advances = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const handlePrevMonth = () => {
+    if (selectedMonth === 1) {
+      setSelectedMonth(12);
+      setSelectedYear((y) => y - 1);
+    } else {
+      setSelectedMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth === 12) {
+      setSelectedMonth(1);
+      setSelectedYear((y) => y + 1);
+    } else {
+      setSelectedMonth((m) => m + 1);
+    }
+  };
 
   const handleOpenAdd = () => {
     setWorkerId(workers.length > 0 ? workers[0].id : '');
@@ -126,12 +150,35 @@ const Advances = () => {
     }
   };
 
-  const filteredAdvances = advances.filter((adv) => {
+  // Helper to test if an advance date belongs to a given calendar year & month
+  const isAdvanceInMonth = (dateStr, year, month) => {
+    if (!dateStr) return false;
+    const cleanDate = typeof dateStr === 'string' ? dateStr.substring(0, 10) : '';
+    const parts = cleanDate.split('-');
+    if (parts.length < 2) return false;
+    return parseInt(parts[0], 10) === year && parseInt(parts[1], 10) === month;
+  };
+
+  // All-time advances filtered by worker selection
+  const totalFilteredAdvances = advances.filter((adv) => {
     if (!selectedWorkerId) return true;
-    return adv.worker_id === parseInt(selectedWorkerId);
+    return adv.worker_id === parseInt(selectedWorkerId, 10);
   });
 
-  const totalFilteredAmount = filteredAdvances.reduce((sum, item) => sum + parseFloat(item.amount || 0), 0);
+  const totalFilteredAmount = totalFilteredAdvances.reduce(
+    (sum, item) => sum + parseFloat(item.amount || 0),
+    0
+  );
+
+  // Monthly advances filtered by selected month and worker selection
+  const monthlyFilteredAdvances = totalFilteredAdvances.filter((adv) =>
+    isAdvanceInMonth(adv.date, selectedYear, selectedMonth)
+  );
+
+  const monthlyTotalAmount = monthlyFilteredAdvances.reduce(
+    (sum, item) => sum + parseFloat(item.amount || 0),
+    0
+  );
 
   const formatCurrency = (val) => {
     const num = parseFloat(val || 0);
@@ -142,7 +189,7 @@ const Advances = () => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5, maxWidth: 1200, width: '100%', mx: 'auto', pb: { xs: 4, sm: 6 } }}>
-      {/* Page Header */}
+      {/* 1. Page Header & Actions */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, pt: 0.5 }}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.35rem', sm: '1.5rem' }, color: '#09090b', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
@@ -169,7 +216,9 @@ const Advances = () => {
             boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
             touchAction: 'manipulation',
             transition: 'transform 140ms ease-out, background-color 140ms ease-out',
-            '&:hover': { bgcolor: '#27272a' },
+            '@media (hover: hover) and (pointer: fine)': {
+              '&:hover': { bgcolor: '#27272a' }
+            },
             '&:active': { transform: 'scale(0.97)' }
           }}
         >
@@ -177,97 +226,189 @@ const Advances = () => {
         </Button>
       </Box>
 
-      {/* Filter & Metric Summary Card */}
+      {/* 2. Monthly Month-Navigation Selector matching Monthly Payroll */}
+      <MonthSelector
+        selectedYear={selectedYear}
+        selectedMonth={selectedMonth}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
+        onChangeMonthYear={(y, m) => {
+          setSelectedYear(y);
+          setSelectedMonth(m);
+        }}
+      />
+
+      {/* 3. Existing Filter Worker Dropdown */}
       <Card
         elevation={0}
         sx={{
           borderRadius: '12px',
           border: '1px solid #e4e4e7',
           bgcolor: '#ffffff',
-          p: { xs: 1.75, sm: 2 },
+          p: { xs: 1.5, sm: 1.75 },
           display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: { xs: 'flex-start', sm: 'center' },
-          flexDirection: { xs: 'column', sm: 'row' },
-          gap: 2
+          alignItems: 'center',
+          gap: 1
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }}>
-          <FormControl size="small" sx={{ flex: 1, minWidth: { xs: 160, sm: 190 } }}>
-            <InputLabel id="filter-worker-label" sx={{ fontSize: '0.8125rem' }}>Filter Worker</InputLabel>
-            <Select
-              labelId="filter-worker-label"
-              value={selectedWorkerId}
-              label="Filter Worker"
-              onChange={(e) => setSelectedWorkerId(e.target.value)}
-              sx={{
-                borderRadius: 2,
-                fontSize: '0.875rem',
-                '& fieldset': { borderColor: '#e4e4e7' },
-                '&:hover fieldset': { borderColor: '#d4d4d8' },
-                '&.Mui-focused fieldset': { borderColor: '#ea580c' }
-              }}
-            >
-              <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>All Workers</MenuItem>
-              {workers.map((w) => (
-                <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
-                  {w.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          {selectedWorkerId && (
-            <Button
-              size="small"
-              onClick={() => setSelectedWorkerId('')}
-              sx={{
-                color: '#71717a',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                minWidth: 'auto',
-                p: 0.75,
-                borderRadius: 1.5,
-                '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' }
-              }}
-            >
-              Reset
-            </Button>
-          )}
-        </Box>
-
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: { xs: 'space-between', sm: 'flex-end' }, width: { xs: '100%', sm: 'auto' }, gap: 2.5 }}>
-          <Box sx={{ textAlign: { xs: 'left', sm: 'right' } }}>
-            <Typography sx={{ color: '#71717a', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-              Total Advances
-            </Typography>
-            <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.4rem' }, color: '#09090b', fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
-              {formatCurrency(totalFilteredAmount)}
-            </Typography>
-          </Box>
-          <Box
+        <FormControl size="small" fullWidth sx={{ minWidth: 160 }}>
+          <InputLabel id="filter-worker-label" sx={{ fontSize: '0.8125rem' }}>Filter Worker</InputLabel>
+          <Select
+            labelId="filter-worker-label"
+            value={selectedWorkerId}
+            label="Filter Worker"
+            onChange={(e) => setSelectedWorkerId(e.target.value)}
             sx={{
-              bgcolor: '#f4f4f5',
-              color: '#71717a',
-              border: '1px solid #e4e4e7',
-              px: 1.5,
-              py: 0.5,
               borderRadius: 2,
-              fontSize: '0.75rem',
-              fontWeight: 700,
-              fontVariantNumeric: 'tabular-nums'
+              fontSize: '0.875rem',
+              '& fieldset': { borderColor: '#e4e4e7' },
+              '&:hover fieldset': { borderColor: '#d4d4d8' },
+              '&.Mui-focused fieldset': { borderColor: '#ea580c' }
             }}
           >
-            {filteredAdvances.length} entries
+            <MenuItem value="" sx={{ fontSize: '0.8125rem' }}>All Workers</MenuItem>
+            {workers.map((w) => (
+              <MenuItem key={w.id} value={w.id} sx={{ fontSize: '0.8125rem' }}>
+                {w.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        {selectedWorkerId && (
+          <Button
+            size="small"
+            onClick={() => setSelectedWorkerId('')}
+            sx={{
+              color: '#71717a',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              minWidth: 'auto',
+              p: 0.75,
+              borderRadius: 1.5,
+              touchAction: 'manipulation',
+              '@media (hover: hover) and (pointer: fine)': {
+                '&:hover': { color: '#09090b', bgcolor: '#f4f4f5' }
+              },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
+          >
+            Reset
+          </Button>
+        )}
+      </Card>
+
+      {/* 4. Summary Card displaying Monthly Advances and Total Advances side-by-side */}
+      <Card
+        elevation={0}
+        sx={{
+          borderRadius: '12px',
+          border: '1px solid #e4e4e7',
+          bgcolor: '#ffffff',
+          p: { xs: 1.5, sm: 2 }
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {/* MONTHLY ADVANCES Column */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              noWrap
+              sx={{
+                color: '#71717a',
+                fontSize: { xs: '0.625rem', sm: '0.75rem' },
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: { xs: '0.01em', sm: '0.03em' },
+                lineHeight: 1.2
+              }}
+            >
+              Monthly Advances
+            </Typography>
+            <Typography
+              noWrap
+              sx={{
+                fontWeight: 800,
+                fontSize: { xs: '1.15rem', sm: '1.4rem' },
+                color: '#09090b',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                mt: 0.5
+              }}
+            >
+              {formatCurrency(monthlyTotalAmount)}
+            </Typography>
+            <Typography
+              sx={{
+                color: '#71717a',
+                fontSize: { xs: '0.6875rem', sm: '0.75rem' },
+                fontWeight: 500,
+                fontVariantNumeric: 'tabular-nums',
+                mt: 0.35,
+                lineHeight: 1.2
+              }}
+            >
+              {monthlyFilteredAdvances.length} {monthlyFilteredAdvances.length === 1 ? 'entry' : 'entries'}
+            </Typography>
+          </Box>
+
+          {/* Clean Vertical Divider */}
+          <Divider
+            orientation="vertical"
+            flexItem
+            sx={{ mx: { xs: 1.25, sm: 2.5 }, borderColor: '#e4e4e7' }}
+          />
+
+          {/* TOTAL ADVANCES Column */}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              noWrap
+              sx={{
+                color: '#71717a',
+                fontSize: { xs: '0.625rem', sm: '0.75rem' },
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: { xs: '0.01em', sm: '0.03em' },
+                lineHeight: 1.2
+              }}
+            >
+              Total Advances
+            </Typography>
+            <Typography
+              noWrap
+              sx={{
+                fontWeight: 800,
+                fontSize: { xs: '1.15rem', sm: '1.4rem' },
+                color: '#09090b',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: '-0.02em',
+                lineHeight: 1.2,
+                mt: 0.5
+              }}
+            >
+              {formatCurrency(totalFilteredAmount)}
+            </Typography>
+            <Typography
+              sx={{
+                color: '#71717a',
+                fontSize: { xs: '0.6875rem', sm: '0.75rem' },
+                fontWeight: 500,
+                fontVariantNumeric: 'tabular-nums',
+                mt: 0.35,
+                lineHeight: 1.2
+              }}
+            >
+              {totalFilteredAdvances.length} {totalFilteredAdvances.length === 1 ? 'entry' : 'entries'}
+            </Typography>
           </Box>
         </Box>
       </Card>
 
-      {/* Advances Content Stream */}
+      {/* 5. Existing Advance-Entry List */}
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
           <CircularProgress size={30} sx={{ color: '#ea580c' }} />
         </Box>
-      ) : filteredAdvances.length === 0 ? (
+      ) : monthlyFilteredAdvances.length === 0 ? (
         <Alert
           severity="info"
           sx={{
@@ -278,11 +419,11 @@ const Advances = () => {
             fontSize: '0.8125rem'
           }}
         >
-          No advance transactions found. Click "Give Advance" to record a payment.
+          No advance transactions found for {MONTH_NAMES[selectedMonth - 1]} {selectedYear}. Click "Give Advance" to record a payment.
         </Alert>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 1.5 }}>
-          {filteredAdvances.map((adv) => (
+          {monthlyFilteredAdvances.map((adv) => (
             <Card
               key={adv.id}
               elevation={0}
