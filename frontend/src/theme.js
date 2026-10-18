@@ -42,7 +42,7 @@ const theme = createTheme({
       contrastText: '#ffffff',
     },
     background: {
-      default: '#f8f9fa',    // Neutral light-grey canvas
+      default: '#faf9f6',    // Attendly warm off-white canvas
       paper: '#ffffff',      // Crisp white surface
     },
     text: {
@@ -109,7 +109,7 @@ const theme = createTheme({
     MuiCssBaseline: {
       styleOverrides: {
         body: {
-          backgroundColor: '#f8f9fa',
+          backgroundColor: '#faf9f6',
           color: '#09090b',
         },
       },

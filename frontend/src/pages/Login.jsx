@@ -20,7 +20,6 @@ const Login = () => {
   const [mpin, setMpin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [demoSubmitting, setDemoSubmitting] = useState(false);
   const [shake, setShake] = useState(false);
 
   const mpinRef = useRef('');
@@ -46,7 +45,7 @@ const Login = () => {
   }, []);
 
   const executeLogin = useCallback(async (pinOverride) => {
-    if (submittingRef.current || demoSubmitting) return;
+    if (submittingRef.current) return;
 
     const pinToSubmit = pinOverride !== undefined ? pinOverride : mpinRef.current;
     if (pinToSubmit.length < MPIN_LENGTH) {
@@ -59,7 +58,15 @@ const Login = () => {
     setError('');
 
     try {
-      const res = await loginWithMpin(pinToSubmit);
+      let res;
+      // MPIN 1234 authenticates to the existing DEMO account via existing backend endpoint
+      if (pinToSubmit === '1234') {
+        res = await loginDemo();
+      } else {
+        // Any other 4-digit MPIN is validated by backend against the administrator credentials
+        res = await loginWithMpin(pinToSubmit);
+      }
+
       if (res.success) {
         navigate('/', { replace: true });
         return;
@@ -87,10 +94,10 @@ const Login = () => {
       setSubmitting(false);
       keypadRef.current?.focus();
     }
-  }, [demoSubmitting, loginWithMpin, navigate, triggerShake]);
+  }, [loginDemo, loginWithMpin, navigate, triggerShake]);
 
   const handleDigitPress = useCallback((digit) => {
-    if (submittingRef.current || demoSubmitting) return;
+    if (submittingRef.current) return;
 
     if (shake) {
       if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -108,15 +115,15 @@ const Login = () => {
         executeLogin(nextPin);
       }
     } else if (error) {
-      // If a non-clearing error occurred (e.g. network error), pressing a digit starts fresh
+      // If a non-clearing error occurred, pressing a digit starts fresh
       mpinRef.current = digit;
       setMpin(digit);
       setError('');
     }
-  }, [demoSubmitting, error, executeLogin, shake]);
+  }, [error, executeLogin, shake]);
 
   const handleBackspace = useCallback(() => {
-    if (submittingRef.current || demoSubmitting) return;
+    if (submittingRef.current) return;
 
     if (shake) {
       if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -127,10 +134,10 @@ const Login = () => {
     const nextPin = mpinRef.current.slice(0, -1);
     mpinRef.current = nextPin;
     setMpin(nextPin);
-  }, [demoSubmitting, shake]);
+  }, [shake]);
 
   const handleClear = useCallback(() => {
-    if (submittingRef.current || demoSubmitting) return;
+    if (submittingRef.current) return;
 
     if (shake) {
       if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -140,34 +147,14 @@ const Login = () => {
     setError('');
     mpinRef.current = '';
     setMpin('');
-  }, [demoSubmitting, shake]);
-
-  const handleDemoLogin = useCallback(async () => {
-    if (submittingRef.current || demoSubmitting) return;
-
-    setDemoSubmitting(true);
-    setError('');
-    try {
-      const res = await loginDemo();
-      if (res.success) {
-        navigate('/', { replace: true });
-        return;
-      } else {
-        setError(res.message || 'Failed to start demo session');
-      }
-    } catch {
-      setError('Failed to start demo session. Please try again.');
-    } finally {
-      setDemoSubmitting(false);
-    }
-  }, [demoSubmitting, loginDemo, navigate]);
+  }, [shake]);
 
   // Hardware keyboard and paste handling
   useEffect(() => {
     const handleKeyDown = (e) => {
       // Ignore modified keys (Ctrl, Alt, Meta)
       if (e.ctrlKey || e.altKey || e.metaKey) return;
-      if (submittingRef.current || demoSubmitting) return;
+      if (submittingRef.current) return;
 
       if (e.key >= '0' && e.key <= '9') {
         e.preventDefault();
@@ -177,7 +164,9 @@ const Login = () => {
         handleBackspace();
       } else if (e.key === 'Enter') {
         e.preventDefault();
-        executeLogin();
+        if (mpinRef.current.length === MPIN_LENGTH) {
+          executeLogin();
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault();
         handleClear();
@@ -185,7 +174,7 @@ const Login = () => {
     };
 
     const handlePaste = (e) => {
-      if (submittingRef.current || demoSubmitting) return;
+      if (submittingRef.current) return;
       const pasted = e.clipboardData?.getData('text') || '';
       const cleanDigits = pasted.replace(/\D/g, '').slice(0, MPIN_LENGTH);
       if (cleanDigits.length > 0) {
@@ -205,80 +194,86 @@ const Login = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('paste', handlePaste);
     };
-  }, [demoSubmitting, executeLogin, handleBackspace, handleClear, handleDigitPress]);
+  }, [executeLogin, handleBackspace, handleClear, handleDigitPress]);
 
   const numpadDigits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
   const keyButtonSx = {
     width: '100%',
-    height: { xs: 52, sm: 56 },
+    height: { xs: 52, sm: 58 },
     borderRadius: '12px',
-    fontSize: { xs: '1.45rem', sm: '1.55rem' },
+    fontSize: { xs: '1.45rem', sm: '1.6rem' },
     fontWeight: 600,
     fontVariantNumeric: 'tabular-nums',
-    color: '#1c1917',
+    color: '#18181b',
     bgcolor: '#ffffff',
-    border: '1px solid #e7e5e4',
+    border: '1px solid #e4e4e7',
     boxShadow: '0 1px 2px rgba(28, 25, 23, 0.04)',
     minWidth: 0,
     p: 0,
     touchAction: 'manipulation',
     userSelect: 'none',
-    transition: 'transform 90ms ease, background-color 90ms ease, border-color 90ms ease, color 90ms ease',
+    WebkitUserSelect: 'none',
+    transition: 'transform 100ms ease, background-color 100ms ease, border-color 100ms ease, color 100ms ease',
     '@media (hover: hover) and (pointer: fine)': {
       '&:hover': {
         bgcolor: '#faf9f6',
-        borderColor: '#d6d3d1'
+        borderColor: '#d4d4d8'
       }
     },
     '&:active': {
-      transform: 'scale(0.95)',
+      transform: 'scale(0.96)',
       bgcolor: '#fff7ed',
       borderColor: '#fed7aa',
       color: '#ea580c'
     },
     '&.Mui-disabled': {
-      color: '#d6d3d1',
+      color: '#d4d4d8',
       bgcolor: '#faf9f6',
-      borderColor: '#f5f5f4'
+      borderColor: '#f4f4f5'
+    },
+    '&:focus-visible, &.Mui-focusVisible': {
+      outline: '2px solid #ea580c',
+      outlineOffset: '2px'
     }
   };
 
   const utilityButtonSx = {
     ...keyButtonSx,
     bgcolor: '#faf9f6',
-    color: '#78716c',
-    fontSize: '0.85rem',
+    color: '#52525b',
+    fontSize: { xs: '0.875rem', sm: '0.95rem' },
+    fontWeight: 600,
     textTransform: 'none',
     letterSpacing: '0.01em',
     '@media (hover: hover) and (pointer: fine)': {
       '&:hover': {
-        bgcolor: '#f5f5f4',
-        borderColor: '#d6d3d1',
-        color: '#1c1917'
+        bgcolor: '#f4f4f5',
+        borderColor: '#d4d4d8',
+        color: '#18181b'
       }
     },
     '&:active': {
-      transform: 'scale(0.95)',
-      bgcolor: '#f5f5f4',
-      borderColor: '#d6d3d1',
-      color: '#1c1917'
+      transform: 'scale(0.96)',
+      bgcolor: '#f4f4f5',
+      borderColor: '#d4d4d8',
+      color: '#18181b'
     }
   };
 
   const backspaceButtonSx = {
     ...keyButtonSx,
     bgcolor: '#faf9f6',
-    color: '#78716c',
+    color: '#52525b',
     '@media (hover: hover) and (pointer: fine)': {
       '&:hover': {
-        bgcolor: '#f5f5f4',
-        borderColor: '#d6d3d1',
-        color: '#1c1917'
+        bgcolor: '#f4f4f5',
+        borderColor: '#d4d4d8',
+        color: '#18181b'
       }
     },
     '&:active': {
-      transform: 'scale(0.95)',
+      transform: 'scale(0.96)',
       bgcolor: '#fff7ed',
       borderColor: '#fed7aa',
       color: '#ea580c'
@@ -291,51 +286,62 @@ const Login = () => {
         minHeight: '100dvh',
         bgcolor: '#faf9f6',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         px: { xs: 2, sm: 3 },
-        py: { xs: 2.5, sm: 4 },
-        pt: 'max(20px, env(safe-area-inset-top, 20px))',
-        pb: 'max(20px, env(safe-area-inset-bottom, 20px))'
+        py: { xs: 3, sm: 5 },
+        pt: 'max(24px, env(safe-area-inset-top, 24px))',
+        pb: 'max(24px, env(safe-area-inset-bottom, 24px))',
+        outline: 'none',
+        '&:focus': { outline: 'none' }
       }}
     >
-      <Box sx={{ width: '100%', maxWidth: 340, textAlign: 'center', my: 'auto' }}>
+      <Box
+        sx={{
+          width: '100%',
+          maxWidth: { xs: 348, sm: 384, md: 400 },
+          textAlign: 'center',
+          my: 'auto'
+        }}
+      >
         {/* Attendly Branding & Lock Icon */}
         <Box
           sx={{
             position: 'relative',
-            width: 46,
-            height: 46,
-            borderRadius: '12px',
-            bgcolor: '#1c1917',
+            width: { xs: 48, sm: 54 },
+            height: { xs: 48, sm: 54 },
+            borderRadius: '14px',
+            bgcolor: '#18181b',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             mx: 'auto',
-            mb: 1.25,
-            boxShadow: '0 4px 14px rgba(28, 25, 23, 0.12)'
+            mb: 1.5,
+            boxShadow: '0 4px 14px rgba(24, 24, 27, 0.12)'
           }}
         >
-          <LockIcon sx={{ fontSize: 22 }} />
+          <LockIcon sx={{ fontSize: { xs: 22, sm: 25 } }} />
           <Box
             sx={{
               position: 'absolute',
-              top: 6,
-              right: 6,
-              width: 7,
-              height: 7,
+              top: { xs: 6, sm: 7 },
+              right: { xs: 6, sm: 7 },
+              width: { xs: 7, sm: 8 },
+              height: { xs: 7, sm: 8 },
               borderRadius: '50%',
               bgcolor: '#ea580c',
-              boxShadow: '0 0 0 2px #1c1917'
+              boxShadow: '0 0 0 2px #18181b'
             }}
           />
         </Box>
         <Typography
+          component="h1"
           sx={{
             fontWeight: 800,
-            fontSize: '1.45rem',
-            color: '#1c1917',
+            fontSize: { xs: '1.45rem', sm: '1.65rem' },
+            color: '#09090b',
             letterSpacing: '-0.025em',
             lineHeight: 1.2
           }}
@@ -344,8 +350,8 @@ const Login = () => {
         </Typography>
         <Typography
           sx={{
-            color: '#78716c',
-            fontSize: '0.8125rem',
+            color: '#71717a',
+            fontSize: { xs: '0.8125rem', sm: '0.875rem' },
             fontWeight: 500,
             mt: 0.5,
             mb: { xs: 2.25, sm: 2.75 }
@@ -359,23 +365,28 @@ const Login = () => {
           tabIndex={-1}
           elevation={0}
           sx={{
-            borderRadius: '16px',
-            border: '1px solid #e7e5e4',
-            boxShadow: '0 4px 24px -2px rgba(28, 25, 23, 0.05)',
+            borderRadius: { xs: '16px', sm: '18px' },
+            border: '1px solid #e4e4e7',
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.03), 0 6px 20px -4px rgba(0, 0, 0, 0.05)',
             bgcolor: '#ffffff',
-            p: { xs: 2, sm: 2.5 },
-            outline: 'none'
+            p: { xs: 2.25, sm: 3 },
+            outline: 'none',
+            '&:focus': { outline: 'none' }
           }}
         >
-          {/* MPIN Dots Display */}
+          {/* Four Square MPIN Blocks in ONE Horizontal Row */}
           <Box
+            role="group"
+            aria-label="MPIN Entry"
             sx={{
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
-              gap: 2,
-              mb: 2.25,
+              gap: { xs: 1.25, sm: 1.75, md: 2 },
+              mb: { xs: 2.25, sm: 2.75 },
               py: 0.5,
+              userSelect: 'none',
+              WebkitUserSelect: 'none',
               animation: shake ? 'mpinShake 320ms cubic-bezier(0.36, 0.07, 0.19, 0.97)' : 'none',
               '@keyframes mpinShake': {
                 '0%, 100%': { transform: 'translateX(0)' },
@@ -391,32 +402,62 @@ const Login = () => {
           >
             {[0, 1, 2, 3].map((index) => {
               const isFilled = index < mpin.length;
+              const isActive = index === mpin.length && !shake;
               return (
                 <Box
                   key={index}
+                  aria-label={`Digit ${index + 1} of 4${isFilled ? ' filled' : ''}`}
                   sx={{
-                    width: 13,
-                    height: 13,
-                    borderRadius: '50%',
-                    border: shake
-                      ? '2px solid #ea580c'
-                      : isFilled
-                      ? '2px solid #ea580c'
-                      : '2px solid #d6d3d1',
+                    width: { xs: 52, sm: 58, md: 62 },
+                    height: { xs: 52, sm: 58, md: 62 },
+                    borderRadius: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     bgcolor: shake
                       ? '#fff7ed'
+                      : isFilled || isActive
+                      ? '#ffffff'
+                      : '#faf9f6',
+                    border: shake
+                      ? '2px solid #ea580c'
+                      : isActive
+                      ? '2px solid #ea580c'
                       : isFilled
-                      ? '#ea580c'
-                      : 'transparent',
-                    transform: isFilled ? 'scale(1.15)' : 'scale(1)',
+                      ? '2px solid #18181b'
+                      : '1.5px solid #d4d4d8',
                     boxShadow: shake
-                      ? '0 0 8px rgba(234, 88, 12, 0.35)'
+                      ? '0 0 10px rgba(234, 88, 12, 0.25)'
+                      : isActive
+                      ? '0 0 0 3px rgba(234, 88, 12, 0.14)'
                       : isFilled
-                      ? '0 2px 8px rgba(234, 88, 12, 0.35)'
-                      : 'none',
-                    transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)'
+                      ? '0 2px 6px rgba(24, 24, 27, 0.08)'
+                      : '0 1px 2px rgba(0, 0, 0, 0.02)',
+                    transition: 'border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease',
+                    '@media (prefers-reduced-motion: reduce)': {
+                      transition: 'none'
+                    }
                   }}
-                />
+                >
+                  {isFilled && (
+                    <Box
+                      sx={{
+                        width: { xs: 13, sm: 15 },
+                        height: { xs: 13, sm: 15 },
+                        borderRadius: '50%',
+                        bgcolor: '#18181b',
+                        animation: 'popIn 120ms cubic-bezier(0.23, 1, 0.32, 1)',
+                        '@keyframes popIn': {
+                          from: { transform: 'scale(0.8)', opacity: 0 },
+                          to: { transform: 'scale(1)', opacity: 1 }
+                        },
+                        '@media (prefers-reduced-motion: reduce)': {
+                          animation: 'none'
+                        }
+                      }}
+                    />
+                  )}
+                </Box>
               );
             })}
           </Box>
@@ -444,14 +485,31 @@ const Login = () => {
             </Alert>
           )}
 
-          {/* 3-Column Keypad with Square-like Rounded Rectangles */}
+          {/* Submitting Loading Indicator */}
+          {submitting && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                mb: 1.5
+              }}
+            >
+              <CircularProgress size={16} sx={{ color: '#ea580c' }} />
+              <Typography sx={{ fontSize: '0.8125rem', color: '#71717a', fontWeight: 500 }}>
+                Verifying...
+              </Typography>
+            </Box>
+          )}
+
+          {/* 3-Column Keypad: Visible immediately when page loads */}
           <Box
             sx={{
               display: 'grid',
               gridTemplateColumns: 'repeat(3, 1fr)',
               gap: { xs: 1, sm: 1.25 },
-              width: '100%',
-              mb: 2.25
+              width: '100%'
             }}
           >
             {numpadDigits.map((digit) => (
@@ -461,7 +519,7 @@ const Login = () => {
                   e.currentTarget.blur();
                   handleDigitPress(digit);
                 }}
-                disabled={submitting || demoSubmitting}
+                disabled={submitting}
                 sx={keyButtonSx}
                 aria-label={`Digit ${digit}`}
               >
@@ -469,119 +527,61 @@ const Login = () => {
               </Button>
             ))}
 
-            {/* Bottom Row: Clear (Col 1), 0 (Col 2), Backspace (Col 3) */}
+            {/* Row 4: Exact Arrangement [ Clear ] [ 0 ] [ Delete ] */}
+            {/* Left: Clear */}
             <Button
               onClick={(e) => {
                 e.currentTarget.blur();
                 handleClear();
               }}
-              disabled={submitting || demoSubmitting || mpin.length === 0}
+              disabled={submitting || mpin.length === 0}
               sx={utilityButtonSx}
-              aria-label="Clear MPIN"
+              aria-label="Clear all MPIN digits"
             >
               Clear
             </Button>
 
+            {/* Centre: 0 */}
             <Button
               onClick={(e) => {
                 e.currentTarget.blur();
                 handleDigitPress('0');
               }}
-              disabled={submitting || demoSubmitting}
+              disabled={submitting}
               sx={keyButtonSx}
               aria-label="Digit 0"
             >
               0
             </Button>
 
+            {/* Right: Delete / Backspace */}
             <Button
               onClick={(e) => {
                 e.currentTarget.blur();
                 handleBackspace();
               }}
-              disabled={submitting || demoSubmitting || mpin.length === 0}
+              disabled={submitting || mpin.length === 0}
               sx={backspaceButtonSx}
-              aria-label="Backspace"
+              aria-label="Delete last digit"
             >
-              <BackspaceIcon sx={{ fontSize: 21 }} />
+              <BackspaceIcon sx={{ fontSize: { xs: 20, sm: 22 } }} />
             </Button>
           </Box>
 
-          {/* Action Buttons: Unlock & Try Demo */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => executeLogin()}
-              disabled={submitting || demoSubmitting || mpin.length < MPIN_LENGTH}
-              startIcon={submitting ? <CircularProgress size={18} color="inherit" /> : null}
-              sx={{
-                height: 46,
-                fontWeight: 700,
-                borderRadius: '10px',
-                fontSize: '0.9375rem',
-                bgcolor: '#1c1917',
-                color: '#ffffff',
-                boxShadow: 'none',
-                textTransform: 'none',
-                touchAction: 'manipulation',
-                transition: 'all 0.12s ease',
-                '@media (hover: hover) and (pointer: fine)': {
-                  '&:hover': {
-                    bgcolor: '#292524',
-                    boxShadow: '0 2px 8px rgba(28, 25, 23, 0.12)'
-                  }
-                },
-                '&:active': {
-                  transform: 'scale(0.98)'
-                },
-                '&.Mui-disabled': {
-                  bgcolor: '#f5f5f4',
-                  color: '#a8a29e',
-                  border: '1px solid #e7e5e4'
-                }
-              }}
-            >
-              {submitting ? 'Verifying...' : 'Unlock'}
-            </Button>
-
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={handleDemoLogin}
-              disabled={submitting || demoSubmitting}
-              startIcon={demoSubmitting ? <CircularProgress size={18} color="inherit" /> : null}
-              sx={{
-                height: 42,
-                fontWeight: 600,
-                borderRadius: '10px',
-                fontSize: '0.875rem',
-                color: '#44403c',
-                borderColor: '#e7e5e4',
-                bgcolor: '#ffffff',
-                boxShadow: 'none',
-                textTransform: 'none',
-                touchAction: 'manipulation',
-                transition: 'all 0.12s ease',
-                '@media (hover: hover) and (pointer: fine)': {
-                  '&:hover': {
-                    bgcolor: '#faf9f6',
-                    borderColor: '#d6d3d1',
-                    color: '#1c1917'
-                  }
-                },
-                '&:active': {
-                  transform: 'scale(0.98)'
-                },
-                '&.Mui-disabled': {
-                  borderColor: '#f5f5f4',
-                  color: '#d6d3d1'
-                }
-              }}
-            >
-              {demoSubmitting ? 'Entering Demo...' : 'Try Demo'}
-            </Button>
-          </Box>
+          {/* Demo Password Hint centered below keypad */}
+          <Typography
+            sx={{
+              color: '#71717a',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              textAlign: 'center',
+              mt: { xs: 2.25, sm: 2.75 },
+              userSelect: 'none',
+              letterSpacing: '0.01em'
+            }}
+          >
+            Demo password: 1234
+          </Typography>
         </Card>
       </Box>
     </Box>
