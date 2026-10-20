@@ -702,9 +702,28 @@ const Payroll = () => {
                           <Typography sx={{ fontWeight: 700, color: '#09090b', fontSize: '0.925rem', lineHeight: 1.2 }}>
                             {row.worker_name}
                           </Typography>
-                          <Typography sx={{ color: '#71717a', fontSize: '0.72rem', mt: 0.25, fontVariantNumeric: 'tabular-nums' }}>
-                            Wage: {formatCurrency(row.daily_wage)}/day
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mt: 0.25 }}>
+                            <Typography sx={{ color: '#71717a', fontSize: '0.72rem', fontVariantNumeric: 'tabular-nums' }}>
+                              Wage: {formatCurrency(row.daily_wage)}/day
+                            </Typography>
+                            {row.wage_breakdown && row.wage_breakdown.length > 1 && (
+                              <Box
+                                component="span"
+                                sx={{
+                                  fontSize: '0.625rem',
+                                  fontWeight: 700,
+                                  bgcolor: '#fff7ed',
+                                  color: '#ea580c',
+                                  border: '1px solid #fed7aa',
+                                  px: 0.6,
+                                  py: 0.1,
+                                  borderRadius: 1
+                                }}
+                              >
+                                {row.wage_breakdown.length} rates
+                              </Box>
+                            )}
+                          </Box>
                         </Box>
                       </Box>
 
@@ -817,7 +836,27 @@ const Payroll = () => {
 
                           {/* Rate / day */}
                           <TableCell align="right" sx={{ color: '#71717a', fontSize: '0.85rem', py: 1.5, fontVariantNumeric: 'tabular-nums' }}>
-                            {formatCurrency(row.daily_wage)}
+                            <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, justifyContent: 'flex-end' }}>
+                              {formatCurrency(row.daily_wage)}
+                              {row.wage_breakdown && row.wage_breakdown.length > 1 && (
+                                <Box
+                                  component="span"
+                                  sx={{
+                                    fontSize: '0.625rem',
+                                    fontWeight: 700,
+                                    bgcolor: '#fff7ed',
+                                    color: '#ea580c',
+                                    border: '1px solid #fed7aa',
+                                    px: 0.5,
+                                    py: 0.1,
+                                    borderRadius: 1
+                                  }}
+                                  title={`${row.wage_breakdown.length} rates applied in this month`}
+                                >
+                                  Split
+                                </Box>
+                              )}
+                            </Box>
                           </TableCell>
 
                           {/* Work Units */}
@@ -960,7 +999,9 @@ const Payroll = () => {
                   Month: {monthNames[selectedMonth - 1]} {selectedYear}
                 </Typography>
                 <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontVariantNumeric: 'tabular-nums' }}>
-                  Daily Wage: {formatCurrency(selectedSlipWorker.daily_wage)} / day
+                  {selectedSlipWorker.wage_breakdown && selectedSlipWorker.wage_breakdown.length > 1
+                    ? `Wage Rates: ${selectedSlipWorker.wage_breakdown.map((wb) => `${formatCurrency(wb.rate)}/day`).join(', ')}`
+                    : `Daily Wage: ${formatCurrency(selectedSlipWorker.daily_wage)} / day`}
                 </Typography>
               </Box>
 
@@ -1087,12 +1128,40 @@ const Payroll = () => {
                     {parseFloat(selectedSlipWorker.total_work_units).toFixed(1)} days
                   </Typography>
                 </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Typography sx={{ color: '#71717a' }}>Formula:</Typography>
-                  <Typography sx={{ color: '#71717a', fontVariantNumeric: 'tabular-nums' }}>
-                    {parseFloat(selectedSlipWorker.total_work_units).toFixed(1)} × {formatCurrency(selectedSlipWorker.daily_wage)}
-                  </Typography>
-                </Box>
+                {selectedSlipWorker.wage_breakdown && selectedSlipWorker.wage_breakdown.length > 1 ? (
+                  <Box
+                    sx={{
+                      bgcolor: '#f4f4f5',
+                      p: 1.25,
+                      borderRadius: 2,
+                      border: '1px solid #e4e4e7',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.5
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                      Wage Rate Breakdown ({selectedSlipWorker.wage_breakdown.length} rates)
+                    </Typography>
+                    {selectedSlipWorker.wage_breakdown.map((wb, idx) => (
+                      <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem' }}>
+                        <Typography sx={{ color: '#09090b', fontSize: '0.78rem' }}>
+                          {parseFloat(wb.work_units).toFixed(1)} units × {formatCurrency(wb.rate)}/day
+                        </Typography>
+                        <Typography sx={{ fontWeight: 700, color: '#09090b', fontVariantNumeric: 'tabular-nums', fontSize: '0.8rem' }}>
+                          {formatCurrency(wb.earnings)}
+                        </Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography sx={{ color: '#71717a' }}>Formula:</Typography>
+                    <Typography sx={{ color: '#71717a', fontVariantNumeric: 'tabular-nums' }}>
+                      {parseFloat(selectedSlipWorker.total_work_units).toFixed(1)} × {formatCurrency(selectedSlipWorker.daily_wage)}
+                    </Typography>
+                  </Box>
+                )}
 
                 <Divider sx={{ my: 0.5, borderColor: '#e4e4e7' }} />
 

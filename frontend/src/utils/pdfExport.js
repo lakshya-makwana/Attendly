@@ -231,16 +231,32 @@ export const exportSalarySlipPdf = async ({
   doc.setTextColor(9, 9, 11);
   doc.text('Monthly Pay Calculation', 14, finalY);
 
+  const hasMultipleRates = Boolean(worker?.wage_breakdown && worker.wage_breakdown.length > 1);
+  const paySummaryBody = [
+    ['Total Work Units', `${totalUnits} days`]
+  ];
+
+  if (hasMultipleRates) {
+    worker.wage_breakdown.forEach((wb) => {
+      paySummaryBody.push([
+        `Rate Breakdown (${parseFloat(wb.work_units).toFixed(1)} units @ ${formatINR(wb.rate)}/day)`,
+        formatINR(wb.earnings)
+      ]);
+    });
+  } else {
+    paySummaryBody.push(['Formula', `${totalUnits} days × ${dailyWage}`]);
+  }
+
+  paySummaryBody.push(
+    ['Gross Wages', grossWages],
+    ['Less Total Advances', `− ${advances}`],
+    ['Net Payable', netPayable]
+  );
+
   autoTable(doc, {
     startY: finalY + 3,
     margin: { left: 14, right: 14 },
-    body: [
-      ['Total Work Units', `${totalUnits} days`],
-      ['Formula', `${totalUnits} days × ${dailyWage}`],
-      ['Gross Wages', grossWages],
-      ['Less Total Advances', `− ${advances}`],
-      ['Net Payable', netPayable]
-    ],
+    body: paySummaryBody,
     theme: 'plain',
     bodyStyles: {
       fontSize: 9.5,
@@ -251,10 +267,10 @@ export const exportSalarySlipPdf = async ({
       1: { cellWidth: 62, halign: 'right', fontStyle: 'bold' }
     },
     didParseCell: (data) => {
-      if (data.row.index === 3) {
+      if (data.row.index === paySummaryBody.length - 2) {
         data.cell.styles.textColor = [220, 38, 38]; // red for advances
       }
-      if (data.row.index === 4) {
+      if (data.row.index === paySummaryBody.length - 1) {
         data.cell.styles.textColor = [234, 88, 12]; // orange for net payable
         data.cell.styles.fontSize = 11;
         data.cell.styles.fontStyle = 'bold';

@@ -13,6 +13,7 @@ from ..schemas.schemas import (
     AttendanceBatchSaveRequest, DailyAttendanceResponse, DailyAttendanceRow,
     AttendanceResponse
 )
+from ..services.wage_service import resolve_effective_wage, get_worker_wages_map
 
 router = APIRouter(prefix="/attendance", tags=["Attendance"])
 
@@ -55,11 +56,15 @@ def get_daily_attendance(
     sites = db.query(Site).filter(Site.account_id == account_id).all()
     site_map = {s.id: s.name for s in sites}
 
+    # Load wages for workers on selected date
+    wages_map = get_worker_wages_map(db, account_id, (w.id for w in workers))
+
     rows = []
     total_units = Decimal("0.0")
     marked_cnt = 0
 
     for w in workers:
+        eff_wage = resolve_effective_wage(wages_map.get(w.id, []), selected_date, w.daily_wage)
         rec = record_map.get(w.id)
         if rec:
             marked_cnt += 1
@@ -69,7 +74,7 @@ def get_daily_attendance(
                 worker_id=w.id,
                 worker_name=w.name,
                 phone=w.phone,
-                daily_wage=w.daily_wage,
+                daily_wage=eff_wage,
                 is_active=w.is_active,
                 site_id=rec.site_id,
                 site_name=site_map.get(rec.site_id) if rec.site_id else None,
@@ -81,7 +86,7 @@ def get_daily_attendance(
                 worker_id=w.id,
                 worker_name=w.name,
                 phone=w.phone,
-                daily_wage=w.daily_wage,
+                daily_wage=eff_wage,
                 is_active=w.is_active,
                 site_id=None,
                 site_name=None,

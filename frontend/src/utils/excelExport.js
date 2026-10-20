@@ -114,13 +114,28 @@ export const exportSalarySlipExcel = async ({
     sheetData.push(['No sites worked this month', 0, 0]);
   }
 
-  sheetData.push(
+  const summaryRows = [
     [],
-    ['PAY CALCULATION SUMMARY'],
+    ['PAY CALCULATION SUMMARY']
+  ];
+
+  if (worker?.wage_breakdown && worker.wage_breakdown.length > 1) {
+    summaryRows.push(['Wage Rate Breakdown:']);
+    worker.wage_breakdown.forEach((wb) => {
+      summaryRows.push([
+        `  ${parseFloat(wb.work_units).toFixed(1)} units @ INR ${parseFloat(wb.rate)}/day`,
+        parseFloat(wb.earnings)
+      ]);
+    });
+  }
+
+  summaryRows.push(
     ['Gross Wages (INR)', grossWages],
     ['Less Advances (INR)', advances],
     ['Net Payable (INR)', netPayable]
   );
+
+  summaryRows.forEach((r) => sheetData.push(r));
 
   const ws = XLSX.utils.aoa_to_sheet(sheetData);
 

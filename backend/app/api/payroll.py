@@ -9,7 +9,12 @@ from ..core.security import get_current_admin
 from ..models.worker import Worker
 from ..models.attendance import Attendance
 from ..models.advance import Advance
-from ..schemas.schemas import MonthlyPayrollResponse, WorkerPayrollRow
+from ..schemas.schemas import MonthlyPayrollResponse, WorkerPayrollRow, WageRateBreakdown
+from ..services.wage_service import (
+    resolve_effective_wage,
+    get_worker_wages_map,
+    compute_wage_breakdown
+)
 
 router = APIRouter(prefix="/payroll", tags=["Payroll"])
 
@@ -28,6 +33,9 @@ def compute_payroll_for_range(db: Session, account_id: int, start_d: date, end_d
         Advance.date <= end_d
     ).all()
 
+    # Load all worker wages for account in one query to prevent N+1 overhead
+    wages_map = get_worker_wages_map(db, account_id, (w.id for w in workers))
+
     att_by_worker = {}
     for att in attendances:
         att_by_worker.setdefault(att.worker_id, []).append(att)
@@ -45,26 +53,42 @@ def compute_payroll_for_range(db: Session, account_id: int, start_d: date, end_d
     for w in workers:
         w_atts = att_by_worker.get(w.id, [])
         w_advs = adv_by_worker.get(w.id, [])
+        w_wages = wages_map.get(w.id, [])
 
         worker_work_units = sum((Decimal(str(a.work_units)) for a in w_atts), Decimal("0.0"))
 
         gross = Decimal("0.00")
         for a in w_atts:
-            gross += Decimal(str(a.work_units)) * w.daily_wage
+            eff_rate = resolve_effective_wage(w_wages, a.date, w.daily_wage)
+            gross += Decimal(str(a.work_units)) * eff_rate
 
         adv_sum = sum((a.amount for a in w_advs), Decimal("0.00"))
         net = gross - adv_sum
+
+        # Compute wage breakdown for month
+        breakdown_raw = compute_wage_breakdown(w_atts, w_wages, w.daily_wage)
+        wage_breakdown = [
+            WageRateBreakdown(
+                rate=b["rate"],
+                work_units=b["work_units"],
+                earnings=b["earnings"]
+            ) for b in breakdown_raw
+        ]
+
+        # Rate to display as representative daily wage: latest effective wage on end_d, or fallback
+        display_wage = resolve_effective_wage(w_wages, end_d, w.daily_wage)
 
         if w.is_active or len(w_atts) > 0 or len(w_advs) > 0:
             rows.append(WorkerPayrollRow(
                 worker_id=w.id,
                 worker_name=w.name,
                 phone=w.phone,
-                daily_wage=w.daily_wage,
+                daily_wage=display_wage,
                 total_work_units=worker_work_units,
                 gross_earnings=gross,
                 total_advances=adv_sum,
-                net_payable=net
+                net_payable=net,
+                wage_breakdown=wage_breakdown
             ))
 
             total_gross += gross
@@ -90,7 +114,7 @@ def get_monthly_payroll(
 ):
     """
     Computes payroll for the specified calendar month (1st -> last day of the month).
-    Automatically resets when navigating to a new calendar month with zero initial shifts.
+    Automatically uses effective-dated daily wage rates for each attendance date.
     Historical months remain permanently available in payroll history.
     """
     account_id = current_admin["account_id"]

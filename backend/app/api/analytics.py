@@ -1,3 +1,4 @@
+import calendar
 from datetime import date
 from decimal import Decimal
 from typing import Optional, List, Dict
@@ -10,7 +11,13 @@ from ..models.worker import Worker
 from ..models.site import Site
 from ..models.attendance import Attendance
 from ..schemas.schemas import (
-    MonthlySiteAnalyticsResponse, SiteAnalyticsItem, SiteWorkerDetail, SiteDateWorkDetail
+    MonthlySiteAnalyticsResponse, SiteAnalyticsItem, SiteWorkerDetail, SiteDateWorkDetail,
+    WageRateBreakdown
+)
+from ..services.wage_service import (
+    resolve_effective_wage,
+    get_worker_wages_map,
+    compute_wage_breakdown
 )
 
 router = APIRouter(prefix="/sites/analytics", tags=["Site Analytics"])
@@ -27,6 +34,9 @@ def get_site_monthly_analytics(
     target_year = year or today.year
     target_month = month or today.month
 
+    _, last_day = calendar.monthrange(target_year, target_month)
+    end_d = date(target_year, target_month, last_day)
+
     # All sites belonging to account (active and inactive, to preserve historical view)
     sites = db.query(Site).filter(Site.account_id == account_id).order_by(Site.name.asc()).all()
 
@@ -39,6 +49,10 @@ def get_site_monthly_analytics(
         extract("year", Attendance.date) == target_year,
         extract("month", Attendance.date) == target_month
     ).order_by(Attendance.date.asc()).all()
+
+    # Preload worker wages for all involved workers in one query
+    unique_worker_ids = {att.worker_id for att in attendances}
+    wages_map = get_worker_wages_map(db, account_id, unique_worker_ids)
 
     # Group attendances by site_id -> list of attendance
     site_att_map: Dict[int, List[Attendance]] = {}
@@ -66,29 +80,44 @@ def get_site_monthly_analytics(
 
         for w_id, w_atts in worker_records.items():
             worker = w_atts[0].worker
+            w_wages = wages_map.get(worker.id, [])
             w_units = sum((Decimal(str(a.work_units)) for a in w_atts), Decimal("0.0"))
             w_expense = Decimal("0.00")
             dates_worked = []
 
             for a in w_atts:
                 a_units = Decimal(str(a.work_units))
-                a_earned = a_units * worker.daily_wage
+                eff_rate = resolve_effective_wage(w_wages, a.date, worker.daily_wage)
+                a_earned = a_units * eff_rate
                 w_expense += a_earned
                 dates_worked.append(SiteDateWorkDetail(
                     date=a.date,
                     work_units=a_units,
+                    daily_wage=eff_rate,
                     wage_earned=a_earned
                 ))
 
             site_work_units += w_units
             site_expense += w_expense
 
+            breakdown_raw = compute_wage_breakdown(w_atts, w_wages, worker.daily_wage)
+            wage_breakdown = [
+                WageRateBreakdown(
+                    rate=b["rate"],
+                    work_units=b["work_units"],
+                    earnings=b["earnings"]
+                ) for b in breakdown_raw
+            ]
+
+            display_wage = resolve_effective_wage(w_wages, end_d, worker.daily_wage)
+
             workers_detail_list.append(SiteWorkerDetail(
                 worker_id=worker.id,
                 worker_name=worker.name,
-                daily_wage=worker.daily_wage,
+                daily_wage=display_wage,
                 work_units=w_units,
                 labour_expense=w_expense,
+                wage_breakdown=wage_breakdown,
                 dates_worked=dates_worked
             ))
 

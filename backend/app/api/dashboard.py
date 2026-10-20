@@ -50,9 +50,14 @@ def get_dashboard_metrics(
         extract("month", Attendance.date) == today.month
     ).all()
 
+    unique_worker_ids = {att.worker_id for att in month_attendances}
+    from ..services.wage_service import resolve_effective_wage, get_worker_wages_map
+    wages_map = get_worker_wages_map(db, account_id, unique_worker_ids)
+
     current_month_gross = Decimal("0.00")
     for att in month_attendances:
-        current_month_gross += Decimal(str(att.work_units)) * att.worker.daily_wage
+        eff_rate = resolve_effective_wage(wages_map.get(att.worker_id, []), att.date, att.worker.daily_wage)
+        current_month_gross += Decimal(str(att.work_units)) * eff_rate
 
     month_advances = db.query(Advance).filter(
         Advance.account_id == account_id,

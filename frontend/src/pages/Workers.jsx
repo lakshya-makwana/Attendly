@@ -23,9 +23,12 @@ import {
   EditOutlined as EditIcon,
   DeleteOutlined as DeleteIcon,
   ChevronRight as ChevronRightIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  Payments as PaymentsIcon,
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import api from '../api/client';
+import WageHistoryModal from '../components/WageHistoryModal';
 
 const Workers = () => {
   const navigate = useNavigate();
@@ -49,6 +52,9 @@ const Workers = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusWorker, setStatusWorker] = useState(null);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Wage History & Rate Change Modal State
+  const [wageModalWorker, setWageModalWorker] = useState(null);
 
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -76,7 +82,12 @@ const Workers = () => {
 
   const handleOpenAdd = () => {
     setEditingWorker(null);
-    setFormData({ name: '', phone: '', daily_wage: '' });
+    setFormData({
+      name: '',
+      phone: '',
+      daily_wage: '',
+      effective_from: new Date().toISOString().split('T')[0]
+    });
     setFormErrors({});
     setDialogOpen(true);
   };
@@ -160,6 +171,9 @@ const Workers = () => {
         phone: formData.phone.trim() || null,
         daily_wage: parseFloat(formData.daily_wage)
       };
+      if (!editingWorker && formData.effective_from) {
+        payload.effective_from = formData.effective_from;
+      }
 
       if (editingWorker) {
         await api.put(`/workers/${editingWorker.id}`, payload);
@@ -405,16 +419,43 @@ const Workers = () => {
                     </Typography>
 
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.35, flexWrap: 'wrap' }}>
-                      <Typography
-                        sx={{
-                          color: '#09090b',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          fontVariantNumeric: 'tabular-nums'
+                      <Box
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setWageModalWorker(worker);
                         }}
+                        sx={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 0.5,
+                          py: 0.2,
+                          px: 0.8,
+                          bgcolor: '#f4f4f5',
+                          borderRadius: 1.5,
+                          border: '1px solid #e4e4e7',
+                          cursor: 'pointer',
+                          touchAction: 'manipulation',
+                          transition: 'background-color 120ms ease-out, border-color 120ms ease-out',
+                          '&:hover': {
+                            bgcolor: '#fff7ed',
+                            borderColor: '#fed7aa'
+                          },
+                          '&:active': { transform: 'scale(0.97)' }
+                        }}
+                        title="Click to view wage history & change rate"
                       >
-                        ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
-                      </Typography>
+                        <Typography
+                          sx={{
+                            color: '#09090b',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            fontVariantNumeric: 'tabular-nums'
+                          }}
+                        >
+                          ₹{parseFloat(worker.daily_wage).toFixed(0)}/day
+                        </Typography>
+                        <TrendingUpIcon sx={{ fontSize: 13, color: '#ea580c' }} />
+                      </Box>
 
                       {worker.phone ? (
                         <Typography
@@ -518,6 +559,25 @@ const Workers = () => {
                 </Button>
 
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setWageModalWorker(worker);
+                    }}
+                    aria-label={`Wage history for ${worker.name}`}
+                    title="Wage History & Rate Changes"
+                    sx={{
+                      width: 36,
+                      height: 36,
+                      color: '#71717a',
+                      touchAction: 'manipulation',
+                      '&:hover': { color: '#ea580c', bgcolor: '#fff7ed' }
+                    }}
+                  >
+                    <PaymentsIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+
                   <IconButton
                     size="small"
                     onClick={(e) => handleOpenEdit(worker, e)}
@@ -697,7 +757,7 @@ const Workers = () => {
               value={formData.daily_wage}
               onChange={(e) => setFormData({ ...formData, daily_wage: e.target.value })}
               error={!!formErrors.daily_wage}
-              helperText={formErrors.daily_wage || 'Standard rate for 1 work unit'}
+              helperText={formErrors.daily_wage || (editingWorker ? 'To add a wage change with effective date, use the Wage Rate button' : 'Standard rate for 1 work unit')}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -714,6 +774,26 @@ const Workers = () => {
                 '& input': { fontSize: '1rem', fontVariantNumeric: 'tabular-nums' }
               }}
             />
+
+            {!editingWorker && (
+              <TextField
+                label="Effective From Date"
+                fullWidth
+                type="date"
+                value={formData.effective_from || ''}
+                onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
+                InputLabelProps={{ shrink: true }}
+                helperText="Date from which this initial rate applies (defaults to today)"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 2,
+                    '& fieldset': { borderColor: '#e4e4e7' },
+                    '&.Mui-focused fieldset': { borderColor: '#ea580c' }
+                  },
+                  '& input': { fontSize: '0.95rem' }
+                }}
+              />
+            )}
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
@@ -813,6 +893,14 @@ const Workers = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Wage History Modal */}
+      <WageHistoryModal
+        open={Boolean(wageModalWorker)}
+        worker={wageModalWorker}
+        onClose={() => setWageModalWorker(null)}
+        onWageUpdated={() => fetchWorkers(statusFilter)}
+      />
 
       {/* Toast Feedback */}
       <Snackbar

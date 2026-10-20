@@ -3,5 +3,6 @@ from .worker import Worker
 from .site import Site
 from .attendance import Attendance
 from .advance import Advance
+from .worker_wage import WorkerWageHistory
 
-__all__ = ["AdminSettings", "Worker", "Site", "Attendance", "Advance"]
+__all__ = ["AdminSettings", "Worker", "Site", "Attendance", "Advance", "WorkerWageHistory"]

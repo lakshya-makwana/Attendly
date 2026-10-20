@@ -403,7 +403,9 @@ export const generateSalarySlipHtml = ({
 
     <div class="info-box">
       <div class="info-title">${workerName}</div>
-      <div class="info-subtitle">Daily Wage: <strong>${dailyWage} / day</strong></div>
+      <div class="info-subtitle">${worker?.wage_breakdown && worker.wage_breakdown.length > 1
+        ? `Wage Rates: <strong>${worker.wage_breakdown.map((wb) => `${formatCurrency(wb.rate)}/day`).join(', ')}</strong>`
+        : `Daily Wage: <strong>${dailyWage} / day</strong>`}</div>
     </div>
 
     <div class="section-title">Sites Worked</div>
@@ -426,10 +428,20 @@ export const generateSalarySlipHtml = ({
         <span style="color: var(--text-secondary);">Total Work Units</span>
         <span style="font-weight: 700;">${totalUnits} days</span>
       </div>
-      <div class="totals-row">
-        <span style="color: var(--text-secondary);">Calculation</span>
-        <span style="color: var(--text-secondary);">${totalUnits} × ${dailyWage}</span>
-      </div>
+      ${worker?.wage_breakdown && worker.wage_breakdown.length > 1
+        ? worker.wage_breakdown.map((wb) => `
+            <div class="totals-row" style="font-size: 0.85rem;">
+              <span style="color: var(--text-secondary);">${parseFloat(wb.work_units).toFixed(1)} units @ ${formatCurrency(wb.rate)}/day</span>
+              <span style="font-weight: 600;">${formatCurrency(wb.earnings)}</span>
+            </div>
+          `).join('')
+        : `
+            <div class="totals-row">
+              <span style="color: var(--text-secondary);">Calculation</span>
+              <span style="color: var(--text-secondary);">${totalUnits} × ${dailyWage}</span>
+            </div>
+          `
+      }
       <div class="totals-divider"></div>
       <div class="totals-row">
         <span style="font-weight: 700;">Gross Wages</span>

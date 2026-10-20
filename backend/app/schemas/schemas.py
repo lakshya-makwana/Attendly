@@ -33,6 +33,27 @@ class ChangeMPINRequest(BaseModel):
             raise ValueError("New MPIN must contain only numeric digits")
         return v
 
+# --- Wage Breakdown & History Schemas ---
+class WageRateBreakdown(BaseModel):
+    rate: Decimal
+    work_units: Decimal
+    earnings: Decimal
+
+class WorkerWageHistoryCreate(BaseModel):
+    daily_wage: Decimal = Field(..., ge=0, description="Daily wage in rupees")
+    effective_from: date = Field(..., description="Date from which this wage rate is effective")
+
+class WorkerWageHistoryResponse(BaseModel):
+    id: int
+    worker_id: int
+    daily_wage: Decimal
+    effective_from: date
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
 # --- Worker Schemas ---
 class WorkerBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=120)
@@ -41,6 +62,7 @@ class WorkerBase(BaseModel):
 
 class WorkerCreate(WorkerBase):
     is_active: Optional[bool] = True
+    effective_from: Optional[date] = None
 
 class WorkerUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=120)
@@ -156,6 +178,7 @@ class WorkerAttendanceHistoryItem(BaseModel):
     id: int
     date: date
     work_units: Decimal
+    daily_wage: Optional[Decimal] = None
     site_id: Optional[int]
     site_name: Optional[str]
     wage_earned: Decimal
@@ -197,6 +220,7 @@ class MonthlyWorkerAttendanceItem(BaseModel):
     site_id: Optional[int] = None
     site_name: Optional[str] = None
     work_units: Decimal
+    daily_wage: Optional[Decimal] = None
     earnings: Decimal
 
 class MonthlyWorkerAdvanceItem(BaseModel):
@@ -209,6 +233,7 @@ class MonthlyWorkerRecordResponse(BaseModel):
     worker: MonthlyWorkerInfo
     month: MonthlyWorkerMonthInfo
     summary: MonthlyWorkerSummary
+    wage_breakdown: List[WageRateBreakdown] = Field(default_factory=list)
     attendance: List[MonthlyWorkerAttendanceItem]
     advances: List[MonthlyWorkerAdvanceItem]
 
@@ -222,6 +247,7 @@ class WorkerPayrollRow(BaseModel):
     gross_earnings: Decimal
     total_advances: Decimal
     net_payable: Decimal
+    wage_breakdown: List[WageRateBreakdown] = Field(default_factory=list)
 
 class MonthlyPayrollResponse(BaseModel):
     year: int
@@ -251,6 +277,7 @@ class DashboardMetricsResponse(BaseModel):
 class SiteDateWorkDetail(BaseModel):
     date: date
     work_units: Decimal
+    daily_wage: Optional[Decimal] = None
     wage_earned: Decimal
 
 class SiteWorkerDetail(BaseModel):
@@ -259,6 +286,7 @@ class SiteWorkerDetail(BaseModel):
     daily_wage: Decimal
     work_units: Decimal
     labour_expense: Decimal
+    wage_breakdown: List[WageRateBreakdown] = Field(default_factory=list)
     dates_worked: List[SiteDateWorkDetail]
 
 class SiteAnalyticsItem(BaseModel):

@@ -32,10 +32,13 @@ import {
   Person as PersonIcon,
   ChevronLeft as PrevIcon,
   ChevronRight as NextIcon,
-  LocationOn as LocationIcon
+  LocationOn as LocationIcon,
+  Payments as PaymentsIcon,
+  TrendingUp as TrendingUpIcon
 } from '@mui/icons-material';
 import api from '../api/client';
 import { formatDateIndian, formatMonthYear } from '../utils/dateUtils';
+import WageHistoryModal from '../components/WageHistoryModal';
 
 const WorkerDetail = () => {
   const { id } = useParams();
@@ -64,6 +67,9 @@ const WorkerDetail = () => {
   // Status Change Confirmation Dialog State
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Wage History & Rate Change Modal State
+  const [wageHistoryOpen, setWageHistoryOpen] = useState(false);
 
   const formatCurrency = (val) => {
     const num = parseFloat(val || 0);
@@ -361,10 +367,31 @@ const WorkerDetail = () => {
                 </Button>
               </Box>
 
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.35, flexWrap: 'wrap' }}>
-                <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
-                  Wage: <strong style={{ color: '#09090b' }}>₹{parseFloat(worker.daily_wage).toFixed(0)}/day</strong>
-                </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.35, flexWrap: 'wrap' }}>
+                <Box
+                  onClick={() => setWageHistoryOpen(true)}
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 0.5,
+                    cursor: 'pointer',
+                    py: 0.25,
+                    px: 0.75,
+                    bgcolor: '#f4f4f5',
+                    borderRadius: 1.5,
+                    border: '1px solid #e4e4e7',
+                    touchAction: 'manipulation',
+                    transition: 'background-color 120ms ease-out, border-color 120ms ease-out',
+                    '&:hover': { bgcolor: '#fff7ed', borderColor: '#fed7aa' },
+                    '&:active': { transform: 'scale(0.97)' }
+                  }}
+                  title="Click to view rate history or change wage"
+                >
+                  <Typography sx={{ color: '#71717a', fontSize: '0.75rem', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
+                    Wage: <strong style={{ color: '#09090b' }}>₹{parseFloat(worker.daily_wage).toFixed(0)}/day</strong>
+                  </Typography>
+                  <TrendingUpIcon sx={{ fontSize: 13, color: '#ea580c' }} />
+                </Box>
                 {worker.phone && (
                   <Typography
                     variant="caption"
@@ -390,28 +417,54 @@ const WorkerDetail = () => {
           </Box>
         </Box>
 
-        <Button
-          variant="contained"
-          startIcon={<AddIcon sx={{ fontSize: 16 }} />}
-          onClick={() => setAdvanceDialogOpen(true)}
-          sx={{
-            bgcolor: '#09090b',
-            color: '#ffffff',
-            fontSize: '0.8125rem',
-            fontWeight: 700,
-            px: 2,
-            py: 0.85,
-            minHeight: 40,
-            borderRadius: 2.5,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-            touchAction: 'manipulation',
-            transition: 'transform 140ms ease-out, background-color 140ms ease-out',
-            '&:hover': { bgcolor: '#27272a' },
-            '&:active': { transform: 'scale(0.97)' }
-          }}
-        >
-          Give Advance
-        </Button>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <Button
+            variant="outlined"
+            startIcon={<PaymentsIcon sx={{ fontSize: 16 }} />}
+            onClick={() => setWageHistoryOpen(true)}
+            sx={{
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              px: 1.75,
+              py: 0.85,
+              minHeight: 40,
+              borderRadius: 2.5,
+              borderColor: '#e4e4e7',
+              color: '#09090b',
+              bgcolor: '#ffffff',
+              textTransform: 'none',
+              touchAction: 'manipulation',
+              transition: 'transform 140ms ease-out, background-color 140ms ease-out',
+              '&:hover': { bgcolor: '#f4f4f5', borderColor: '#d4d4d8' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
+          >
+            Change Wage
+          </Button>
+
+          <Button
+            variant="contained"
+            startIcon={<AddIcon sx={{ fontSize: 16 }} />}
+            onClick={() => setAdvanceDialogOpen(true)}
+            sx={{
+              bgcolor: '#09090b',
+              color: '#ffffff',
+              fontSize: '0.8125rem',
+              fontWeight: 700,
+              px: 2,
+              py: 0.85,
+              minHeight: 40,
+              borderRadius: 2.5,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              touchAction: 'manipulation',
+              transition: 'transform 140ms ease-out, background-color 140ms ease-out',
+              '&:hover': { bgcolor: '#27272a' },
+              '&:active': { transform: 'scale(0.97)' }
+            }}
+          >
+            Give Advance
+          </Button>
+        </Box>
       </Box>
 
       {/* Inactive Worker Warning Banner */}
@@ -564,8 +617,17 @@ const WorkerDetail = () => {
           <Typography sx={{ fontWeight: 800, fontSize: { xs: '1.25rem', sm: '1.4rem' }, color: '#09090b', mt: 0.5, fontVariantNumeric: 'tabular-nums', lineHeight: 1.2 }}>
             {formatCurrency(summary.gross_earnings)}
           </Typography>
-          <Typography sx={{ color: '#a1a1aa', fontSize: '0.6875rem', mt: 0.25 }}>
-            Units × Daily Rate
+          <Typography
+            sx={{
+              color: monthlyData?.wage_breakdown?.length > 1 ? '#ea580c' : '#a1a1aa',
+              fontSize: '0.6875rem',
+              mt: 0.25,
+              fontWeight: monthlyData?.wage_breakdown?.length > 1 ? 700 : 500
+            }}
+          >
+            {monthlyData?.wage_breakdown?.length > 1
+              ? `${monthlyData.wage_breakdown.length} rates in month`
+              : 'Units × Daily Rate'}
           </Typography>
         </Card>
 
@@ -705,6 +767,50 @@ const WorkerDetail = () => {
             {/* Tab 0: Attendance */}
             {tabIndex === 0 && (
               <Box sx={{ p: 0 }}>
+                {/* Wage Breakdown Banner if multiple rates in month */}
+                {monthlyData?.wage_breakdown?.length > 1 && (
+                  <Box
+                    sx={{
+                      m: 1.5,
+                      p: 1.5,
+                      bgcolor: '#fff7ed',
+                      borderRadius: 2,
+                      border: '1px solid #fed7aa',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.75
+                    }}
+                  >
+                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#9a3412', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                      Mid-Month Rate Breakdown ({selectedMonthLabel})
+                    </Typography>
+                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                      {monthlyData.wage_breakdown.map((wb, idx) => (
+                        <Box
+                          key={idx}
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.75,
+                            bgcolor: '#ffffff',
+                            px: 1.25,
+                            py: 0.6,
+                            borderRadius: 1.5,
+                            border: '1px solid #fed7aa'
+                          }}
+                        >
+                          <Typography sx={{ fontSize: '0.78rem', color: '#71717a' }}>
+                            {parseFloat(wb.work_units).toFixed(1)} units @ <strong>₹{parseFloat(wb.rate).toFixed(0)}/day</strong> =
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.8125rem', fontWeight: 800, color: '#09090b', fontVariantNumeric: 'tabular-nums' }}>
+                            ₹{parseFloat(wb.earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Box>
+                )}
+
                 {attendanceList.length === 0 ? (
                   <Box sx={{ py: 6, textAlign: 'center', px: 2 }}>
                     <Typography sx={{ color: '#71717a', fontSize: '0.875rem' }}>
@@ -784,6 +890,15 @@ const WorkerDetail = () => {
                               </Typography>
                               <Typography
                                 sx={{
+                                  fontSize: '0.7rem',
+                                  color: '#71717a',
+                                  fontVariantNumeric: 'tabular-nums'
+                                }}
+                              >
+                                @ ₹{parseFloat(att.daily_wage || worker.daily_wage).toFixed(0)}
+                              </Typography>
+                              <Typography
+                                sx={{
                                   fontSize: '0.8125rem',
                                   fontWeight: 600,
                                   color: '#292524',
@@ -806,6 +921,7 @@ const WorkerDetail = () => {
                           <TableRow>
                             <TableCell sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Date</TableCell>
                             <TableCell sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Site</TableCell>
+                            <TableCell align="right" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Applied Rate</TableCell>
                             <TableCell align="right" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Work Units</TableCell>
                             <TableCell align="right" sx={{ bgcolor: '#fafafa', color: '#71717a', fontWeight: 700, fontSize: '0.75rem', borderBottom: '1px solid #e4e4e7' }}>Earnings</TableCell>
                           </TableRow>
@@ -860,6 +976,9 @@ const WorkerDetail = () => {
                                       {units === 0 ? 'Absent' : 'No site assigned'}
                                     </Typography>
                                   )}
+                                </TableCell>
+                                <TableCell align="right" sx={{ fontSize: '0.8125rem', color: '#71717a', fontVariantNumeric: 'tabular-nums' }}>
+                                  ₹{parseFloat(att.daily_wage || worker.daily_wage).toFixed(0)}/day
                                 </TableCell>
                                 <TableCell align="right" sx={{ fontWeight: 700, fontSize: '0.8125rem', color: units > 0 ? '#15803d' : '#a1a1aa', fontVariantNumeric: 'tabular-nums' }}>
                                   {units.toFixed(1)}
@@ -1182,6 +1301,17 @@ const WorkerDetail = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Wage History Modal */}
+      <WageHistoryModal
+        open={wageHistoryOpen}
+        worker={detail?.worker}
+        onClose={() => setWageHistoryOpen(false)}
+        onWageUpdated={() => {
+          fetchDetail();
+          fetchMonthlyRecord(selectedYear, selectedMonth);
+        }}
+      />
 
       {/* Toast Feedback */}
       <Snackbar

@@ -18,3 +18,4 @@ class Worker(Base):
 
     attendances = relationship("Attendance", back_populates="worker", cascade="all, delete-orphan")
     advances = relationship("Advance", back_populates="worker", cascade="all, delete-orphan")
+    wage_history = relationship("WorkerWageHistory", back_populates="worker", cascade="all, delete-orphan", order_by="WorkerWageHistory.effective_from.asc()")

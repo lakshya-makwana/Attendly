@@ -7,6 +7,9 @@ from fastapi.testclient import TestClient
 # Ensure app is importable
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from tests.test_db_guard import enforce_test_database
+enforce_test_database()
+
 from app.main import app
 from app.core.database import SessionLocal
 from app.core.security import create_access_token

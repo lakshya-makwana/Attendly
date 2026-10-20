@@ -35,6 +35,17 @@ def seed_fictional_demo_data(db: Session, demo_account_id: int):
             Worker(account_id=demo_account_id, name="Neeraj Verma", phone="555-0105", daily_wage=Decimal("650.00"), is_active=True),
         ]
         db.add_all(demo_workers)
+        db.flush()
+        from ..models.worker_wage import WorkerWageHistory
+        wage_history_entries = [
+            WorkerWageHistory(
+                account_id=demo_account_id,
+                worker_id=w.id,
+                daily_wage=w.daily_wage,
+                effective_from=date.today() - timedelta(days=60)
+            ) for w in demo_workers
+        ]
+        db.add_all(wage_history_entries)
         db.commit()
 
     workers = db.query(Worker).filter(Worker.account_id == demo_account_id).all()
