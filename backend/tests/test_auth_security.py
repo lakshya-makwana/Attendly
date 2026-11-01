@@ -547,6 +547,46 @@ def test_change_mpin_revokes_devices():
     print("✔ Devices: MPIN change revokes every earlier trusted device and re-trusts the current one.")
 
 
+def test_admin_recovery():
+    from scripts import admin_recovery as rec
+    acc = _new_account()
+    device = _issue_device(acc)
+    db = database.SessionLocal()
+    token = create_access_token({"sub": str(acc), "account_id": acc, "is_demo": False}, account=db.get(AdminSettings, acc))
+    db.close()
+    me = lambda t: client.get("/api/auth/verify", headers={"Authorization": f"Bearer {t}"})
+    _lock_account_bucket(acc)
+
+    with database.engine.begin() as conn:
+        info = rec.status(conn, acc)
+    assert info["active_trusted_devices"] == 1 and any(b["active"] for b in info["buckets"])
+
+    with database.engine.begin() as conn:
+        assert rec.unlock(conn, acc) >= 1
+    assert _attempt(acc, GOOD_MPIN, "10.5.0.1") == "ok", "unlock restores anonymous login immediately"
+    assert me(token).status_code == 200, "unlock alone does not log anyone out"
+
+    with database.engine.begin() as conn:
+        assert rec.revoke_sessions(conn, acc) == 1
+    assert me(token).status_code == 401, "revoke-sessions logs out every session"
+    assert _device_attempt(acc, device, GOOD_MPIN) == "ok-anonymous", "revoke-sessions forgets trusted devices"
+
+    _lock_account_bucket(acc)
+    with database.engine.begin() as conn:
+        rec.reset_mpin(conn, acc, "9051")
+    assert _attempt(acc, GOOD_MPIN, "10.5.0.2") == "invalid", "old MPIN no longer works"
+    assert _attempt(acc, "9051", "10.5.0.3") == "ok", "reset also clears lockouts and sets the new MPIN"
+    for bad in ("12ab", "123", "1234567", ""):
+        try:
+            rec.validate_mpin(bad)
+            raise AssertionError(f"{bad!r} accepted")
+        except SystemExit:
+            pass
+
+    assert rec.main(["--confirm-host", "wrong.example", "status"]) == 2, "host confirmation is mandatory"
+    print("✔ Recovery: status, unlock, revoke-sessions and reset-mpin work; host confirmation enforced.")
+
+
 def test_demo_login_still_works():
     r = client.post("/api/auth/demo-login")
     assert r.status_code == 200 and r.json()["is_demo"] is True
@@ -562,7 +602,7 @@ def run():
         test_escalation_and_cap, test_escalation_decay, test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
         test_login_endpoint_contract, test_session_validation, test_session_epoch_revocation_is_exact,
         test_trusted_device_resists_lockout_dos, test_trusted_device_validity, test_trusted_device_http_flow,
-        test_change_mpin_revokes_devices,
+        test_change_mpin_revokes_devices, test_admin_recovery,
         test_demo_login_still_works,
     ]
     try:
