@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const MPIN_LENGTH = 4;
+const RECOVERY_CODE_LENGTH = 12; // characters, ignoring separators (backend app/services/enrolment.py)
 
 const Login = () => {
   const [mpin, setMpin] = useState('');
@@ -34,6 +35,12 @@ const Login = () => {
 
   const { loginWithMpin, loginDemo } = useAuth();
   const navigate = useNavigate();
+
+  // Moves focus out of the recovery-code field to the keypad, so physical-keyboard digits enter the MPIN.
+  const focusKeypad = useCallback(() => {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    keypadRef.current?.focus();
+  }, []);
 
   const triggerShake = useCallback(() => {
     if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -608,16 +615,31 @@ const Login = () => {
                 value={recoveryCode}
                 onChange={(e) => {
                   const value = e.target.value.toUpperCase().slice(0, 32);
+                  const wasComplete = recoveryCodeRef.current.replace(/[^A-Z0-9]/g, '').length >= RECOVERY_CODE_LENGTH;
                   recoveryCodeRef.current = value;
                   setRecoveryCode(value);
                   setError('');
+                  // Once the full code is typed or pasted, hand the keyboard to the MPIN keypad.
+                  if (!wasComplete && value.replace(/[^A-Z0-9]/g, '').length >= RECOVERY_CODE_LENGTH) {
+                    focusKeypad();
+                  }
+                }}
+                onKeyDown={(e) => {
+                  // Enter moves on to the MPIN without submitting anything.
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    focusKeypad();
+                  }
                 }}
                 disabled={submitting}
                 size="small"
                 fullWidth
+                autoFocus
                 autoComplete="off"
-                helperText="Enter the code, then your MPIN on the keypad."
-                inputProps={{ autoCapitalize: 'characters', spellCheck: false, 'aria-label': 'Recovery code' }}
+                helperText="Enter the code, press Enter, then type your MPIN or use the keypad."
+                slotProps={{
+                  htmlInput: { autoCapitalize: 'characters', spellCheck: false, autoCorrect: 'off', 'aria-label': 'Recovery code' }
+                }}
               />
             ) : (
               <Button
