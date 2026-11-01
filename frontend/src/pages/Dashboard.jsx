@@ -44,7 +44,7 @@ const Dashboard = () => {
       setLoading(true);
       setError('');
       const [dashRes, analyticsRes] = await Promise.all([
-        api.get('/dashboard'),
+        api.get('/dashboard', { params: { year, month } }),
         api.get(`/sites/analytics?year=${year}&month=${month}`).catch(() => ({ data: null }))
       ]);
       setMetrics(dashRes.data);
@@ -64,6 +64,13 @@ const Dashboard = () => {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  // The 12 months ending with the current one (previously a fixed Jan–Sep 2026 list, which made later
+  // months unselectable and left the default current-month value without a matching option).
+  const monthOptions = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    return { y: d.getFullYear(), m: d.getMonth() + 1 };
+  });
 
   const formatCurrency = (val) => {
     const num = parseFloat(val || 0);
@@ -134,17 +141,7 @@ const Dashboard = () => {
                 '& .MuiSelect-icon': { color: '#71717a' }
               }}
             >
-              {[
-                { y: 2026, m: 9 },
-                { y: 2026, m: 8 },
-                { y: 2026, m: 7 },
-                { y: 2026, m: 6 },
-                { y: 2026, m: 5 },
-                { y: 2026, m: 4 },
-                { y: 2026, m: 3 },
-                { y: 2026, m: 2 },
-                { y: 2026, m: 1 }
-              ].map(({ y, m }) => (
+              {monthOptions.map(({ y, m }) => (
                 <MenuItem key={`${y}-${m}`} value={`${y}-${m}`} sx={{ fontSize: '0.8125rem', fontWeight: 500, color: '#09090b' }}>
                   {monthNames[m - 1]} {y}
                 </MenuItem>
