@@ -10,7 +10,8 @@ import urllib.parse
 try:
     parsed_db = urllib.parse.urlparse(db_url)
     sanitized_host = f"{parsed_db.hostname}:{parsed_db.port or 5432}{parsed_db.path}"
-    print(f"[DATABASE SAFETY] Connected to database target: {sanitized_host}")
+    print(f"[DATABASE SAFETY] Connected to database target: {sanitized_host} "
+          f"(deployment environment: {settings.deployment_environment})")
 except Exception as e:
     print(f"[DATABASE SAFETY] Could not parse DB URL: {e}")
 

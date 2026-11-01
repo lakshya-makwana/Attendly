@@ -134,6 +134,57 @@ def test_config_hardening():
     print("✔ Config: insecure/missing production config rejected; no default MPIN or secret.")
 
 
+class _env:
+    """Temporarily sets (value) or removes (None) environment variables."""
+    def __init__(self, **values):
+        self.values, self.saved = values, {}
+
+    def __enter__(self):
+        for key, value in self.values.items():
+            self.saved[key] = os.environ.get(key)
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+    def __exit__(self, *exc):
+        for key, value in self.saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+
+
+def test_production_database_isolation():
+    prod = "postgresql://u@ep-still-queen-a1b2c3-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+    preview_db = "postgresql://u@ep-other-preview-d4e5-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+    secret = "x" * 64
+
+    def blocked(url, **env):
+        base = {"VERCEL": None, "VERCEL_ENV": None, "ALLOW_REMOTE_DATABASE": None, "PRODUCTION_DATABASE_HOSTS": None}
+        with _env(**{**base, **env}):
+            try:
+                _validate(Settings(DATABASE_URL=url, JWT_SECRET=secret, ENVIRONMENT=env.get("ENVIRONMENT", "development")))
+            except ConfigurationError as e:
+                return "production database" in str(e)
+            return False
+
+    assert blocked(prod, VERCEL="1", VERCEL_ENV="preview"), "Preview must never use the production database"
+    assert blocked(prod, VERCEL="1", VERCEL_ENV="preview", ENVIRONMENT="production"), \
+        "ENVIRONMENT=production leaking into Preview scope does not override VERCEL_ENV"
+    assert blocked(prod, VERCEL="1", VERCEL_ENV="development"), "vercel dev must not use the production database"
+    assert blocked(prod, VERCEL="1"), "missing VERCEL_ENV on Vercel fails closed"
+    assert blocked(prod, ALLOW_REMOTE_DATABASE="true"), "ALLOW_REMOTE_DATABASE does not unlock the production database"
+    assert blocked(preview_db, VERCEL="1", VERCEL_ENV="preview", PRODUCTION_DATABASE_HOSTS="ep-other-preview"), \
+        "PRODUCTION_DATABASE_HOSTS extends the protected list"
+
+    assert not blocked(prod, VERCEL="1", VERCEL_ENV="production"), "the production deployment uses the production database"
+    assert not blocked(prod, ENVIRONMENT="production"), "explicit local production operation is allowed"
+    assert not blocked(preview_db, VERCEL="1", VERCEL_ENV="preview"), "Preview may use its own separate Neon database"
+    print("✔ Config: only the production deployment may use the production database (Preview, vercel dev, "
+          "missing VERCEL_ENV and local dev are refused).")
+
+
 # ---------------------------------------------------------------- lockout policy
 
 def test_threshold_and_duration():
@@ -598,7 +649,7 @@ def test_demo_login_still_works():
 def run():
     print("\n=== Stage 2: Authentication & configuration security tests ===")
     tests = [
-        test_config_hardening, test_threshold_and_duration, test_expiry_and_reset,
+        test_config_hardening, test_production_database_isolation, test_threshold_and_duration, test_expiry_and_reset,
         test_escalation_and_cap, test_escalation_decay, test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
         test_login_endpoint_contract, test_session_validation, test_session_epoch_revocation_is_exact,
         test_trusted_device_resists_lockout_dos, test_trusted_device_validity, test_trusted_device_http_flow,

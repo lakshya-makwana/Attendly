@@ -9,6 +9,10 @@ Security-sensitive values have no hard-coded fallbacks:
   production database host unless ALLOW_REMOTE_DATABASE=true is set explicitly.
 - ADMIN_MPIN is only used to bootstrap the admin account on a brand-new database. There is
   no default MPIN; if it is unset, no admin account is auto-created.
+- Only the production deployment may use the production database. On Vercel the deployment
+  environment comes from the system variable VERCEL_ENV (it cannot be set per project), so a
+  Preview deployment that inherits the production DATABASE_URL refuses to start instead of
+  connecting. ALLOW_REMOTE_DATABASE does not override this.
 """
 import logging
 import os
@@ -28,6 +32,10 @@ logger = logging.getLogger(__name__)
 _KNOWN_INSECURE_SECRETS = {"super_secret_jwt_key_contractor_attendance_app_2026"}
 _REMOTE_DB_HOST_MARKERS = ("neon.tech", "amazonaws.com", "aws.")
 _MIN_RECOMMENDED_SECRET_LENGTH = 32
+# Neon endpoint of the production database (also named in tests/test_db_guard.py). A host containing
+# any marker may only be used by the production deployment. PRODUCTION_DATABASE_HOSTS (comma-separated
+# markers) adds more; it can only extend this list, never shrink it.
+_PRODUCTION_DB_HOST_MARKERS = ("ep-still-queen",)
 
 
 class ConfigurationError(RuntimeError):
@@ -43,6 +51,12 @@ def fix_database_url(url: str) -> str:
 
 def _env_flag(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes"}
+
+
+def is_production_database_host(host: str) -> bool:
+    extra = [m.strip().lower() for m in os.getenv("PRODUCTION_DATABASE_HOSTS", "").split(",") if m.strip()]
+    host = (host or "").lower()
+    return any(marker in host for marker in (*_PRODUCTION_DB_HOST_MARKERS, *extra))
 
 
 class Settings(BaseSettings):
@@ -76,10 +90,30 @@ class Settings(BaseSettings):
             or os.getenv("VERCEL_ENV") in {"production", "preview"}
         )
 
+    @property
+    def deployment_environment(self) -> str:
+        """'production', 'preview' or 'development'. On Vercel only the system VERCEL_ENV counts; if it is
+        missing the result is 'unknown', which is treated as non-production (fail closed)."""
+        if os.getenv("VERCEL"):
+            return (os.getenv("VERCEL_ENV") or "unknown").strip().lower()
+        return self.ENVIRONMENT.strip().lower()
+
+    @property
+    def is_production_deployment(self) -> bool:
+        return self.deployment_environment == "production"
+
 
 def _validate(settings: Settings) -> None:
     if not settings.DATABASE_URL:
         raise ConfigurationError("DATABASE_URL is not configured.")
+
+    db_host = (urllib.parse.urlparse(fix_database_url(settings.DATABASE_URL)).hostname or "").lower()
+    if is_production_database_host(db_host) and not settings.is_production_deployment:
+        raise ConfigurationError(
+            f"Refusing to connect the '{settings.deployment_environment}' environment to the production "
+            f"database host '{db_host}'. Preview and development deployments must use their own database "
+            "(see DEPLOYMENT.md, 'Environment isolation')."
+        )
 
     secret = (settings.SECRET_KEY or "").strip()
     if secret in _KNOWN_INSECURE_SECRETS:
