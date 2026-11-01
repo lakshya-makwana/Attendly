@@ -72,6 +72,14 @@ const Login = () => {
         return;
       }
 
+      // Lockout after too many incorrect attempts: the MPIN was not checked, so never call it incorrect.
+      if (res.status === 429) {
+        setError(res.message || 'Too many incorrect attempts. Please try again later.');
+        mpinRef.current = '';
+        setMpin('');
+        return;
+      }
+
       // Distinguish network/server errors from incorrect MPIN
       const isNetwork = Boolean(res.isNetworkError || res.message?.toLowerCase().includes('network'));
       const isServerError = Boolean((res.status && res.status >= 500) || res.message?.toLowerCase().includes('server'));
