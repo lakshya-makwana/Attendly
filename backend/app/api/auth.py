@@ -11,6 +11,7 @@ from ..core.security import hash_mpin, create_access_token, get_current_admin, r
 from ..models.admin import AdminSettings
 from ..schemas.schemas import LoginMPINRequest, TokenResponse, ChangeMPINRequest
 from ..services.login_throttle import InvalidMpin, LoginLocked, verify_mpin_with_throttle
+from ..services.trusted_devices import find_active_device, issue_device, revoke_all_devices, touch_device
 
 logger = logging.getLogger(__name__)
 
@@ -75,14 +76,25 @@ def login_with_mpin(req: LoginMPINRequest, request: Request, db: Session = Depen
         logger.error("Login attempted but no admin account exists and ADMIN_MPIN is not configured.")
         raise incorrect
 
+    device = find_active_device(db, admin_setting.id, req.device_token)
     try:
-        verify_mpin_with_throttle(db, admin_setting, req.mpin, _client_ip(request))
+        verify_mpin_with_throttle(
+            db, admin_setting, req.mpin, _client_ip(request), device_id=device.id if device else None
+        )
     except LoginLocked as locked:
-        logger.warning("MPIN login rejected: lockout active for account %s.", admin_setting.id)
+        logger.warning("MPIN login rejected: lockout active for account %s (trusted device: %s).",
+                       admin_setting.id, bool(device))
         raise _locked_response(locked)
     except InvalidMpin:
-        logger.info("Incorrect MPIN for account %s.", admin_setting.id)
+        logger.info("Incorrect MPIN for account %s (trusted device: %s).", admin_setting.id, bool(device))
         raise incorrect
+
+    if device:
+        touch_device(device)
+        device_token = req.device_token
+    else:
+        device_token = issue_device(db, admin_setting.id)
+    db.commit()
 
     access_token = create_access_token(
         data={"sub": str(admin_setting.id), "account_id": admin_setting.id, "is_demo": False},
@@ -93,6 +105,7 @@ def login_with_mpin(req: LoginMPINRequest, request: Request, db: Session = Depen
         token_type="bearer",
         app_title=admin_setting.app_title or "Attendly",
         is_demo=False,
+        device_token=device_token,
     )
 
 
@@ -165,13 +178,20 @@ def change_mpin(
 
     admin_setting.hashed_mpin = hash_mpin(req.new_mpin)
     revoke_all_sessions(admin_setting)
+    revoke_all_devices(db, admin_setting.id)
+    device_token = issue_device(db, admin_setting.id)
     db.commit()
     db.refresh(admin_setting)
-    logger.info("MPIN changed for account %s; earlier sessions are revoked.", admin_setting.id)
+    logger.info("MPIN changed for account %s; earlier sessions and trusted devices are revoked.", admin_setting.id)
 
-    # Tokens issued before the change are now invalid; hand back a fresh one for the current device.
+    # Earlier sessions and devices are now invalid; hand back fresh ones for the current device.
     new_token = create_access_token(
         data={"sub": str(admin_setting.id), "account_id": admin_setting.id, "is_demo": bool(admin_setting.is_demo)},
         account=admin_setting,
     )
-    return {"message": "MPIN updated successfully.", "access_token": new_token, "token_type": "bearer"}
+    return {
+        "message": "MPIN updated successfully.",
+        "access_token": new_token,
+        "token_type": "bearer",
+        "device_token": device_token,
+    }

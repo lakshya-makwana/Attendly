@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator
 # --- Auth Schemas ---
 class LoginMPINRequest(BaseModel):
     mpin: str = Field(..., min_length=4, max_length=6, description="4 or 6 digit numeric MPIN")
+    device_token: Optional[str] = Field(None, max_length=128, description="Trusted-device token from an earlier login")
 
     @field_validator("mpin")
     @classmethod
@@ -20,6 +21,7 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
     app_title: str = "Attendly"
     is_demo: bool = False
+    device_token: Optional[str] = None  # MPIN logins only: keep it and send it with the next login
 
 class ChangeMPINRequest(BaseModel):
     current_mpin: str

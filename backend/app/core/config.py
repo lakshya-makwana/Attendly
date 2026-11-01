@@ -64,6 +64,9 @@ class Settings(BaseSettings):
     LOGIN_LOCKOUT_MINUTES: int = 15               # first lockout; each further lockout doubles
     LOGIN_MAX_LOCKOUT_MINUTES: int = 24 * 60      # escalation cap
     LOGIN_LOCKOUT_RESET_HOURS: int = 24           # quiet period (no failures, no lock) that resets escalation
+    LOGIN_DEVICE_MAX_FAILED_ATTEMPTS: int = 5     # per trusted device before that device's first lockout
+    LOGIN_MAX_TRUSTED_DEVICES: int = 10           # active trusted devices per account (oldest revoked beyond this)
+    LOGIN_TRUSTED_DEVICE_DAYS: int = 90           # a trusted device unused for this long must log in anonymously again
 
     @property
     def is_production(self) -> bool:

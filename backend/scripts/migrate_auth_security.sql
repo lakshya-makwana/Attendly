@@ -35,3 +35,16 @@ ALTER TABLE auth_login_attempts ADD COLUMN IF NOT EXISTS lockout_level INTEGER N
 --    existed, so current sessions stay valid until the first MPIN change or admin recovery.
 --    REQUIRED before deploying: the application selects this column on every authenticated request.
 ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS session_epoch INTEGER NOT NULL DEFAULT 0;
+
+-- 3. Trusted devices: logins from a known device use their own lockout bucket, so an attacker
+--    keeping the anonymous account bucket locked cannot lock the owner out. Only SHA-256 hashes
+--    of device tokens are stored.
+CREATE TABLE IF NOT EXISTS auth_trusted_devices (
+    id SERIAL PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES admin_settings(id) ON DELETE CASCADE,
+    token_hash VARCHAR(64) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    last_used_at TIMESTAMP WITH TIME ZONE,
+    revoked_at TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX IF NOT EXISTS ix_auth_trusted_devices_account_id ON auth_trusted_devices (account_id);

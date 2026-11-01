@@ -6,6 +6,9 @@ Buckets (one LoginAttempt row per account and scope):
   does not depend on the client IP being trustworthy.
 - "client:<hmac of IP>": failures from one client, so a single noisy client is stopped early without
   waiting for the account bucket.
+- "device:<id>": failures from one trusted device (services/trusted_devices.py). Logins with a valid
+  device token use only this bucket, so an attacker keeping the anonymous buckets locked cannot lock
+  the owner out of a known device. Device tokens are only issued after a correct MPIN.
 
 Escalation (per bucket, all values configurable in Settings):
 - First lockout after LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS (account) / LOGIN_MAX_FAILED_ATTEMPTS (client)
@@ -38,6 +41,7 @@ from ..models.admin import AdminSettings
 from ..models.login_attempt import LoginAttempt
 
 ACCOUNT_SCOPE = "account"
+DEVICE_SCOPE_PREFIX = "device:"
 _STALE_CLIENT_ROW_AGE = timedelta(days=1)
 
 
@@ -67,8 +71,16 @@ def lockout_duration(level: int) -> timedelta:
     return timedelta(minutes=min(minutes, settings.LOGIN_MAX_LOCKOUT_MINUTES))
 
 
+def device_scope(device_id: int) -> str:
+    return f"{DEVICE_SCOPE_PREFIX}{int(device_id)}"
+
+
 def _first_limit(scope: str) -> int:
-    return settings.LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS if scope == ACCOUNT_SCOPE else settings.LOGIN_MAX_FAILED_ATTEMPTS
+    if scope == ACCOUNT_SCOPE:
+        return settings.LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS
+    if scope.startswith(DEVICE_SCOPE_PREFIX):
+        return settings.LOGIN_DEVICE_MAX_FAILED_ATTEMPTS
+    return settings.LOGIN_MAX_FAILED_ATTEMPTS
 
 
 def _lock_counter_rows(db: Session, account_id: int, scopes: List[str]) -> Dict[str, LoginAttempt]:
@@ -129,20 +141,33 @@ def _check(db: Session, account: AdminSettings, mpin: str, scopes: List[str], no
     return bool(account.hashed_mpin and verify_mpin(mpin, account.hashed_mpin)), rows
 
 
-def verify_mpin_with_throttle(db: Session, account: AdminSettings, mpin: str, client_ip: Optional[str]) -> None:
+def verify_mpin_with_throttle(
+    db: Session,
+    account: AdminSettings,
+    mpin: str,
+    client_ip: Optional[str],
+    device_id: Optional[int] = None,
+) -> None:
     """
     Verifies `mpin` for `account` under brute-force protection and commits the counter changes.
+
+    `device_id` is the id of an already validated, active TrustedDevice of this account. Such attempts
+    use only that device's bucket, so they are not blocked by (and do not count towards) the anonymous
+    account and client buckets.
 
     Returns normally on success. Raises LoginLocked while a lockout is active, or InvalidMpin on a
     wrong MPIN (after recording the failure).
     """
     now = _utcnow()
-    own_scope = client_scope(client_ip)
-    ok, rows = _check(db, account, mpin, [ACCOUNT_SCOPE, own_scope], now)
+    scopes = [device_scope(device_id)] if device_id is not None else [ACCOUNT_SCOPE, client_scope(client_ip)]
+    ok, rows = _check(db, account, mpin, scopes, now)
 
     if ok:
         for row in rows.values():
-            row.failed_count = 0  # escalation level is kept on purpose (see module docstring)
+            row.failed_count = 0
+            if row.scope.startswith(DEVICE_SCOPE_PREFIX):
+                row.lockout_level = 0  # the owner proved both the device and the MPIN
+            # Anonymous buckets keep their escalation level on purpose (see module docstring).
         db.query(LoginAttempt).filter(
             LoginAttempt.account_id == account.id,
             LoginAttempt.scope.like("client:%"),

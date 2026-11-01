@@ -24,8 +24,10 @@ from app.core.config import ConfigurationError, Settings, _validate, settings
 from app.core.security import create_access_token
 from app.models.admin import AdminSettings
 from app.models.login_attempt import LoginAttempt
+from app.models.trusted_device import TrustedDevice
+from app.services.trusted_devices import find_active_device, issue_device, revoke_all_devices
 from app.services.login_throttle import (
-    ACCOUNT_SCOPE, InvalidMpin, LoginLocked, client_scope, verify_mpin_with_throttle,
+    ACCOUNT_SCOPE, InvalidMpin, LoginLocked, client_scope, device_scope, verify_mpin_with_throttle,
 )
 
 TEST_ACCOUNT_TYPE = "test_throttle"
@@ -276,7 +278,8 @@ def test_login_endpoint_contract():
     db.commit()
     try:
         ok = client.post("/api/auth/login-mpin", json={"mpin": GOOD_MPIN})
-        assert ok.status_code == 200 and set(ok.json()) == {"access_token", "token_type", "app_title", "is_demo"}
+        assert ok.status_code == 200 and set(ok.json()) == {"access_token", "token_type", "app_title", "is_demo", "device_token"}
+        assert ok.json()["device_token"], "MPIN login issues a trusted-device token"
         for _ in range(5):
             r = client.post("/api/auth/login-mpin", json={"mpin": BAD_MPIN})
             assert r.status_code == 401 and r.json()["detail"] == "Incorrect MPIN. Please try again."
@@ -287,6 +290,7 @@ def test_login_endpoint_contract():
         print("✔ HTTP: 200 contract unchanged; 401 for wrong MPIN; 429 + Retry-After when locked.")
     finally:
         db.query(LoginAttempt).filter(LoginAttempt.account_id == admin.id).delete(synchronize_session=False)
+        db.query(TrustedDevice).filter(TrustedDevice.account_id == admin.id).delete(synchronize_session=False)
         admin.hashed_mpin = original_hash
         db.commit()
         db.close()
@@ -397,6 +401,152 @@ def test_session_epoch_revocation_is_exact():
     print("✔ Sessions: epoch revocation is exact (25 same-second issue/revoke/issue cycles), malformed epochs rejected.")
 
 
+def _issue_device(account_id: int) -> str:
+    db = database.SessionLocal()
+    try:
+        raw = issue_device(db, account_id)
+        db.commit()
+        return raw
+    finally:
+        db.close()
+
+
+def _device_attempt(account_id: int, raw_token: str, mpin: str) -> str:
+    """Like _attempt, but through the trusted-device path exactly as the login endpoint resolves it."""
+    db = database.SessionLocal()
+    try:
+        device = find_active_device(db, account_id, raw_token)
+        try:
+            verify_mpin_with_throttle(db, db.get(AdminSettings, account_id), mpin, "10.7.7.7",
+                                      device_id=device.id if device else None)
+            return "ok" if device else "ok-anonymous"
+        except InvalidMpin:
+            return "invalid"
+        except LoginLocked:
+            return "locked"
+    finally:
+        db.close()
+
+
+def _lock_account_bucket(account_id: int):
+    for i in range(10):
+        assert _attempt(account_id, BAD_MPIN, f"10.6.{account_id % 250}.{i}") == "invalid"
+    assert _row(account_id, ACCOUNT_SCOPE).locked_until is not None
+
+
+def test_trusted_device_resists_lockout_dos():
+    acc = _new_account()
+    device = _issue_device(acc)
+    _lock_account_bucket(acc)
+    assert _attempt(acc, GOOD_MPIN, "10.6.9.9") == "locked", "anonymous logins are locked out"
+    assert _device_attempt(acc, device, GOOD_MPIN) == "ok", "the owner's trusted device still logs in"
+    assert _row(acc, ACCOUNT_SCOPE).locked_until > datetime.now(timezone.utc), \
+        "a trusted-device success must not unlock the anonymous bucket for the attacker"
+
+    # The device bucket has its own escalating limit, so a stolen device token is still bounded.
+    assert [_device_attempt(acc, device, BAD_MPIN) for _ in range(5)] == ["invalid"] * 5
+    assert _device_attempt(acc, device, GOOD_MPIN) == "locked"
+    assert _row(acc, device_scope(find_device_id(acc, device))).lockout_level == 1
+
+    # Device failures never count towards the anonymous buckets.
+    acc2 = _new_account()
+    device2 = _issue_device(acc2)
+    for _ in range(4):
+        _device_attempt(acc2, device2, BAD_MPIN)
+    assert _row(acc2, ACCOUNT_SCOPE) is None
+    print("✔ Devices: a trusted device logs in while the anonymous account bucket is locked; "
+          "device buckets are separately bounded.")
+
+
+def find_device_id(account_id: int, raw_token: str) -> int:
+    db = database.SessionLocal()
+    try:
+        return find_active_device(db, account_id, raw_token).id
+    finally:
+        db.close()
+
+
+def test_trusted_device_validity():
+    acc, other = _new_account(), _new_account()
+    device = _issue_device(acc)
+    _lock_account_bucket(acc)
+    assert _device_attempt(acc, "not-a-real-token", GOOD_MPIN) == "locked", "unknown token falls back to anonymous"
+    assert _device_attempt(acc, "x" * 129, GOOD_MPIN) == "locked", "oversized token ignored"
+    assert _device_attempt(other, device, GOOD_MPIN) == "ok-anonymous", "a device token only works for its own account"
+
+    db = database.SessionLocal()
+    db.query(TrustedDevice).filter_by(account_id=acc).update(
+        {TrustedDevice.last_used_at: datetime.now(timezone.utc) - timedelta(days=91)})
+    db.commit()
+    db.close()
+    assert _device_attempt(acc, device, GOOD_MPIN) == "locked", "a device unused for 90 days is no longer trusted"
+
+    fresh = _issue_device(acc)
+    db = database.SessionLocal()
+    assert revoke_all_devices(db, acc) >= 1
+    db.commit()
+    db.close()
+    assert _device_attempt(acc, fresh, GOOD_MPIN) == "locked", "a revoked device is no longer trusted"
+
+    acc3 = _new_account()
+    tokens = [_issue_device(acc3) for _ in range(12)]
+    db = database.SessionLocal()
+    active = db.query(TrustedDevice).filter(TrustedDevice.account_id == acc3, TrustedDevice.revoked_at.is_(None)).count()
+    stored = {d.token_hash for d in db.query(TrustedDevice).filter_by(account_id=acc3)}
+    db.close()
+    assert active == 10, f"at most 10 active devices per account, got {active}"
+    assert not (set(tokens) & stored), "raw device tokens are never stored"
+    assert find_device_id(acc3, tokens[-1]) and _device_attempt(acc3, tokens[0], GOOD_MPIN) == "ok-anonymous", \
+        "the oldest devices beyond the cap are revoked"
+    print("✔ Devices: unknown, foreign, expired, revoked and over-cap tokens fall back to anonymous throttling; "
+          "only hashes are stored.")
+
+
+def test_trusted_device_http_flow():
+    db = database.SessionLocal()
+    admin = db.query(AdminSettings).filter(AdminSettings.is_demo.is_(False)).order_by(AdminSettings.id).first()
+    original_hash = admin.hashed_mpin
+    admin.hashed_mpin = _fast_hash(GOOD_MPIN)
+    db.commit()
+    try:
+        first = client.post("/api/auth/login-mpin", json={"mpin": GOOD_MPIN})
+        device = first.json()["device_token"]
+        for i in range(10):  # distributed attacker: a different client address for every guess
+            r = client.post("/api/auth/login-mpin", json={"mpin": BAD_MPIN}, headers={"X-Forwarded-For": f"203.0.113.{i}"})
+            assert r.status_code == 401
+        assert client.post("/api/auth/login-mpin", json={"mpin": GOOD_MPIN},
+                           headers={"X-Forwarded-For": "198.51.100.1"}).status_code == 429
+        again = client.post("/api/auth/login-mpin", json={"mpin": GOOD_MPIN, "device_token": device},
+                            headers={"X-Forwarded-For": "198.51.100.1"})
+        assert again.status_code == 200 and again.json()["device_token"] == device, \
+            "the owner's device logs in during the lockout and keeps its token"
+        print("✔ HTTP: login returns a device token; with it the owner logs in while attackers keep the account locked.")
+    finally:
+        db.query(LoginAttempt).filter(LoginAttempt.account_id == admin.id).delete(synchronize_session=False)
+        db.query(TrustedDevice).filter(TrustedDevice.account_id == admin.id).delete(synchronize_session=False)
+        admin.hashed_mpin = original_hash
+        db.commit()
+        db.close()
+
+
+def test_change_mpin_revokes_devices():
+    acc = _new_account()
+    old_device = _issue_device(acc)
+    db = database.SessionLocal()
+    token = create_access_token({"sub": str(acc), "account_id": acc, "is_demo": False}, account=db.get(AdminSettings, acc))
+    db.close()
+    r = client.post("/api/auth/change-mpin", json={"current_mpin": GOOD_MPIN, "new_mpin": "5820"},
+                    headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 200 and r.json()["device_token"]
+    db = database.SessionLocal()
+    try:
+        assert find_active_device(db, acc, old_device) is None, "MPIN change revokes earlier trusted devices"
+        assert find_active_device(db, acc, r.json()["device_token"]) is not None, "current device is re-trusted"
+    finally:
+        db.close()
+    print("✔ Devices: MPIN change revokes every earlier trusted device and re-trusts the current one.")
+
+
 def test_demo_login_still_works():
     r = client.post("/api/auth/demo-login")
     assert r.status_code == 200 and r.json()["is_demo"] is True
@@ -411,6 +561,8 @@ def run():
         test_config_hardening, test_threshold_and_duration, test_expiry_and_reset,
         test_escalation_and_cap, test_escalation_decay, test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
         test_login_endpoint_contract, test_session_validation, test_session_epoch_revocation_is_exact,
+        test_trusted_device_resists_lockout_dos, test_trusted_device_validity, test_trusted_device_http_flow,
+        test_change_mpin_revokes_devices,
         test_demo_login_still_works,
     ]
     try:

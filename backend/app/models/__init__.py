@@ -5,5 +5,6 @@ from .attendance import Attendance
 from .advance import Advance
 from .worker_wage import WorkerWageHistory
 from .login_attempt import LoginAttempt
+from .trusted_device import TrustedDevice
 
-__all__ = ["AdminSettings", "Worker", "Site", "Attendance", "Advance", "WorkerWageHistory", "LoginAttempt"]
+__all__ = ["AdminSettings", "Worker", "Site", "Attendance", "Advance", "WorkerWageHistory", "LoginAttempt", "TrustedDevice"]

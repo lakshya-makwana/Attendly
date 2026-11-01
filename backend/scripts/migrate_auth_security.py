@@ -29,6 +29,12 @@ EXPECTED_COLUMNS = [
     ("auth_login_attempts", "last_failed_at"),
     ("auth_login_attempts", "updated_at"),
     ("admin_settings", "session_epoch"),
+    ("auth_trusted_devices", "id"),
+    ("auth_trusted_devices", "account_id"),
+    ("auth_trusted_devices", "token_hash"),
+    ("auth_trusted_devices", "created_at"),
+    ("auth_trusted_devices", "last_used_at"),
+    ("auth_trusted_devices", "revoked_at"),
 ]
 
 
