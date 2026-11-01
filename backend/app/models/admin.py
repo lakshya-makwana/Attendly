@@ -12,3 +12,6 @@ class AdminSettings(Base):
     app_title = Column(String(100), default="Attendly")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    # Every session token issued before this moment is rejected (set on MPIN change / admin recovery).
+    # NULL means no revocation has ever happened, so tokens issued before this column existed stay valid.
+    sessions_revoked_at = Column(DateTime(timezone=True), nullable=True)

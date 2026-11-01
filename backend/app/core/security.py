@@ -42,9 +42,11 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, *
     """
     Signs an admin session token.
 
-    Pass `account` (an AdminSettings row) to bind the token to the account's current MPIN, so it is
-    revoked automatically when the MPIN changes. Tokens issued before this mechanism existed carry no
-    binding and stay valid until they expire.
+    Two independent revocation mechanisms apply (see get_current_admin):
+    - `account` (an AdminSettings row) binds the token to the account's current MPIN hash, so it is
+      revoked whenever the hash changes, even if the hash is changed directly in the database.
+    - The `iat` claim is compared with AdminSettings.sessions_revoked_at, which also revokes legacy
+      tokens that predate MPIN binding (they carry no `iat`).
     """
     now = datetime.now(timezone.utc)
     to_encode = data.copy()
@@ -56,6 +58,25 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, *
     if account is not None:
         to_encode[MPIN_VERSION_CLAIM] = mpin_fingerprint(account.hashed_mpin)
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def revoke_all_sessions(account, when: Optional[datetime] = None) -> None:
+    """Marks every session token issued for `account` up to now as revoked. Caller commits."""
+    account.sessions_revoked_at = when or datetime.now(timezone.utc)
+
+
+def _revoked_by_cutoff(payload: dict, revoked_at: Optional[datetime]) -> bool:
+    if revoked_at is None:
+        return False
+    if revoked_at.tzinfo is None:
+        revoked_at = revoked_at.replace(tzinfo=timezone.utc)
+    issued_at = payload.get("iat")
+    if isinstance(issued_at, bool) or not isinstance(issued_at, (int, float)):
+        return True  # legacy token without iat, issued before any revocation could be recorded
+    # JWT iat has whole-second precision; compare at that precision so a token issued in the same
+    # second right after the revocation stays valid. Tokens issued earlier in that same second are
+    # still rejected by the MPIN binding, because the MPIN hash changed with the revocation.
+    return int(issued_at) < int(revoked_at.timestamp())
 
 
 def _invalid_session() -> HTTPException:
@@ -113,6 +134,9 @@ def get_current_admin(
     if bound_version is not None and not hmac.compare_digest(
         str(bound_version), mpin_fingerprint(account.hashed_mpin)
     ):
+        raise _invalid_session()
+
+    if _revoked_by_cutoff(payload, account.sessions_revoked_at):
         raise _invalid_session()
 
     return {

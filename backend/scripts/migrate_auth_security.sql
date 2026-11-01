@@ -24,3 +24,8 @@ CREATE TABLE IF NOT EXISTS auth_login_attempts (
     updated_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uq_login_attempt_account_scope UNIQUE (account_id, scope)
 );
+
+-- 2. Session revocation cut-off. Tokens issued before this moment are rejected.
+--    NULL (the value for every existing account) revokes nothing, so current sessions stay valid.
+--    REQUIRED before deploying: the application selects this column on every authenticated request.
+ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS sessions_revoked_at TIMESTAMP WITH TIME ZONE;

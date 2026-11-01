@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..core.config import settings
 from ..core.database import get_db
-from ..core.security import hash_mpin, create_access_token, get_current_admin
+from ..core.security import hash_mpin, create_access_token, get_current_admin, revoke_all_sessions
 from ..models.admin import AdminSettings
 from ..schemas.schemas import LoginMPINRequest, TokenResponse, ChangeMPINRequest
 from ..services.login_throttle import InvalidMpin, LoginLocked, verify_mpin_with_throttle
@@ -164,6 +164,7 @@ def change_mpin(
         raise incorrect
 
     admin_setting.hashed_mpin = hash_mpin(req.new_mpin)
+    revoke_all_sessions(admin_setting)
     db.commit()
     db.refresh(admin_setting)
     logger.info("MPIN changed for account %s; earlier sessions are revoked.", admin_setting.id)

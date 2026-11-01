@@ -85,6 +85,15 @@ def _expire_locks(account_id: int):
         db.close()
 
 
+def _legacy_token(account_id: int) -> str:
+    """A token exactly as commit 89ccb34 (current production) issues them: no iat and no MPIN binding."""
+    return jwt.encode(
+        {"sub": str(account_id), "account_id": account_id, "is_demo": False, "role": "admin",
+         "exp": datetime.now(timezone.utc) + timedelta(days=30)},
+        settings.SECRET_KEY, algorithm=settings.ALGORITHM,
+    )
+
+
 def _cleanup():
     db = database.SessionLocal()
     try:
@@ -238,7 +247,8 @@ def test_session_validation():
     me = lambda token: client.get("/api/auth/verify", headers={"Authorization": f"Bearer {token}"})
     claims = {"sub": str(acc), "account_id": acc, "is_demo": False}
 
-    assert me(create_access_token(claims)).status_code == 200, "unbound (pre-existing style) token still valid"
+    assert me(create_access_token(claims)).status_code == 200, "unbound token valid while nothing is revoked"
+    assert me(_legacy_token(acc)).status_code == 200, "pre-deployment token stays valid until a revocation"
 
     no_exp = jwt.encode({**claims, "role": "admin"}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     assert me(no_exp).status_code == 401, "token without exp must be rejected"
@@ -267,21 +277,40 @@ def test_session_validation():
     db.close()
     assert me(tampered_demo).json()["is_demo"] is False
 
-    # MPIN change revokes earlier bound tokens and issues a new one
+    # MPIN change revokes every earlier session (bound, unbound and legacy) and issues a new one
     db = database.SessionLocal()
     old_token = create_access_token(claims, account=db.get(AdminSettings, acc))
     db.close()
+    old_unbound, old_legacy = create_access_token(claims), _legacy_token(acc)
+    other = _new_account()
+    other_legacy = _legacy_token(other)
     r = client.post("/api/auth/change-mpin", json={"current_mpin": GOOD_MPIN, "new_mpin": "7391"},
                     headers={"Authorization": f"Bearer {old_token}"})
     assert r.status_code == 200 and r.json()["message"] == "MPIN updated successfully."
-    assert me(old_token).status_code == 401, "token issued before MPIN change must be revoked"
+    assert me(old_token).status_code == 401, "MPIN-bound token issued before the change must be revoked"
+    assert me(old_unbound).status_code == 401, "unbound token issued before the change must be revoked"
+    assert me(old_legacy).status_code == 401, "legacy (pre-deployment) token must be revoked by an MPIN change"
     assert me(r.json()["access_token"]).status_code == 200, "token returned by change-mpin is valid"
+    assert me(create_access_token(claims)).status_code == 200, "tokens issued after the change are valid"
+    assert me(other_legacy).status_code == 200, "revocation is per account"
 
     bad = client.post("/api/auth/change-mpin", json={"current_mpin": BAD_MPIN, "new_mpin": "1234"},
                       headers={"Authorization": f"Bearer {r.json()['access_token']}"})
     assert bad.status_code == 400 and bad.json()["detail"] == "Current MPIN is incorrect."
     print("✔ Sessions: exp required, forged/expired/orphaned tokens rejected, no account-1 fallback, "
-          "MPIN change revokes older sessions.")
+          "MPIN change revokes all older sessions including pre-deployment tokens.")
+
+
+def test_revocation_cutoff_precision():
+    from app.core.security import _revoked_by_cutoff
+    cutoff = datetime(2026, 11, 1, 10, 0, 0, 750000, tzinfo=timezone.utc)
+    second = int(cutoff.timestamp())
+    assert _revoked_by_cutoff({"iat": second - 1}, cutoff), "earlier second is revoked"
+    assert not _revoked_by_cutoff({"iat": second}, cutoff), "token minted right after the cut-off survives truncation"
+    assert _revoked_by_cutoff({}, cutoff) and _revoked_by_cutoff({"iat": "x"}, cutoff) and _revoked_by_cutoff({"iat": True}, cutoff)
+    assert not _revoked_by_cutoff({}, None), "no cut-off revokes nothing"
+    assert _revoked_by_cutoff({"iat": second - 1}, cutoff.replace(tzinfo=None)), "naive timestamps treated as UTC"
+    print("✔ Sessions: revocation cut-off handles whole-second iat, missing iat and naive timestamps.")
 
 
 def test_demo_login_still_works():
@@ -297,7 +326,8 @@ def run():
     tests = [
         test_config_hardening, test_threshold_and_duration, test_expiry_and_reset,
         test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
-        test_login_endpoint_contract, test_session_validation, test_demo_login_still_works,
+        test_login_endpoint_contract, test_session_validation, test_revocation_cutoff_precision,
+        test_demo_login_still_works,
     ]
     try:
         for t in tests:
