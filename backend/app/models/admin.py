@@ -12,6 +12,7 @@ class AdminSettings(Base):
     app_title = Column(String(100), default="Attendly")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
-    # Every session token issued before this moment is rejected (set on MPIN change / admin recovery).
-    # NULL means no revocation has ever happened, so tokens issued before this column existed stay valid.
-    sessions_revoked_at = Column(DateTime(timezone=True), nullable=True)
+    # Session generation. Incrementing it revokes every session token issued for this account
+    # (MPIN change / admin recovery). Tokens carry the epoch they were issued under; tokens without one
+    # (issued before this column existed) count as epoch 0, so they stay valid until the first revocation.
+    session_epoch = Column(Integer, nullable=False, default=0, server_default="0")

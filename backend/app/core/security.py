@@ -18,6 +18,8 @@ security_bearer = HTTPBearer(auto_error=False)
 # Claim holding a fingerprint of the account's MPIN hash at issue time.
 # Changing the MPIN changes the fingerprint, which revokes every token issued before the change.
 MPIN_VERSION_CLAIM = "mpv"
+# Claim holding the account's session epoch at issue time (see AdminSettings.session_epoch).
+SESSION_EPOCH_CLAIM = "sep"
 
 
 def hash_mpin(mpin: str) -> str:
@@ -42,11 +44,12 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, *
     """
     Signs an admin session token.
 
-    Two independent revocation mechanisms apply (see get_current_admin):
-    - `account` (an AdminSettings row) binds the token to the account's current MPIN hash, so it is
-      revoked whenever the hash changes, even if the hash is changed directly in the database.
-    - The `iat` claim is compared with AdminSettings.sessions_revoked_at, which also revokes legacy
-      tokens that predate MPIN binding (they carry no `iat`).
+    Pass `account` (an AdminSettings row) for every real session. Two independent revocation
+    mechanisms then apply (see get_current_admin):
+    - MPIN binding: revoked whenever the MPIN hash changes, even if changed directly in the database.
+    - Session epoch: revoked whenever revoke_all_sessions() increments the account's epoch. Exact
+      (no clocks or timestamp precision involved) and also covers legacy tokens, which count as epoch 0.
+    Tokens signed without `account` count as epoch 0 and stop working after the first revocation.
     """
     now = datetime.now(timezone.utc)
     to_encode = data.copy()
@@ -57,26 +60,24 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, *
     })
     if account is not None:
         to_encode[MPIN_VERSION_CLAIM] = mpin_fingerprint(account.hashed_mpin)
+        to_encode[SESSION_EPOCH_CLAIM] = int(account.session_epoch or 0)
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def revoke_all_sessions(account, when: Optional[datetime] = None) -> None:
-    """Marks every session token issued for `account` up to now as revoked. Caller commits."""
-    account.sessions_revoked_at = when or datetime.now(timezone.utc)
+def revoke_all_sessions(account) -> None:
+    """
+    Revokes every session token issued for `account` so far. Caller commits and must refresh the row
+    before issuing a new token (the increment is applied in SQL, so concurrent revocations never lose one).
+    """
+    account.session_epoch = AdminSettings.session_epoch + 1
 
 
-def _revoked_by_cutoff(payload: dict, revoked_at: Optional[datetime]) -> bool:
-    if revoked_at is None:
-        return False
-    if revoked_at.tzinfo is None:
-        revoked_at = revoked_at.replace(tzinfo=timezone.utc)
-    issued_at = payload.get("iat")
-    if isinstance(issued_at, bool) or not isinstance(issued_at, (int, float)):
-        return True  # legacy token without iat, issued before any revocation could be recorded
-    # JWT iat has whole-second precision; compare at that precision so a token issued in the same
-    # second right after the revocation stays valid. Tokens issued earlier in that same second are
-    # still rejected by the MPIN binding, because the MPIN hash changed with the revocation.
-    return int(issued_at) < int(revoked_at.timestamp())
+def _token_epoch(payload: dict) -> Optional[int]:
+    """Epoch carried by the token; tokens issued before epochs existed carry none and count as 0."""
+    value = payload.get(SESSION_EPOCH_CLAIM, 0)
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
 
 
 def _invalid_session() -> HTTPException:
@@ -136,7 +137,7 @@ def get_current_admin(
     ):
         raise _invalid_session()
 
-    if _revoked_by_cutoff(payload, account.sessions_revoked_at):
+    if _token_epoch(payload) != int(account.session_epoch or 0):
         raise _invalid_session()
 
     return {

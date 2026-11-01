@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS auth_login_attempts (
     CONSTRAINT uq_login_attempt_account_scope UNIQUE (account_id, scope)
 );
 
--- 2. Session revocation cut-off. Tokens issued before this moment are rejected.
---    NULL (the value for every existing account) revokes nothing, so current sessions stay valid.
+-- 2. Session epoch. Incrementing it revokes every session of the account.
+--    Existing accounts get 0, which is also the epoch of every token issued before this column
+--    existed, so current sessions stay valid until the first MPIN change or admin recovery.
 --    REQUIRED before deploying: the application selects this column on every authenticated request.
-ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS sessions_revoked_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS session_epoch INTEGER NOT NULL DEFAULT 0;

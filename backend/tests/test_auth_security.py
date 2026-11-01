@@ -291,7 +291,10 @@ def test_session_validation():
     assert me(old_unbound).status_code == 401, "unbound token issued before the change must be revoked"
     assert me(old_legacy).status_code == 401, "legacy (pre-deployment) token must be revoked by an MPIN change"
     assert me(r.json()["access_token"]).status_code == 200, "token returned by change-mpin is valid"
-    assert me(create_access_token(claims)).status_code == 200, "tokens issued after the change are valid"
+    db = database.SessionLocal()
+    fresh = create_access_token(claims, account=db.get(AdminSettings, acc))
+    db.close()
+    assert me(fresh).status_code == 200, "sessions issued after the change are valid"
     assert me(other_legacy).status_code == 200, "revocation is per account"
 
     bad = client.post("/api/auth/change-mpin", json={"current_mpin": BAD_MPIN, "new_mpin": "1234"},
@@ -301,16 +304,45 @@ def test_session_validation():
           "MPIN change revokes all older sessions including pre-deployment tokens.")
 
 
-def test_revocation_cutoff_precision():
-    from app.core.security import _revoked_by_cutoff
-    cutoff = datetime(2026, 11, 1, 10, 0, 0, 750000, tzinfo=timezone.utc)
-    second = int(cutoff.timestamp())
-    assert _revoked_by_cutoff({"iat": second - 1}, cutoff), "earlier second is revoked"
-    assert not _revoked_by_cutoff({"iat": second}, cutoff), "token minted right after the cut-off survives truncation"
-    assert _revoked_by_cutoff({}, cutoff) and _revoked_by_cutoff({"iat": "x"}, cutoff) and _revoked_by_cutoff({"iat": True}, cutoff)
-    assert not _revoked_by_cutoff({}, None), "no cut-off revokes nothing"
-    assert _revoked_by_cutoff({"iat": second - 1}, cutoff.replace(tzinfo=None)), "naive timestamps treated as UTC"
-    print("✔ Sessions: revocation cut-off handles whole-second iat, missing iat and naive timestamps.")
+def test_session_epoch_revocation_is_exact():
+    from app.core.security import revoke_all_sessions
+    acc = _new_account()
+    me = lambda token: client.get("/api/auth/verify", headers={"Authorization": f"Bearer {token}"})
+    claims = {"sub": str(acc), "account_id": acc, "is_demo": False}
+
+    def issue():
+        db = database.SessionLocal()
+        try:
+            return create_access_token(claims, account=db.get(AdminSettings, acc))
+        finally:
+            db.close()
+
+    def revoke():
+        db = database.SessionLocal()
+        try:
+            revoke_all_sessions(db.get(AdminSettings, acc))
+            db.commit()
+        finally:
+            db.close()
+
+    # Issue → revoke → issue in a tight loop: many iterations land in the same wall-clock second,
+    # which a timestamp cut-off with whole-second iat cannot separate. The epoch must, every time.
+    for i in range(25):
+        before = issue()
+        revoke()
+        after = issue()
+        assert me(before).status_code == 401, f"iteration {i}: token issued before revocation must be rejected"
+        assert me(after).status_code == 200, f"iteration {i}: token issued after revocation must be accepted"
+
+    db = database.SessionLocal()
+    assert db.get(AdminSettings, acc).session_epoch == 25, "each revocation increments the epoch exactly once"
+    db.close()
+
+    for bad in ("25", True, 25.0, None):
+        forged = jwt.encode({**claims, "role": "admin", "sep": bad, "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+                            settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+        assert me(forged).status_code == 401, f"malformed epoch claim {bad!r} must be rejected"
+    print("✔ Sessions: epoch revocation is exact (25 same-second issue/revoke/issue cycles), malformed epochs rejected.")
 
 
 def test_demo_login_still_works():
@@ -326,7 +358,7 @@ def run():
     tests = [
         test_config_hardening, test_threshold_and_duration, test_expiry_and_reset,
         test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
-        test_login_endpoint_contract, test_session_validation, test_revocation_cutoff_precision,
+        test_login_endpoint_contract, test_session_validation, test_session_epoch_revocation_is_exact,
         test_demo_login_still_works,
     ]
     try:

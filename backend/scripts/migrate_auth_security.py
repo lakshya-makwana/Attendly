@@ -27,7 +27,7 @@ EXPECTED_COLUMNS = [
     ("auth_login_attempts", "locked_until"),
     ("auth_login_attempts", "last_failed_at"),
     ("auth_login_attempts", "updated_at"),
-    ("admin_settings", "sessions_revoked_at"),
+    ("admin_settings", "session_epoch"),
 ]
 
 
