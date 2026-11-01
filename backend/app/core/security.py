@@ -1,17 +1,28 @@
+import hashlib
+import hmac
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+
 import bcrypt
-from jose import JWTError, jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from jose import JWTError, jwt
+from sqlalchemy.orm import Session
+
 from .config import settings
+from .database import get_db
+from ..models.admin import AdminSettings
 
 security_bearer = HTTPBearer(auto_error=False)
 
+# Claim holding a fingerprint of the account's MPIN hash at issue time.
+# Changing the MPIN changes the fingerprint, which revokes every token issued before the change.
+MPIN_VERSION_CLAIM = "mpv"
+
+
 def hash_mpin(mpin: str) -> str:
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(mpin.encode("utf-8"), salt)
-    return hashed.decode("utf-8")
+    return bcrypt.hashpw(mpin.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
 
 def verify_mpin(plain_mpin: str, hashed_mpin: str) -> bool:
     try:
@@ -19,55 +30,94 @@ def verify_mpin(plain_mpin: str, hashed_mpin: str) -> bool:
     except Exception:
         return False
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire, "role": "admin"})
-    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-    return encoded_jwt
 
-def get_current_admin(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer)):
+def mpin_fingerprint(hashed_mpin: Optional[str]) -> str:
+    """Keyed, truncated fingerprint of the stored MPIN hash. Reveals nothing about the MPIN itself."""
+    return hmac.new(
+        settings.SECRET_KEY.encode("utf-8"), (hashed_mpin or "").encode("utf-8"), hashlib.sha256
+    ).hexdigest()[:16]
+
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, *, account=None) -> str:
+    """
+    Signs an admin session token.
+
+    Pass `account` (an AdminSettings row) to bind the token to the account's current MPIN, so it is
+    revoked automatically when the MPIN changes. Tokens issued before this mechanism existed carry no
+    binding and stay valid until they expire.
+    """
+    now = datetime.now(timezone.utc)
+    to_encode = data.copy()
+    to_encode.update({
+        "iat": now,
+        "exp": now + (expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)),
+        "role": "admin",
+    })
+    if account is not None:
+        to_encode[MPIN_VERSION_CLAIM] = mpin_fingerprint(account.hashed_mpin)
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def _invalid_session() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired session. Please enter your MPIN again.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+
+def _account_id_from_claims(payload: dict) -> int:
+    account_id = payload.get("account_id")
+    if account_id is None:
+        sub = payload.get("sub")
+        if sub is not None and str(sub).isdigit():
+            account_id = sub
+    try:
+        return int(account_id)
+    except (TypeError, ValueError):
+        raise _invalid_session()
+
+
+def get_current_admin(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    db: Session = Depends(get_db),
+):
     if not credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication token missing. Please enter your MPIN.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    token = credentials.credentials
     try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        role: str = payload.get("role")
-        if role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied. Admin privileges required.",
-            )
-
-        # Resolve account_id from payload (default to 1 for backward compatibility with legacy tokens)
-        account_id = payload.get("account_id")
-        if account_id is None:
-            sub = payload.get("sub")
-            if sub and str(sub).isdigit():
-                account_id = int(sub)
-            else:
-                account_id = 1
-        else:
-            account_id = int(account_id)
-
-        is_demo = bool(payload.get("is_demo", False))
-
-        return {
-            "account_id": account_id,
-            "is_demo": is_demo,
-            "role": role,
-            "sub": payload.get("sub")
-        }
-    except JWTError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired session. Please enter your MPIN again.",
-            headers={"WWW-Authenticate": "Bearer"},
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM],
+            options={"require_exp": True},
         )
+    except JWTError:
+        raise _invalid_session()
+
+    role = payload.get("role")
+    if role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Admin privileges required.",
+        )
+
+    account = db.get(AdminSettings, _account_id_from_claims(payload))
+    if account is None:
+        raise _invalid_session()
+
+    bound_version = payload.get(MPIN_VERSION_CLAIM)
+    if bound_version is not None and not hmac.compare_digest(
+        str(bound_version), mpin_fingerprint(account.hashed_mpin)
+    ):
+        raise _invalid_session()
+
+    return {
+        "account_id": account.id,
+        "is_demo": bool(account.is_demo),
+        "role": role,
+        "sub": payload.get("sub"),
+    }

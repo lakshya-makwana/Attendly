@@ -56,6 +56,15 @@ def enforce_test_database():
     # Initialize tables on the test database
     database.Base.metadata.create_all(bind=test_engine)
 
+    # Each test run starts with clean MPIN throttle counters (test database only).
+    from app.models.login_attempt import LoginAttempt
+    reset_db = database.SessionLocal()
+    try:
+        reset_db.query(LoginAttempt).delete(synchronize_session=False)
+        reset_db.commit()
+    finally:
+        reset_db.close()
+
     # Seed baseline AdminSettings (main admin + demo) if clean test db
     from app.core.security import hash_mpin
     from app.models.admin import AdminSettings
