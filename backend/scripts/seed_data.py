@@ -24,9 +24,11 @@ def seed():
     try:
         # 1. Dad / Production Test Account (id=1, is_demo=False)
         dad_admin = db.query(AdminSettings).filter(AdminSettings.is_demo == False).first()
-        mpin_to_set = settings.ADMIN_MPIN or "1234"
+        mpin_to_set = settings.ADMIN_MPIN
+        if not mpin_to_set:
+            raise SystemExit("[SEED] ADMIN_MPIN must be set explicitly in the environment; there is no default MPIN.")
         if not dad_admin:
-            print(f"[SEED] Initializing Dad Account with MPIN: {mpin_to_set}")
+            print("[SEED] Initializing Dad Account with the configured ADMIN_MPIN.")
             dad_admin = AdminSettings(
                 hashed_mpin=hash_mpin(mpin_to_set),
                 app_title="Attendly",
@@ -38,7 +40,7 @@ def seed():
             db.refresh(dad_admin)
         else:
             if not dad_admin.hashed_mpin:
-                print(f"[SEED] Initializing missing MPIN on admin account: {mpin_to_set}")
+                print("[SEED] Initializing missing MPIN on admin account from ADMIN_MPIN.")
                 dad_admin.hashed_mpin = hash_mpin(mpin_to_set)
             dad_admin.is_demo = False
             dad_admin.account_type = "admin"
