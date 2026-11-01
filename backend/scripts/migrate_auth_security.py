@@ -15,6 +15,7 @@ import urllib.parse
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
+from sqlalchemy.exc import OperationalError
 
 SQL_FILE = Path(__file__).resolve().with_name("migrate_auth_security.sql")
 
@@ -86,6 +87,11 @@ def main() -> int:
                 return 1
         print("Verification passed: all authentication security objects are present.")
         return 0
+    except OperationalError as exc:
+        reason = getattr(exc.orig, "pgerror", None) or str(exc.orig)
+        print(f"Migration rolled back, nothing was changed: {reason.strip()}", file=sys.stderr)
+        print("It is safe to re-run once the blocking transaction has finished.", file=sys.stderr)
+        return 1
     finally:
         engine.dispose()
 

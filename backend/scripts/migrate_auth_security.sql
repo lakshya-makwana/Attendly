@@ -13,6 +13,12 @@
 -- No BEGIN/COMMIT here: psql --single-transaction and the runner supply the transaction.
 -- ==============================================================================
 
+-- Give up instead of queueing: ALTER TABLE admin_settings needs a brief ACCESS EXCLUSIVE lock, and
+-- waiting behind a long-running transaction would stall every request queued behind it. On timeout
+-- the whole transaction rolls back (nothing is changed) and the migration can simply be re-run.
+-- SET LOCAL only takes effect inside a transaction, hence --single-transaction for psql.
+SET LOCAL lock_timeout = '5s';
+
 -- 1. Persistent MPIN brute-force counters (one row per account and scope).
 CREATE TABLE IF NOT EXISTS auth_login_attempts (
     id SERIAL PRIMARY KEY,
