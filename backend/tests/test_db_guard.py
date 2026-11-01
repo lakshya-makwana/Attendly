@@ -56,6 +56,13 @@ def enforce_test_database():
     # Initialize tables on the test database
     database.Base.metadata.create_all(bind=test_engine)
 
+    # Apply the idempotent auth security migration too: create_all() never adds columns to existing
+    # tables, and running it on every test run proves the migration is re-runnable.
+    from pathlib import Path
+    migration_sql = (Path(__file__).resolve().parents[1] / "scripts" / "migrate_auth_security.sql").read_text()
+    with test_engine.begin() as conn:
+        conn.exec_driver_sql(migration_sql)
+
     # Each test run starts with clean MPIN throttle counters (test database only).
     from app.models.login_attempt import LoginAttempt
     reset_db = database.SessionLocal()
