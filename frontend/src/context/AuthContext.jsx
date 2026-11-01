@@ -3,6 +3,27 @@ import api from '../api/client';
 
 const AuthContext = createContext();
 
+// Trusted-device token issued by the backend after a correct MPIN. Logins that send it are throttled
+// per device, so failed guesses by others cannot lock this device out. It is deliberately kept on
+// logout and on 401: it is not a session and grants nothing without the MPIN.
+const DEVICE_TOKEN_KEY = 'attendly_device_token';
+
+const readDeviceToken = () => {
+  try {
+    return localStorage.getItem(DEVICE_TOKEN_KEY);
+  } catch {
+    return null;
+  }
+};
+
+const saveDeviceToken = (token) => {
+  try {
+    localStorage.setItem(DEVICE_TOKEN_KEY, token);
+  } catch {
+    // Storage unavailable (private mode): logins still work, just without device trust.
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   // Session is ONLY active if explicitly unlocked in this browser/PWA window session
   const isSessionActive = typeof window !== 'undefined' && sessionStorage.getItem('attendly_session_active') === 'true';
@@ -44,8 +65,10 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithMpin = async (mpin) => {
     try {
-      const response = await api.post('/auth/login-mpin', { mpin });
-      const { access_token, app_title, is_demo } = response.data;
+      const deviceToken = readDeviceToken();
+      const response = await api.post('/auth/login-mpin', deviceToken ? { mpin, device_token: deviceToken } : { mpin });
+      const { access_token, app_title, is_demo, device_token } = response.data;
+      if (device_token) saveDeviceToken(device_token);
       sessionStorage.setItem('attendly_session_active', 'true');
       sessionStorage.setItem('contractor_token', access_token);
       sessionStorage.setItem('contractor_is_demo', is_demo ? 'true' : 'false');
