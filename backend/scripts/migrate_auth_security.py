@@ -36,6 +36,14 @@ EXPECTED_COLUMNS = [
     ("auth_trusted_devices", "created_at"),
     ("auth_trusted_devices", "last_used_at"),
     ("auth_trusted_devices", "revoked_at"),
+    ("auth_enrolment_codes", "id"),
+    ("auth_enrolment_codes", "account_id"),
+    ("auth_enrolment_codes", "code_hash"),
+    ("auth_enrolment_codes", "created_at"),
+    ("auth_enrolment_codes", "expires_at"),
+    ("auth_enrolment_codes", "used_at"),
+    ("auth_enrolment_codes", "revoked_at"),
+    ("auth_enrolment_codes", "failed_attempts"),
 ]
 
 

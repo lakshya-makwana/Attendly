@@ -54,3 +54,17 @@ CREATE TABLE IF NOT EXISTS auth_trusted_devices (
     revoked_at TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX IF NOT EXISTS ix_auth_trusted_devices_account_id ON auth_trusted_devices (account_id);
+
+-- 4. One-time recovery enrolment codes (scripts/admin_recovery.py enrol-device). A code plus the
+--    correct MPIN registers a new browser as a trusted device. Only SHA-256 hashes are stored.
+CREATE TABLE IF NOT EXISTS auth_enrolment_codes (
+    id SERIAL PRIMARY KEY,
+    account_id INTEGER NOT NULL REFERENCES admin_settings(id) ON DELETE CASCADE,
+    code_hash VARCHAR(64) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used_at TIMESTAMP WITH TIME ZONE,
+    revoked_at TIMESTAMP WITH TIME ZONE,
+    failed_attempts INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS ix_auth_enrolment_codes_account_id ON auth_enrolment_codes (account_id);
