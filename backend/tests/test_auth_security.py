@@ -140,7 +140,7 @@ def test_threshold_and_duration():
     results = [_attempt(acc, BAD_MPIN, ip) for _ in range(5)]
     assert results == ["invalid"] * 5, results
     row = _row(acc, client_scope(ip))
-    assert row.failed_count == 5 and row.locked_until is not None
+    assert row.lockout_level == 1 and row.failed_count == 0 and row.locked_until is not None
     remaining = (row.locked_until - datetime.now(timezone.utc)).total_seconds()
     assert 14 * 60 < remaining <= 15 * 60, f"lockout should last 15 minutes, got {remaining}s"
 
@@ -152,8 +152,14 @@ def test_threshold_and_duration():
         assert 14 * 60 < e.retry_after_seconds <= 15 * 60
     finally:
         db.close()
-    assert _row(acc, client_scope(ip)).failed_count == 5, "attempts during lockout are not counted further"
+    row = _row(acc, client_scope(ip))
+    assert row.failed_count == 0 and row.lockout_level == 1, "attempts during lockout are not counted further"
     print("✔ Lockout: 5 consecutive failures lock the client for 15 minutes; MPIN not checked while locked.")
+
+
+def _lock_remaining_minutes(account_id: int, scope: str) -> float:
+    row = _row(account_id, scope)
+    return (row.locked_until - datetime.now(timezone.utc)).total_seconds() / 60
 
 
 def test_expiry_and_reset():
@@ -163,15 +169,60 @@ def test_expiry_and_reset():
         _attempt(acc, BAD_MPIN, ip)
     _expire_locks(acc)
     assert _attempt(acc, GOOD_MPIN, ip) == "ok", "expired lockout must allow login"
-    assert _row(acc, client_scope(ip)) is None, "successful login clears the client counter"
+    row = _row(acc, client_scope(ip))
+    assert row.failed_count == 0 and row.lockout_level == 1, "success clears the count but keeps the escalation level"
     assert _row(acc, ACCOUNT_SCOPE).failed_count == 0, "successful login resets the account counter"
 
-    for _ in range(3):
+    assert [_attempt(acc, BAD_MPIN, ip) for _ in range(2)] == ["invalid"] * 2
+    assert _attempt(acc, GOOD_MPIN, ip) == "ok", "success between failures resets the count"
+    assert [_attempt(acc, BAD_MPIN, ip) for _ in range(3)] == ["invalid"] * 3
+    assert 29 < _lock_remaining_minutes(acc, client_scope(ip)) <= 30, "a success does not wipe escalation: next lock is 30 min"
+    print("✔ Lockout: expiry re-enables login; success resets the count but not the escalation level.")
+
+
+def test_escalation_and_cap():
+    # A distributed attacker (new IP for every guess) against the account-wide bucket: the hard bound.
+    acc = _new_account()
+    ips = (f"10.8.{n // 250}.{n % 250}" for n in range(10_000))
+    assert [_attempt(acc, BAD_MPIN, next(ips)) for _ in range(10)] == ["invalid"] * 10
+    expected = [15, 30, 60, 120, 240, 480, 960, 1440, 1440]
+    for level, minutes in enumerate(expected, start=1):
+        if level > 1:
+            _expire_locks(acc)
+            assert [_attempt(acc, BAD_MPIN, next(ips)) for _ in range(3)] == ["invalid"] * 3, f"level {level}"
+        row = _row(acc, ACCOUNT_SCOPE)
+        assert row.lockout_level == level, (level, row.lockout_level)
+        assert minutes - 1 < _lock_remaining_minutes(acc, ACCOUNT_SCOPE) <= minutes, (level, minutes)
+        assert _attempt(acc, GOOD_MPIN, next(ips)) == "locked"
+    print("✔ Lockout: account bucket escalates 15 → 30 → 60 … minutes after 3 further failures each, "
+          "capped at 24 hours, regardless of client IP.")
+
+
+def test_escalation_decay():
+    acc = _new_account()
+    ip = "10.0.0.4"
+    for _ in range(5):
         _attempt(acc, BAD_MPIN, ip)
-    assert _attempt(acc, GOOD_MPIN, ip) == "ok"
+
+    def age_bucket(hours):
+        db = database.SessionLocal()
+        try:
+            past = datetime.now(timezone.utc) - timedelta(hours=hours)
+            db.query(LoginAttempt).filter_by(account_id=acc).update(
+                {LoginAttempt.locked_until: past, LoginAttempt.last_failed_at: past})
+            db.commit()
+        finally:
+            db.close()
+
+    age_bucket(23)
+    assert [_attempt(acc, BAD_MPIN, ip) for _ in range(3)] == ["invalid"] * 3
+    assert _row(acc, client_scope(ip)).lockout_level == 2, "23 quiet hours are not enough to reset escalation"
+
+    age_bucket(24.1)
     assert [_attempt(acc, BAD_MPIN, ip) for _ in range(4)] == ["invalid"] * 4
-    assert _row(acc, client_scope(ip)).locked_until is None, "counter restarted after success: 4 failures do not lock"
-    print("✔ Lockout: expiry re-enables login; success resets counters.")
+    row = _row(acc, client_scope(ip))
+    assert row.lockout_level == 0 and row.failed_count == 4, "24 quiet hours reset escalation to the first-lock limit"
+    print("✔ Lockout: escalation resets only after 24 hours with no failures and no lockout.")
 
 
 def test_client_isolation_and_account_limit():
@@ -205,7 +256,8 @@ def test_concurrent_attempts():
     with ThreadPoolExecutor(max_workers=12) as pool:
         results = list(pool.map(lambda _: _attempt(acc, BAD_MPIN, ip), range(12)))
     assert results.count("invalid") == 5 and results.count("locked") == 7, results
-    assert _row(acc, client_scope(ip)).failed_count == 5, "concurrent requests must not exceed the limit"
+    row = _row(acc, client_scope(ip))
+    assert row.lockout_level == 1 and row.failed_count == 0, "concurrent requests must not exceed the limit"
 
     acc2 = _new_account()
     with ThreadPoolExecutor(max_workers=12) as pool:
@@ -357,7 +409,7 @@ def run():
     print("\n=== Stage 2: Authentication & configuration security tests ===")
     tests = [
         test_config_hardening, test_threshold_and_duration, test_expiry_and_reset,
-        test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
+        test_escalation_and_cap, test_escalation_decay, test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
         test_login_endpoint_contract, test_session_validation, test_session_epoch_revocation_is_exact,
         test_demo_login_still_works,
     ]

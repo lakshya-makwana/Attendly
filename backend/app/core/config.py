@@ -57,10 +57,13 @@ class Settings(BaseSettings):
     ADMIN_MPIN: Optional[str] = None
     FRONTEND_URL: Optional[str] = None
 
-    # MPIN brute-force protection
-    LOGIN_MAX_FAILED_ATTEMPTS: int = 5          # per client (IP) before that client is locked out
-    LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS: int = 10  # across all clients before the whole account is locked out
-    LOGIN_LOCKOUT_MINUTES: int = 15
+    # MPIN brute-force protection (escalating lockouts; see app/services/login_throttle.py)
+    LOGIN_MAX_FAILED_ATTEMPTS: int = 5            # per client (IP) before that client's first lockout
+    LOGIN_ACCOUNT_MAX_FAILED_ATTEMPTS: int = 10   # across all clients before the account's first lockout
+    LOGIN_ESCALATED_MAX_FAILED_ATTEMPTS: int = 3  # failures allowed between later, escalated lockouts
+    LOGIN_LOCKOUT_MINUTES: int = 15               # first lockout; each further lockout doubles
+    LOGIN_MAX_LOCKOUT_MINUTES: int = 24 * 60      # escalation cap
+    LOGIN_LOCKOUT_RESET_HOURS: int = 24           # quiet period (no failures, no lock) that resets escalation
 
     @property
     def is_production(self) -> bool:

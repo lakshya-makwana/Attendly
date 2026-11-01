@@ -19,11 +19,16 @@ CREATE TABLE IF NOT EXISTS auth_login_attempts (
     account_id INTEGER NOT NULL REFERENCES admin_settings(id) ON DELETE CASCADE,
     scope VARCHAR(80) NOT NULL,
     failed_count INTEGER NOT NULL DEFAULT 0,
+    lockout_level INTEGER NOT NULL DEFAULT 0,
     locked_until TIMESTAMP WITH TIME ZONE,
     last_failed_at TIMESTAMP WITH TIME ZONE,
     updated_at TIMESTAMP WITH TIME ZONE,
     CONSTRAINT uq_login_attempt_account_scope UNIQUE (account_id, scope)
 );
+
+-- 1b. Escalating lockouts. Only needed where the table was created by an earlier revision of this
+--     work (e.g. create_all from commit 83dd89f); on a fresh database step 1 already includes it.
+ALTER TABLE auth_login_attempts ADD COLUMN IF NOT EXISTS lockout_level INTEGER NOT NULL DEFAULT 0;
 
 -- 2. Session epoch. Incrementing it revokes every session of the account.
 --    Existing accounts get 0, which is also the epoch of every token issued before this column

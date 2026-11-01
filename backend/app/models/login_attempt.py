@@ -18,8 +18,9 @@ class LoginAttempt(Base):
     id = Column(Integer, primary_key=True)
     account_id = Column(Integer, ForeignKey("admin_settings.id", ondelete="CASCADE"), nullable=False)
     scope = Column(String(80), nullable=False)
-    failed_count = Column(Integer, nullable=False, default=0, server_default="0")
-    locked_until = Column(DateTime(timezone=True), nullable=True)
+    failed_count = Column(Integer, nullable=False, default=0, server_default="0")  # failures since the last lockout
+    lockout_level = Column(Integer, nullable=False, default=0, server_default="0")  # lockouts in the current escalation
+    locked_until = Column(DateTime(timezone=True), nullable=True)  # end of the most recent lockout (may be past)
     last_failed_at = Column(DateTime(timezone=True), nullable=True)
     updated_at = Column(
         DateTime(timezone=True),

@@ -24,6 +24,7 @@ EXPECTED_COLUMNS = [
     ("auth_login_attempts", "account_id"),
     ("auth_login_attempts", "scope"),
     ("auth_login_attempts", "failed_count"),
+    ("auth_login_attempts", "lockout_level"),
     ("auth_login_attempts", "locked_until"),
     ("auth_login_attempts", "last_failed_at"),
     ("auth_login_attempts", "updated_at"),
