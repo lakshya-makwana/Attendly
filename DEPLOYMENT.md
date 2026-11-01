@@ -110,11 +110,41 @@ Environment variables are configured in the **Vercel Project Settings** under **
 
 | Variable Name | Required | Example / Format | Purpose |
 | :--- | :--- | :--- | :--- |
-| `DATABASE_URL` | **Yes** | `postgresql://user:pass@ep-xyz.aws.neon.tech/neondb?sslmode=require` | Pooled PostgreSQL connection string with SSL. |
-| `JWT_SECRET` | **Yes** | `f9c2d1b8...` (32+ character random hex string) | Cryptographic key used to sign and verify admin session JWTs. |
-| `ADMIN_MPIN` | Optional | `1234` | Cold-start seed fallback only if `admin_settings` is completely empty. Not used for normal login verification (MPIN is verified against PostgreSQL hash). |
+| `DATABASE_URL` | **Yes** | `postgresql://user:pass@ep-xyz.aws.neon.tech/neondb?sslmode=require` | Pooled PostgreSQL connection string with SSL. The app refuses to start without it. |
+| `JWT_SECRET` | **Yes** | output of `openssl rand -hex 32` | Signs admin session JWTs. Must be non-empty and must not be the old published default, or the app refuses to start. `SECRET_KEY` is accepted as a fallback name; do not set `JWT_SECRET` to an empty string. |
+| `ADMIN_MPIN` | Optional | 4–6 digits | Only bootstraps the admin account on an empty database. There is no default. If set, it must be 4–6 digits (an empty value is rejected); leave it unset once the account exists. |
 | `FRONTEND_URL` | Optional | `https://your-domain.vercel.app` | Comma-separated allowed CORS origins (used when accessing API from external domains). |
-| `ENVIRONMENT` | Optional | `production` | Environment flag (`production` or `development`). |
+| `ENVIRONMENT` | Optional | `production` | Off Vercel only. On Vercel the environment is taken from the system variable `VERCEL_ENV`. |
+| `PRODUCTION_DATABASE_HOSTS` | Optional | `ep-still-queen` | Extra comma-separated host markers that only the production deployment may use (the production Neon endpoint is built in). |
+| `LOGIN_*` | Optional | see `backend/app/core/config.py` | MPIN lockout tuning. Defaults: first lock after 10 (account) / 5 (client or trusted device) failures for 15 min; then every 3 failures doubles it up to 24 h; resets after 24 quiet hours. |
+
+`VERCEL` and `VERCEL_ENV` are set by Vercel automatically. Never set `ALLOW_REMOTE_DATABASE` on Vercel.
+
+### Environment isolation (Production / Preview / Development)
+
+Vercel scopes every variable to **Production**, **Preview** and/or **Development**. A variable added with the default checkboxes applies to **all three**, which would give every Preview deployment the production database and the production JWT secret. Preview code is whatever is on a branch, so anything available to Preview is available to anyone who can push a branch.
+
+| Variable | Production | Preview | Development |
+| :--- | :--- | :--- | :--- |
+| `DATABASE_URL` | Production Neon (pooled) | **Separate** database (see below) | Local PostgreSQL, or unset |
+| `JWT_SECRET` | Secret A | **Different** secret B | Unset (random per process) or secret C |
+| `ADMIN_MPIN` | Unset | Optional (bootstraps the empty preview DB) | Optional |
+| `FRONTEND_URL` | Production domain | Optional | Unset |
+| `ENVIRONMENT` | Optional (`production`) | **Do not set** | **Do not set** |
+
+Distinct JWT secrets matter as much as distinct databases: with a shared secret, a token signed by a preview deployment would be a valid signature in production.
+
+**Configure in the Vercel dashboard** (Project → Settings → Environment Variables):
+1. Edit `DATABASE_URL` and `JWT_SECRET` (and `SECRET_KEY` if present) and leave **only Production** ticked.
+2. Add a Preview-scoped `DATABASE_URL` for the preview database and a Preview-scoped `JWT_SECRET` generated with `openssl rand -hex 32`.
+3. Project → Settings → Deployment Protection: enable **Vercel Authentication** for Preview deployments so previews are not public.
+4. Until a preview database exists, either do not push other branches or skip preview builds (Project → Settings → Git → Ignored Build Step).
+
+**Preview database options**:
+- **Separate Neon project** (recommended): fully isolated, contains no production data. Tables are created by the app on first start; then apply `backend/scripts/migrate_auth_security.sql` and bootstrap with a Preview-scoped `ADMIN_MPIN` or `backend/scripts/seed_data.py`.
+- **Neon branch of production**: writes never reach production, and the branch has its own `ep-…` host, so the guard below allows it. But it contains a **copy of production data** (worker names, phone numbers, wages); treat it as production-sensitive.
+
+**Guard in code** (`backend/app/core/config.py`): any database host matching the production Neon endpoint is refused unless the deployment environment is production. On Vercel that is decided only by the system variable `VERCEL_ENV`; if it is missing the app fails closed. A Preview that inherits the production `DATABASE_URL` therefore refuses to start instead of connecting. The startup log shows which environment connected where, for example `[DATABASE SAFETY] Connected to database target: <host> (deployment environment: preview)`.
 
 > [!TIP]
 > Generate a secure `JWT_SECRET` locally using:
@@ -175,9 +205,51 @@ git status
 ### Post-Deployment Verification Steps:
 1. **Health Check**: Open `https://<your-vercel-domain>/health` &rarr; verify `{"status": "healthy"}`.
 2. **API Documentation**: Open `https://<your-vercel-domain>/docs` &rarr; verify Swagger UI renders.
-3. **Authentication**: Open `https://<your-vercel-domain>/login` &rarr; enter your configured `ADMIN_MPIN` &rarr; dashboard loads.
+3. **Authentication**: Open `https://<your-vercel-domain>/login` &rarr; enter your MPIN &rarr; dashboard loads.
 4. **Client-Side Refresh**: Navigate to `/attendance` and `/payroll` &rarr; press browser reload &rarr; confirm no 404 error occurs.
 5. **Data Flow**: Add a test worker or check-in &rarr; verify instantaneous update and ledger persistence.
+
+---
+
+## 6a. Authentication Security Deployment (migration first)
+
+The authentication security changes need schema objects that `create_all()` cannot add (it never alters existing tables). The new code selects `admin_settings.session_epoch` on every authenticated request, so **deploying before migrating breaks every API call**. The migration is additive and older code ignores it, so it is always safe to apply first.
+
+**Schema changes** (`backend/scripts/migrate_auth_security.sql`, idempotent):
+- New table `auth_login_attempts` (lockout counters, unique per account and scope).
+- New table `auth_trusted_devices` (SHA-256 hashes of trusted-device tokens) with index `ix_auth_trusted_devices_account_id`.
+- New column `admin_settings.session_epoch INTEGER NOT NULL DEFAULT 0`.
+
+**Sequence**:
+1. Check Production variables in Vercel (section 3): `DATABASE_URL`, non-empty `JWT_SECRET`, and `ADMIN_MPIN` unset or 4–6 digits.
+2. Back up production: `pg_dump "$DATABASE_URL" --no-owner --format=custom -f attendly_pre_auth_security.dump` (backups are git-ignored).
+3. Load the production URL without writing it to shell history: `read -rs DATABASE_URL && export DATABASE_URL`.
+4. Check what is missing: `backend/venv/bin/python backend/scripts/migrate_auth_security.py --confirm-host <production host> --verify-only`.
+5. Apply: `backend/venv/bin/python backend/scripts/migrate_auth_security.py --confirm-host <production host>` (or `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction -f backend/scripts/migrate_auth_security.sql`). Re-run `--verify-only` and expect "Verification passed".
+6. `unset DATABASE_URL`, then push `main` (Vercel deploys Production).
+7. Smoke test: `/api/health`; an already logged-in browser still works; MPIN login works; one wrong MPIN returns 401; the login response contains `device_token`; the function log shows `deployment environment: production`.
+
+**Compatibility**:
+- Existing sessions stay valid: they carry no session epoch and count as epoch 0, which every account starts at. The first MPIN change, or `admin_recovery.py revoke-sessions` / `reset-mpin`, revokes them along with every other earlier session.
+- Changing `JWT_SECRET` logs everyone out once and resets per-client lockout counters (they are keyed with the secret). Trusted devices stay trusted.
+
+**Rollback**:
+- Vercel → Deployments → previous production deployment → **Instant Rollback** (no rebuild), or `git revert` the commits and push.
+- Leave the schema in place: the previous code ignores the new tables and column, and tokens issued by the new code carry extra claims that the previous code ignores, so nobody is logged out by a rollback.
+- Only if the schema must be removed after rolling back the code: `DROP TABLE IF EXISTS auth_trusted_devices; DROP TABLE IF EXISTS auth_login_attempts; ALTER TABLE admin_settings DROP COLUMN IF EXISTS session_epoch;`
+
+### Admin recovery (locked out, lost MPIN, suspected compromise)
+
+Needs the database credentials, so it works when every login path is locked. Load `DATABASE_URL` as in step 3 above, then:
+
+```bash
+backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> status           # read-only
+backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> unlock           # clear lockouts
+backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> revoke-sessions  # log out everywhere
+backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> reset-mpin       # prompts for the new MPIN
+```
+
+A browser that has logged in before is a trusted device: it keeps logging in while others' failed guesses hold the account-wide lockout, so `unlock` is only needed for new browsers.
 
 ---
 
