@@ -12,17 +12,20 @@ Security-sensitive values have no hard-coded fallbacks:
 - Only the production deployment may use the production database. On Vercel the deployment
   environment comes from the system variable VERCEL_ENV (it cannot be set per project), so a
   Preview deployment that inherits the production DATABASE_URL refuses to start instead of
-  connecting. ALLOW_REMOTE_DATABASE does not override this.
+  connecting. ALLOW_REMOTE_DATABASE does not override this. Every connection-string form libpq
+  accepts is inspected (see classify_database_target); a target that cannot be classified is refused.
 """
 import logging
 import os
+import re
 import secrets
 import urllib.parse
-from typing import Optional
+from typing import Optional, Tuple
 
 from dotenv import load_dotenv
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy.engine import make_url
 
 load_dotenv()
 
@@ -53,10 +56,90 @@ def _env_flag(name: str) -> bool:
     return os.getenv(name, "").strip().lower() in {"1", "true", "yes"}
 
 
-def is_production_database_host(host: str) -> bool:
+DB_TARGET_PRODUCTION = "production"
+DB_TARGET_OTHER = "other"
+DB_TARGET_UNCLASSIFIABLE = "unclassifiable"
+
+# libpq falls back to these when the connection string leaves a parameter out, so they can change the
+# real target (host, endpoint via options/password, or a whole service definition).
+_LIBPQ_TARGET_ENV_VARS = (
+    "PGHOST", "PGHOSTADDR", "PGPORT", "PGOPTIONS", "PGPASSWORD", "PGUSER", "PGDATABASE", "PGSERVICE", "PGSERVICEFILE",
+)
+# Neon accepts the endpoint id outside the hostname for clients without SNI: `options=endpoint=ep-…`
+# or a password of the form `endpoint=ep-…;secret`.
+_NEON_ENDPOINT_PARAM = re.compile(r"endpoint\s*[=:]\s*ep-[a-z0-9-]+")
+
+
+def _production_markers() -> tuple:
     extra = [m.strip().lower() for m in os.getenv("PRODUCTION_DATABASE_HOSTS", "").split(",") if m.strip()]
-    host = (host or "").lower()
-    return any(marker in host for marker in (*_PRODUCTION_DB_HOST_MARKERS, *extra))
+    return (*_PRODUCTION_DB_HOST_MARKERS, *extra)
+
+
+def _decoded_forms(value: str) -> list:
+    """The value lower-cased and repeatedly percent-decoded, so encoded markers cannot hide."""
+    forms, current = [], (value or "").lower()
+    for _ in range(4):
+        forms.append(current)
+        decoded = urllib.parse.unquote_plus(current).lower()
+        if decoded == current:
+            break
+        current = decoded
+    return forms
+
+
+def _mentions_marker(value: str, markers: tuple) -> bool:
+    # A marker counts only as a whole name component (so "ep-still-queen-a1b2" and "ep-still-queen."
+    # match, but "ep-still-queenie" or "xep-still-queen" do not).
+    for form in _decoded_forms(value):
+        for marker in markers:
+            if re.search(r"(?<![a-z0-9-])" + re.escape(marker) + r"(?![a-z0-9])", form):
+                return True
+    return False
+
+
+def classify_database_target(url: str) -> Tuple[str, str]:
+    """
+    Classifies where a DATABASE_URL really connects: DB_TARGET_PRODUCTION, DB_TARGET_OTHER, or
+    DB_TARGET_UNCLASSIFIABLE (with a reason) when the target is decided somewhere this process cannot
+    inspect. Callers outside production must treat anything but DB_TARGET_OTHER as forbidden.
+    """
+    markers = _production_markers()
+    env = {name: os.environ[name] for name in _LIBPQ_TARGET_ENV_VARS if os.environ.get(name)}
+
+    # 1. The production endpoint named anywhere libpq could take it from: hostname, multi-host lists,
+    #    ?host=, ?options=, credentials, keyword-style strings, or PG* environment fallbacks.
+    if _mentions_marker(url, markers) or any(_mentions_marker(v, markers) for v in env.values()):
+        return DB_TARGET_PRODUCTION, "it names the production database"
+
+    try:
+        parsed = make_url(fix_database_url((url or "").strip()))
+    except Exception:
+        return DB_TARGET_UNCLASSIFIABLE, "it is not a postgresql:// URL (keyword-style or malformed)"
+    if not parsed.drivername.startswith("postgresql"):
+        return DB_TARGET_UNCLASSIFIABLE, f"driver '{parsed.drivername}' is not PostgreSQL"
+
+    query = {k.lower(): (v if isinstance(v, tuple) else (v,)) for k, v in parsed.query.items()}
+    if "service" in query or "PGSERVICE" in env or "PGSERVICEFILE" in env:
+        return DB_TARGET_UNCLASSIFIABLE, "the target comes from a libpq service definition"
+
+    hosts = list((parsed.host or "").split(","))
+    for value in query.get("host", ()):
+        hosts += value.split(",")
+    hosts = [h.strip().lower() for h in hosts if h.strip()]
+    if not hosts and "PGHOST" in env:
+        hosts = [h.strip().lower() for h in env["PGHOST"].split(",") if h.strip()]
+    if not hosts and (query.get("hostaddr") or "PGHOSTADDR" in env):
+        return DB_TARGET_UNCLASSIFIABLE, "it connects by IP address (hostaddr) without a host name"
+
+    endpoint_sources = [parsed.password or "", *query.get("options", ()), env.get("PGOPTIONS", ""), env.get("PGPASSWORD", "")]
+    endpoint_named = any(_NEON_ENDPOINT_PARAM.search(form) for s in endpoint_sources for form in _decoded_forms(s))
+    for host in hosts:
+        if host == "neon.tech" or host.endswith(".neon.tech"):
+            if not host.split(".")[0].startswith("ep-") and not endpoint_named:
+                return DB_TARGET_UNCLASSIFIABLE, (
+                    f"Neon host '{host}' does not name an endpoint (it could come from a password file)"
+                )
+    return DB_TARGET_OTHER, ""
 
 
 class Settings(BaseSettings):
@@ -107,13 +190,19 @@ def _validate(settings: Settings) -> None:
     if not settings.DATABASE_URL:
         raise ConfigurationError("DATABASE_URL is not configured.")
 
-    db_host = (urllib.parse.urlparse(fix_database_url(settings.DATABASE_URL)).hostname or "").lower()
-    if is_production_database_host(db_host) and not settings.is_production_deployment:
-        raise ConfigurationError(
-            f"Refusing to connect the '{settings.deployment_environment}' environment to the production "
-            f"database host '{db_host}'. Preview and development deployments must use their own database "
-            "(see DEPLOYMENT.md, 'Environment isolation')."
-        )
+    if not settings.is_production_deployment:
+        target, reason = classify_database_target(settings.DATABASE_URL)
+        if target == DB_TARGET_PRODUCTION:
+            raise ConfigurationError(
+                f"Refusing to connect the '{settings.deployment_environment}' environment to the production "
+                "database. Preview and development deployments must use their own database "
+                "(see DEPLOYMENT.md, 'Environment isolation')."
+            )
+        if target != DB_TARGET_OTHER:
+            raise ConfigurationError(
+                f"Refusing to start the '{settings.deployment_environment}' environment: the database target "
+                f"cannot be safely classified ({reason}). Use a postgresql:// URL with an explicit host name."
+            )
 
     secret = (settings.SECRET_KEY or "").strip()
     if secret in _KNOWN_INSECURE_SECRETS:

@@ -161,7 +161,7 @@ def test_production_database_isolation():
     secret = "x" * 64
 
     def blocked(url, **env):
-        base = {"VERCEL": None, "VERCEL_ENV": None, "ALLOW_REMOTE_DATABASE": None, "PRODUCTION_DATABASE_HOSTS": None}
+        base = {**_CLEAN_DB_ENV}
         with _env(**{**base, **env}):
             try:
                 _validate(Settings(DATABASE_URL=url, JWT_SECRET=secret, ENVIRONMENT=env.get("ENVIRONMENT", "development")))
@@ -183,6 +183,91 @@ def test_production_database_isolation():
     assert not blocked(preview_db, VERCEL="1", VERCEL_ENV="preview"), "Preview may use its own separate Neon database"
     print("✔ Config: only the production deployment may use the production database (Preview, vercel dev, "
           "missing VERCEL_ENV and local dev are refused).")
+
+
+_CLEAN_DB_ENV = {
+    "VERCEL": None, "VERCEL_ENV": None, "ALLOW_REMOTE_DATABASE": None, "PRODUCTION_DATABASE_HOSTS": None,
+    **{name: None for name in ("PGHOST", "PGHOSTADDR", "PGPORT", "PGOPTIONS", "PGPASSWORD", "PGUSER",
+                               "PGDATABASE", "PGSERVICE", "PGSERVICEFILE")},
+}
+
+
+def test_database_target_classification():
+    """Every connection-string form libpq accepts, evaluated as a Preview deployment would."""
+    secret = "x" * 64
+    region = "ap-southeast-1.aws.neon.tech"
+
+    def outcome(url, **env):
+        with _env(**{**_CLEAN_DB_ENV, "VERCEL": "1", "VERCEL_ENV": "preview", **env}):
+            try:
+                _validate(Settings(DATABASE_URL=url, JWT_SECRET=secret))
+            except ConfigurationError as e:
+                return "production" if "production database" in str(e) else "unclassifiable"
+            return "allowed"
+
+    production_forms = {
+        "hostname": f"postgresql://u:p@ep-still-queen-a1b2-pooler.{region}/neondb",
+        "uppercase hostname": f"postgresql://u:p@EP-STILL-QUEEN-A1B2.{region.upper()}/neondb",
+        "percent-encoded hostname": f"postgresql://u:p@%65p-still-queen-a1b2.{region}/neondb",
+        "double-encoded hostname": f"postgresql://u:p@%2565p-still-queen-a1b2.{region}/neondb",
+        "options=endpoint (audit bypass 1)": f"postgresql://u:p@{region}/neondb?options=endpoint%3Dep-still-queen-a1b2",
+        "endpoint in password (audit bypass 2)": f"postgresql://u:endpoint=ep-still-queen-a1b2;p@{region}/neondb",
+        "?host= parameter (audit bypass 3)": f"postgresql://u:p@/neondb?host=ep-still-queen-a1b2.{region}",
+        "multi-host list": f"postgresql://u:p@localhost,ep-still-queen-a1b2.{region}/neondb",
+        "endpoint in username": f"postgresql://ep-still-queen-a1b2:p@{region}/neondb",
+        "keyword-style DSN": f"host=ep-still-queen-a1b2.{region} dbname=neondb user=u",
+        "postgres:// scheme": f"postgres://u:p@ep-still-queen-a1b2.{region}/neondb",
+        "psycopg2 driver name": f"postgresql+psycopg2://u:p@ep-still-queen-a1b2.{region}/neondb",
+    }
+    for name, url in production_forms.items():
+        assert outcome(url) == "production", f"{name}: {outcome(url)}"
+
+    env_forms = {
+        "PGHOST with hostless URL": ("postgresql:///neondb", {"PGHOST": f"ep-still-queen-a1b2.{region}"}),
+        "PGOPTIONS endpoint": (f"postgresql://u:p@{region}/neondb", {"PGOPTIONS": "endpoint=ep-still-queen-a1b2"}),
+        "PGPASSWORD endpoint": (f"postgresql://u@{region}/neondb", {"PGPASSWORD": "endpoint=ep-still-queen-a1b2;p"}),
+        "PRODUCTION_DATABASE_HOSTS extension": ("postgresql://u:p@db.internal.example/app",
+                                                {"PRODUCTION_DATABASE_HOSTS": "db.internal.example"}),
+    }
+    for name, (url, env) in env_forms.items():
+        assert outcome(url, **env) == "production", f"{name}: {outcome(url, **env)}"
+
+    unclassifiable = {
+        "Neon regional host, endpoint hidden (e.g. .pgpass)": (f"postgresql://u@{region}/neondb", {}),
+        "service= parameter": ("postgresql:///?service=attendly", {}),
+        "PGSERVICE environment": ("postgresql://u@localhost/app", {"PGSERVICE": "attendly"}),
+        "PGSERVICEFILE environment": ("postgresql://u@localhost/app", {"PGSERVICEFILE": "/tmp/pg_service.conf"}),
+        "hostaddr without host name": ("postgresql://u:p@/neondb?hostaddr=203.0.113.10", {}),
+        "PGHOSTADDR without host name": ("postgresql:///neondb", {"PGHOSTADDR": "203.0.113.10"}),
+        "keyword-style DSN without marker": ("host=localhost dbname=app", {}),
+        "malformed": ("not a url at all", {}),
+        "non-PostgreSQL driver": ("sqlite:///tmp/attendly.db", {}),
+    }
+    for name, (url, env) in unclassifiable.items():
+        assert outcome(url, **env) == "unclassifiable", f"{name}: {outcome(url, **env)}"
+
+    allowed = {
+        "separate Neon endpoint": f"postgresql://u:p@ep-other-preview-d4e5-pooler.{region}/neondb",
+        "regional host + other endpoint in options": f"postgresql://u:p@{region}/neondb?options=endpoint%3Dep-other-preview-d4e5",
+        "regional host + other endpoint in password": f"postgresql://u:endpoint=ep-other-preview-d4e5;p@{region}/neondb",
+        "similar but different endpoint name": f"postgresql://u:p@ep-still-queenie-a1b2.{region}/neondb",
+        "marker inside another label": f"postgresql://u:p@xep-still-queen.example.com/app",
+        "localhost": "postgresql://localhost:5432/attendly_test",
+        "unix socket default": "postgresql:///attendly",
+        "unix socket via host=": "postgresql:///attendly?host=/var/run/postgresql",
+        "hostaddr with host name": "postgresql://u:p@db.example.com/app?hostaddr=203.0.113.10",
+        "unrelated managed host": "postgresql://u:p@db.abc.eu-west-1.rds.amazonaws.com/app",
+    }
+    for name, url in allowed.items():
+        assert outcome(url) == "allowed", f"{name}: {outcome(url)}"
+
+    # The production deployment itself is never restricted by classification.
+    with _env(**{**_CLEAN_DB_ENV, "VERCEL": "1", "VERCEL_ENV": "production"}):
+        for url in (*production_forms.values(), unclassifiable["Neon regional host, endpoint hidden (e.g. .pgpass)"][0]):
+            if url.startswith("postgres"):
+                _validate(Settings(DATABASE_URL=url, JWT_SECRET=secret))
+    print(f"✔ Config: {len(production_forms) + len(env_forms)} production connection forms refused, "
+          f"{len(unclassifiable)} unclassifiable forms fail closed, {len(allowed)} unrelated targets allowed.")
 
 
 # ---------------------------------------------------------------- lockout policy
@@ -649,7 +734,8 @@ def test_demo_login_still_works():
 def run():
     print("\n=== Stage 2: Authentication & configuration security tests ===")
     tests = [
-        test_config_hardening, test_production_database_isolation, test_threshold_and_duration, test_expiry_and_reset,
+        test_config_hardening, test_production_database_isolation, test_database_target_classification,
+        test_threshold_and_duration, test_expiry_and_reset,
         test_escalation_and_cap, test_escalation_decay, test_client_isolation_and_account_limit, test_accounts_isolated, test_concurrent_attempts,
         test_login_endpoint_contract, test_session_validation, test_session_epoch_revocation_is_exact,
         test_trusted_device_resists_lockout_dos, test_trusted_device_validity, test_trusted_device_http_flow,
