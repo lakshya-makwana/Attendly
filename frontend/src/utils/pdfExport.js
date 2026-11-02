@@ -372,7 +372,7 @@ export const exportSiteReportPdf = async ({
         w.worker_name,
         parseFloat(w.work_units || 0).toFixed(1),
         formatINR(w.daily_wage),
-        formatINR(w.labour_cost)
+        formatINR(w.labour_expense)
       ])
     : [['-', 'No workers logged attendance at this site', '0.0', 'Rs. 0', 'Rs. 0']];
 

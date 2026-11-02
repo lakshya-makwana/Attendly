@@ -190,7 +190,7 @@ export const exportSiteReportExcel = async ({
         w.worker_name,
         parseFloat(w.work_units || 0),
         parseFloat(w.daily_wage || 0),
-        parseFloat(w.labour_cost || 0)
+        parseFloat(w.labour_expense || 0)
       ]);
     });
   } else {
