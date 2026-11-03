@@ -63,15 +63,10 @@ export const AuthProvider = ({ children }) => {
     checkAuth();
   }, []);
 
-  // `enrolmentCode`: optional one-time recovery code (admin_recovery.py enrol-device) that, together with
-  // the MPIN, makes this browser a trusted device while the account-wide lockout is active.
-  const loginWithMpin = async (mpin, enrolmentCode) => {
+  const loginWithMpin = async (mpin) => {
     try {
       const deviceToken = readDeviceToken();
-      const body = enrolmentCode
-        ? { mpin, enrolment_code: enrolmentCode }
-        : (deviceToken ? { mpin, device_token: deviceToken } : { mpin });
-      const response = await api.post('/auth/login-mpin', body);
+      const response = await api.post('/auth/login-mpin', deviceToken ? { mpin, device_token: deviceToken } : { mpin });
       const { access_token, app_title, is_demo, device_token } = response.data;
       if (device_token) saveDeviceToken(device_token);
       sessionStorage.setItem('attendly_session_active', 'true');

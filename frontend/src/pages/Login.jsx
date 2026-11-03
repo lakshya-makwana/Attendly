@@ -6,8 +6,7 @@ import {
   Typography,
   Button,
   Alert,
-  CircularProgress,
-  TextField
+  CircularProgress
 } from '@mui/material';
 import {
   LockOutlined as LockIcon,
@@ -16,31 +15,20 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 const MPIN_LENGTH = 4;
-const RECOVERY_CODE_LENGTH = 12; // characters, ignoring separators (backend app/services/enrolment.py)
 
 const Login = () => {
   const [mpin, setMpin] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [shake, setShake] = useState(false);
-  // One-time recovery code (admin_recovery.py enrol-device) for enrolling a new browser during a lockout.
-  const [showRecovery, setShowRecovery] = useState(false);
-  const [recoveryCode, setRecoveryCode] = useState('');
 
   const mpinRef = useRef('');
-  const recoveryCodeRef = useRef('');
   const submittingRef = useRef(false);
   const shakeTimerRef = useRef(null);
   const keypadRef = useRef(null);
 
   const { loginWithMpin, loginDemo } = useAuth();
   const navigate = useNavigate();
-
-  // Moves focus out of the recovery-code field to the keypad, so physical-keyboard digits enter the MPIN.
-  const focusKeypad = useCallback(() => {
-    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
-    keypadRef.current?.focus();
-  }, []);
 
   const triggerShake = useCallback(() => {
     if (shakeTimerRef.current) clearTimeout(shakeTimerRef.current);
@@ -71,12 +59,8 @@ const Login = () => {
 
     try {
       let res;
-      const enrolmentCode = recoveryCodeRef.current.trim();
-      if (enrolmentCode) {
-        // Recovery enrolment: the code plus the MPIN make this browser a trusted device.
-        res = await loginWithMpin(pinToSubmit, enrolmentCode);
-      } else if (pinToSubmit === '1234') {
-        // MPIN 1234 authenticates to the existing DEMO account via existing backend endpoint
+      // MPIN 1234 authenticates to the existing DEMO account via existing backend endpoint
+      if (pinToSubmit === '1234') {
         res = await loginDemo();
       } else {
         // Any other 4-digit MPIN is validated by backend against the administrator credentials
@@ -84,16 +68,7 @@ const Login = () => {
       }
 
       if (res.success) {
-        recoveryCodeRef.current = '';
         navigate('/', { replace: true });
-        return;
-      }
-
-      // Recovery code rejected (invalid, expired or already used): show why; the MPIN was not checked.
-      if (enrolmentCode && res.status === 400) {
-        setError(res.message || 'This recovery code is invalid, expired or already used.');
-        mpinRef.current = '';
-        setMpin('');
         return;
       }
 
@@ -184,11 +159,7 @@ const Login = () => {
 
   // Hardware keyboard and paste handling
   useEffect(() => {
-    // Typing or pasting into a text field (the recovery code) must not feed the MPIN keypad.
-    const isTextInput = (target) => target instanceof Element && Boolean(target.closest('input, textarea'));
-
     const handleKeyDown = (e) => {
-      if (isTextInput(e.target)) return;
       // Ignore modified keys (Ctrl, Alt, Meta)
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (submittingRef.current) return;
@@ -211,7 +182,6 @@ const Login = () => {
     };
 
     const handlePaste = (e) => {
-      if (isTextInput(e.target)) return;
       if (submittingRef.current) return;
       const pasted = e.clipboardData?.getData('text') || '';
       const cleanDigits = pasted.replace(/\D/g, '').slice(0, MPIN_LENGTH);
@@ -604,57 +574,6 @@ const Login = () => {
             >
               <BackspaceIcon sx={{ fontSize: { xs: 20, sm: 22 } }} />
             </Button>
-          </Box>
-
-          {/* Recovery enrolment for a new browser while the account is locked */}
-          <Box sx={{ mt: { xs: 2, sm: 2.5 }, textAlign: 'center' }}>
-            {showRecovery ? (
-              <TextField
-                label="Recovery code"
-                placeholder="XXXX-XXXX-XXXX"
-                value={recoveryCode}
-                onChange={(e) => {
-                  const value = e.target.value.toUpperCase().slice(0, 32);
-                  const wasComplete = recoveryCodeRef.current.replace(/[^A-Z0-9]/g, '').length >= RECOVERY_CODE_LENGTH;
-                  recoveryCodeRef.current = value;
-                  setRecoveryCode(value);
-                  setError('');
-                  // Once the full code is typed or pasted, hand the keyboard to the MPIN keypad.
-                  if (!wasComplete && value.replace(/[^A-Z0-9]/g, '').length >= RECOVERY_CODE_LENGTH) {
-                    focusKeypad();
-                  }
-                }}
-                onKeyDown={(e) => {
-                  // Enter moves on to the MPIN without submitting anything.
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    focusKeypad();
-                  }
-                }}
-                disabled={submitting}
-                size="small"
-                fullWidth
-                autoFocus
-                autoComplete="off"
-                helperText="Enter the code, press Enter, then type your MPIN or use the keypad."
-                slotProps={{
-                  htmlInput: { autoCapitalize: 'characters', spellCheck: false, autoCorrect: 'off', 'aria-label': 'Recovery code' }
-                }}
-              />
-            ) : (
-              <Button
-                variant="text"
-                size="small"
-                onClick={(e) => {
-                  e.currentTarget.blur();
-                  setShowRecovery(true);
-                }}
-                disabled={submitting}
-                sx={{ textTransform: 'none', color: '#71717a', fontWeight: 500 }}
-              >
-                Use a recovery code
-              </Button>
-            )}
           </Box>
 
           {/* Demo Password Hint centered below keypad */}

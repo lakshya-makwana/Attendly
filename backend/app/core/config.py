@@ -164,7 +164,6 @@ class Settings(BaseSettings):
     LOGIN_DEVICE_MAX_FAILED_ATTEMPTS: int = 5     # per trusted device before that device's first lockout
     LOGIN_MAX_TRUSTED_DEVICES: int = 10           # active trusted devices per account (oldest revoked beyond this)
     LOGIN_TRUSTED_DEVICE_DAYS: int = 90           # a trusted device unused for this long must log in anonymously again
-    LOGIN_ENROLMENT_MAX_MPIN_ATTEMPTS: int = 3    # wrong MPINs with one recovery enrolment code before it is burned
 
     @property
     def is_production(self) -> bool:

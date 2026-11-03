@@ -218,7 +218,7 @@ The authentication security changes need schema objects that `create_all()` cann
 **Schema changes** (`backend/scripts/migrate_auth_security.sql`, idempotent):
 - New table `auth_login_attempts` (lockout counters, unique per account and scope).
 - New table `auth_trusted_devices` (SHA-256 hashes of trusted-device tokens) with index `ix_auth_trusted_devices_account_id`.
-- New table `auth_enrolment_codes` (SHA-256 hashes of one-time recovery codes) with index `ix_auth_enrolment_codes_account_id`.
+- New table `auth_enrolment_codes` with index `ix_auth_enrolment_codes_account_id`. Unused since the one-time recovery-code feature was removed; kept so existing data and the idempotent migration stay untouched.
 - New column `admin_settings.session_epoch INTEGER NOT NULL DEFAULT 0`.
 
 **Sequence**:
@@ -248,27 +248,11 @@ Needs the database credentials, so it works when every login path is locked. Loa
 ```bash
 backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> status           # read-only
 backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> unlock           # clear lockouts
-backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> enrol-device     # one-time recovery code
 backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> revoke-sessions  # log out everywhere
 backend/venv/bin/python backend/scripts/admin_recovery.py --confirm-host <host> reset-mpin       # prompts for the new MPIN
 ```
 
-**Which tool to use:**
-
-| Situation | What works |
-| :--- | :--- |
-| Locked out on a browser that has logged in before | Nothing to do: it is a trusted device with its own lockout bucket and keeps logging in while others' guesses hold the account-wide lockout. |
-| Locked out on a **new** browser (new phone, cleared storage, iOS home-screen app vs Safari, or unused for 90 days) | `enrol-device` (below). `unlock` alone is not reliable here: it clears the counters, but an ongoing attacker can lock the account again after 10 guesses. |
-| Lockout caused by your own typos, no attack | `unlock`, or wait for the lockout to end. |
-| Lost or suspected-leaked MPIN | `reset-mpin` (also logs out all sessions, forgets trusted devices, revokes pending recovery codes and clears lockouts). |
-| Lost or stolen device | `revoke-sessions` (logs out everywhere, forgets every trusted device, revokes pending recovery codes). Changing the MPIN in the app does the same. |
-
-**Enrolling a new browser with a recovery code** (`enrol-device`):
-1. Run `enrol-device` (optionally `--minutes N`, 1–60, default 15). It prints a code such as `K7QM-2XRP-9WDF`.
-2. On the new browser's login screen choose **Use a recovery code**, enter the code, then enter your MPIN on the keypad.
-3. The browser becomes a trusted device and logs in, even while the account-wide lockout is active. The lockout itself stays in place for everyone else.
-
-The code is not a password replacement: without the correct MPIN it grants nothing, and it can only produce the same single session and trusted device that a normal login produces. It is 60 bits of CSPRNG output, only its SHA-256 hash is stored, it is single-use (consumed in the same transaction that enrols the device; concurrent or replayed uses are rejected), expires after its lifetime, and is burned after 3 wrong MPINs. Generating a new code revokes any earlier unused one. Anyone who can run this tool already holds the database credentials (and could reset the MPIN), so it adds no new way in.
+A browser that has logged in before is a trusted device: it keeps logging in while others' failed guesses hold the account-wide lockout, so `unlock` is only needed for new browsers.
 
 ---
 

@@ -11,30 +11,18 @@ Commands (default account: the primary, non-demo admin):
   revoke-sessions  Log out every session and forget every trusted device.
   reset-mpin       Set a new MPIN (prompted, never echoed or passed as an argument), then
                    revoke sessions and devices and clear lockouts.
-  enrol-device     Print a one-time recovery code (single use, expires after --minutes, default 15).
-                   On a new browser, choose "Use a recovery code", enter it, then the MPIN: that
-                   browser becomes a trusted device even while the account-wide lockout is active.
-                   The code alone grants nothing; the correct MPIN is still required.
 
   DATABASE_URL='postgresql://...' python scripts/admin_recovery.py --confirm-host <host> status
 """
 import argparse
 import getpass
-import hashlib
 import os
-import secrets
 import sys
 import urllib.parse
 from typing import Optional
 
 import bcrypt
 from sqlalchemy import create_engine, text
-
-# Must match app/services/enrolment.py.
-CODE_ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ"
-CODE_LENGTH = 12
-DEFAULT_CODE_MINUTES = 15
-MAX_CODE_MINUTES = 60
 
 
 def primary_account_id(conn) -> int:
@@ -57,45 +45,15 @@ def status(conn, account_id: int) -> dict:
     devices = conn.execute(text(
         "SELECT count(*) FROM auth_trusted_devices WHERE account_id = :id AND revoked_at IS NULL"
     ), {"id": account_id}).scalar()
-    codes = conn.execute(text(
-        "SELECT count(*) FROM auth_enrolment_codes WHERE account_id = :id "
-        "AND used_at IS NULL AND revoked_at IS NULL AND expires_at > now()"
-    ), {"id": account_id}).scalar()
-    return {"account": dict(account), "buckets": [dict(b) for b in buckets], "active_trusted_devices": devices,
-            "pending_enrolment_codes": codes}
+    return {"account": dict(account), "buckets": [dict(b) for b in buckets], "active_trusted_devices": devices}
 
 
 def unlock(conn, account_id: int) -> int:
     return conn.execute(text("DELETE FROM auth_login_attempts WHERE account_id = :id"), {"id": account_id}).rowcount
 
 
-def create_enrolment_code(conn, account_id: int, minutes: int = DEFAULT_CODE_MINUTES) -> tuple:
-    """
-    Creates a one-time enrolment code and returns (display code, expires_at). Any earlier unused code
-    of the account is revoked, so at most one is valid at a time. Only the SHA-256 hash is stored;
-    hashing and normalisation must match app/services/enrolment.py (covered by the test suite).
-    """
-    if not (1 <= int(minutes) <= MAX_CODE_MINUTES):
-        raise SystemExit(f"--minutes must be between 1 and {MAX_CODE_MINUTES}.")
-    if conn.execute(text("SELECT 1 FROM admin_settings WHERE id = :id"), {"id": account_id}).first() is None:
-        raise SystemExit(f"Account {account_id} does not exist.")
-    code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(CODE_LENGTH))
-    conn.execute(text(
-        "UPDATE auth_enrolment_codes SET revoked_at = now() "
-        "WHERE account_id = :id AND used_at IS NULL AND revoked_at IS NULL"
-    ), {"id": account_id})
-    expires_at = conn.execute(text(
-        "INSERT INTO auth_enrolment_codes (account_id, code_hash, created_at, expires_at, failed_attempts) "
-        "VALUES (:id, :h, now(), now() + make_interval(mins => :m), 0) RETURNING expires_at"
-    ), {"id": account_id, "h": hashlib.sha256(code.encode("utf-8")).hexdigest(), "m": int(minutes)}).scalar()
-    return "-".join(code[i:i + 4] for i in range(0, CODE_LENGTH, 4)), expires_at
-
-
 def revoke_sessions(conn, account_id: int) -> int:
     conn.execute(text("UPDATE admin_settings SET session_epoch = session_epoch + 1 WHERE id = :id"), {"id": account_id})
-    conn.execute(text(
-        "UPDATE auth_enrolment_codes SET revoked_at = now() WHERE account_id = :id AND used_at IS NULL AND revoked_at IS NULL"
-    ), {"id": account_id})
     return conn.execute(text(
         "UPDATE auth_trusted_devices SET revoked_at = now() WHERE account_id = :id AND revoked_at IS NULL"
     ), {"id": account_id}).rowcount
@@ -125,8 +83,7 @@ def _prompt_new_mpin() -> str:
 def _print_status(info: dict) -> None:
     acc = info["account"]
     print(f"Account {acc['id']} ({acc['account_type']}, demo={acc['is_demo']}), session epoch {acc['session_epoch']}, "
-          f"{info['active_trusted_devices']} active trusted device(s), "
-          f"{info['pending_enrolment_codes']} pending recovery code(s)")
+          f"{info['active_trusted_devices']} active trusted device(s)")
     if not info["buckets"]:
         print("  No lockout counters.")
     for b in info["buckets"]:
@@ -139,9 +96,7 @@ def main(argv: Optional[list] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--confirm-host", required=True, help="Exact hostname of the target database.")
     parser.add_argument("--account-id", type=int, help="Defaults to the primary (non-demo) admin account.")
-    parser.add_argument("--minutes", type=int, default=DEFAULT_CODE_MINUTES,
-                        help=f"enrol-device only: code lifetime, 1-{MAX_CODE_MINUTES} minutes (default {DEFAULT_CODE_MINUTES}).")
-    parser.add_argument("command", choices=["status", "unlock", "revoke-sessions", "reset-mpin", "enrol-device"])
+    parser.add_argument("command", choices=["status", "unlock", "revoke-sessions", "reset-mpin"])
     args = parser.parse_args(argv)
 
     url = os.environ.get("DATABASE_URL", "")
@@ -166,12 +121,6 @@ def main(argv: Optional[list] = None) -> int:
             elif args.command == "reset-mpin":
                 reset_mpin(conn, account_id, new_mpin)
                 print("MPIN reset. All sessions and trusted devices revoked; lockouts cleared.")
-            elif args.command == "enrol-device":
-                code, expires_at = create_enrolment_code(conn, account_id, args.minutes)
-                print(f"One-time recovery code: {code}")
-                print(f"Valid until {expires_at:%Y-%m-%d %H:%M %Z}, single use; any earlier unused code is revoked.")
-                print("On the new browser: Login -> 'Use a recovery code' -> enter the code, then your MPIN.")
-                print("The code alone grants nothing; the MPIN is still required. 3 wrong MPINs burn the code.")
             _print_status(status(conn, account_id))
         return 0
     finally:

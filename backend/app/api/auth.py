@@ -12,7 +12,6 @@ from ..models.admin import AdminSettings
 from ..schemas.schemas import LoginMPINRequest, TokenResponse, ChangeMPINRequest
 from ..services.login_throttle import InvalidMpin, LoginLocked, verify_mpin_with_throttle
 from ..services.trusted_devices import find_active_device, issue_device, revoke_all_devices, touch_device
-from ..services.enrolment import InvalidEnrolmentCode, enrol_with_code, revoke_pending_codes
 
 logger = logging.getLogger(__name__)
 
@@ -77,39 +76,25 @@ def login_with_mpin(req: LoginMPINRequest, request: Request, db: Session = Depen
         logger.error("Login attempted but no admin account exists and ADMIN_MPIN is not configured.")
         raise incorrect
 
-    if req.enrolment_code:
-        # Recovery enrolment: the one-time code plus the correct MPIN register this browser as a trusted
-        # device without going through the (possibly attacker-locked) anonymous buckets.
-        try:
-            device_token = enrol_with_code(db, admin_setting, req.enrolment_code, req.mpin)
-        except InvalidEnrolmentCode:
-            logger.warning("Rejected invalid, expired or used enrolment code for account %s.", admin_setting.id)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                                detail="This recovery code is invalid, expired or already used.")
-        except InvalidMpin:
-            logger.info("Incorrect MPIN with an enrolment code for account %s.", admin_setting.id)
-            raise incorrect
-        logger.info("New trusted device enrolled with a recovery code for account %s.", admin_setting.id)
-    else:
-        device = find_active_device(db, admin_setting.id, req.device_token)
-        try:
-            verify_mpin_with_throttle(
-                db, admin_setting, req.mpin, _client_ip(request), device_id=device.id if device else None
-            )
-        except LoginLocked as locked:
-            logger.warning("MPIN login rejected: lockout active for account %s (trusted device: %s).",
-                           admin_setting.id, bool(device))
-            raise _locked_response(locked)
-        except InvalidMpin:
-            logger.info("Incorrect MPIN for account %s (trusted device: %s).", admin_setting.id, bool(device))
-            raise incorrect
+    device = find_active_device(db, admin_setting.id, req.device_token)
+    try:
+        verify_mpin_with_throttle(
+            db, admin_setting, req.mpin, _client_ip(request), device_id=device.id if device else None
+        )
+    except LoginLocked as locked:
+        logger.warning("MPIN login rejected: lockout active for account %s (trusted device: %s).",
+                       admin_setting.id, bool(device))
+        raise _locked_response(locked)
+    except InvalidMpin:
+        logger.info("Incorrect MPIN for account %s (trusted device: %s).", admin_setting.id, bool(device))
+        raise incorrect
 
-        if device:
-            touch_device(device)
-            device_token = req.device_token
-        else:
-            device_token = issue_device(db, admin_setting.id)
-        db.commit()
+    if device:
+        touch_device(device)
+        device_token = req.device_token
+    else:
+        device_token = issue_device(db, admin_setting.id)
+    db.commit()
 
     access_token = create_access_token(
         data={"sub": str(admin_setting.id), "account_id": admin_setting.id, "is_demo": False},
@@ -194,7 +179,6 @@ def change_mpin(
     admin_setting.hashed_mpin = hash_mpin(req.new_mpin)
     revoke_all_sessions(admin_setting)
     revoke_all_devices(db, admin_setting.id)
-    revoke_pending_codes(db, admin_setting.id)
     device_token = issue_device(db, admin_setting.id)
     db.commit()
     db.refresh(admin_setting)

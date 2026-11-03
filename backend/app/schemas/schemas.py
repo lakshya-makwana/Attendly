@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field, field_validator
 class LoginMPINRequest(BaseModel):
     mpin: str = Field(..., min_length=4, max_length=6, description="4 or 6 digit numeric MPIN")
     device_token: Optional[str] = Field(None, max_length=128, description="Trusted-device token from an earlier login")
-    enrolment_code: Optional[str] = Field(None, max_length=32, description="One-time recovery code from admin_recovery.py")
 
     @field_validator("mpin")
     @classmethod
